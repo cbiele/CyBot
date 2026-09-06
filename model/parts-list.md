@@ -79,5 +79,7 @@ Total solid volume of all listed parts: 6769 cm3 (before infill; at 40 % infill 
 
 ## Parts that do not fit the P2S bed as exported
 
+Resolved: print `model/split/mainBody1_lower`, `mainBody1_upper`, `mainBody2_lower`, `mainBody2_upper` instead of the two plates (half-lap joint, glue plus 2× M4 bolts per plate).
+
 - **mainBody1.stl** 380 x 142 x 16 mm: SPLIT
 - **mainBody2.stl** 380 x 142 x 16 mm: SPLIT

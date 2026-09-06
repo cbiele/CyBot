@@ -51,11 +51,20 @@ which 73 print (one alternative). Solid volume 6.8 litres, roughly 4 kg of filam
 40 % infill.
 
 **Bed (P2S, 256 mm cube):** every part fits as exported except the two main-body plates
-(380 × 142 × 16 mm). Suggested split: one cut per plate at **z ≈ 260 mm** in the
-feature-free band between the axis-2 joint boss (z 203) and the motor pockets
-(z 280–384). That gives a 128 mm lower piece and a 252 mm upper piece, both flat on the
-bed, with dowel or dovetail registration across the 16 mm thickness. The 170 mm base
-parts and the 209 mm wrist holder fit without splitting.
+(380 × 142 × 16 mm). Both are split by `tools/blender/split_plates.py` into
+`model/split/mainBody{1,2}_{lower,upper}.stl`.
+
+**Joint (decided 2026-09-06).** No straight cut exists between z 256 and 388 that misses
+every feature: the Ø20 bolt pockets occupy z 250–279 and the motor and encoder
+pockets take over from 275. So the split is a **40 mm half-lap** from z 258 to 298:
+the lower piece keeps the *outer* half of the 16 mm thickness in that band, the upper
+piece keeps the *inner* half. Every existing bolt pocket in the band (the three Ø20
+pockets and the first motor bolt) then clamps the two laps together, and two extra
+M4 clearance holes at x ±55, z 268 pin the corners. Glue the lap. Pieces: lower
+166 mm, upper 254 mm, both flat on the bed. Plate 1's original STL has nine
+non-manifold edges near its top; the split script closes them, so the split pieces
+are cleaner than the source. The 170 mm base parts and the 209 mm wrist holder fit
+without splitting.
 
 ## 4. Motor and encoder map, from the geometry
 

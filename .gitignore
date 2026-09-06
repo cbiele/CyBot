@@ -7,3 +7,4 @@ model/*.blend
 model/*.png
 *.zip
 model/*.blend1
+model/split/*.png
