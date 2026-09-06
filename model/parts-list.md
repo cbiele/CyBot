@@ -1,6 +1,6 @@
 # Cybot print list (from the Cults3D v5 + gripper STLs)
 
-Rule: one STL file = one placed instance, so quantity = number of files (byte-identical files confirmed for axis3 disks). `holderNoSplit` is an ALTERNATIVE to holder+holder2, not an extra part.
+Rule: one STL file = one placed instance, so quantity = number of files (byte-identical files confirmed for axis3 disks). `holderNoSplit` is an ALTERNATIVE to holder+holder2, not an extra part. **Rule exceptions:** `plateBall` prints 4 (one per base corner) and the gripper's `grip`, `Axe` and `T8_to_Axes` print 4 each (four fingers), although each is a single file.
 
 Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = longest dim <= 362 and the part is thin enough to lie flat rotated 45 deg (needs a manual check). Split = longest dim > 362.
 
