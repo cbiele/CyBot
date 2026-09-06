@@ -1,0 +1,83 @@
+# Cybot print list (from the Cults3D v5 + gripper STLs)
+
+Rule: one STL file = one placed instance, so quantity = number of files (byte-identical files confirmed for axis3 disks). `holderNoSplit` is an ALTERNATIVE to holder+holder2, not an extra part.
+
+Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = longest dim <= 362 and the part is thin enough to lie flat rotated 45 deg (needs a manual check). Split = longest dim > 362.
+
+| Group | Part | X x Y x Z (mm) | Volume cm3 | Bed |
+|---|---|---|---|---|
+| 1-mainbody | beltTentioner1 | 93 x 30 x 18 | 12 | fits |
+| 1-mainbody | beltTentioner2 | 87 x 30 x 18 | 17 | fits |
+| 1-mainbody | beltTentioner3 | 106 x 30 x 21 | 15 | fits |
+| 1-mainbody | mainBody1 | 380 x 142 x 16 | 351 | SPLIT |
+| 1-mainbody | mainBody2 | 380 x 142 x 16 | 389 | SPLIT |
+| 1-mainbody | plateBall | 60 x 60 x 50 | 77 | fits |
+| 2-axis1 | axis-1-rotatingBase1 | 170 x 170 x 28 | 314 | fits |
+| 2-axis1 | axis-1-rotatingBase2 | 170 x 170 x 17 | 189 | fits |
+| 2-axis1 | axis-1-rotatingBase3 | 170 x 170 x 69 | 744 | fits |
+| 2-axis1 | axis1-baseHolder | 170 x 170 x 68 | 402 | fits |
+| 2-axis1 | axis1-encoderHolder | 80 x 78 x 30 | 50 | fits |
+| 2-axis1 | axis1-stepperHolder | 80 x 79 x 50 | 76 | fits |
+| 3-axis2 | axis2-GT2-encoder | 118 x 118 x 38 | 122 | fits |
+| 3-axis2 | axis2-GT2-stepper | 118 x 118 x 15 | 112 | fits |
+| 3-axis2 | axis2-OPH1 | 69 x 69 x 14 | 36 | fits |
+| 3-axis2 | axis2-OPH2 | 69 x 69 x 14 | 36 | fits |
+| 3-axis2 | axis2-disk1 | 118 x 118 x 9 | 65 | fits |
+| 3-axis2 | axis2-disk2 | 118 x 118 x 9 | 65 | fits |
+| 3-axis2 | axis2-disk3 | 118 x 118 x 9 | 65 | fits |
+| 3-axis2 | axis2-diskCap | 80 x 80 x 3 | 11 | fits |
+| 3-axis2 | axis2-holder1 | 132 x 130 x 20 | 157 | fits |
+| 3-axis2 | axis2-holder2 | 132 x 130 x 20 | 157 | fits |
+| 3-axis2 | axis2-housing1 | 142 x 142 x 32 | 118 | fits |
+| 3-axis2 | axis2-housing2 | 142 x 142 x 32 | 118 | fits |
+| 3-axis2 | axis2-shaft1 | 26 x 24 x 16 | 6 | fits |
+| 3-axis2 | axis2-shaft2 | 27 x 26 x 11 | 4 | fits |
+| 3-axis2 | axis2-shaft3 | 27 x 24 x 11 | 4 | fits |
+| 3-axis2 | axis2-shaft4 | 26 x 25 x 16 | 6 | fits |
+| 4-axis3 | axis3-GT2-encoder | 106 x 106 x 15 | 90 | fits |
+| 4-axis3 | axis3-GT2-stepper | 106 x 106 x 38 | 100 | fits |
+| 4-axis3 | axis3-OPH1 | 69 x 69 x 20 | 53 | fits |
+| 4-axis3 | axis3-OPH2 | 69 x 69 x 20 | 53 | fits |
+| 4-axis3 | axis3-disk1 | 102 x 102 x 9 | 42 | fits |
+| 4-axis3 | axis3-disk2 | 102 x 102 x 9 | 42 | fits |
+| 4-axis3 | axis3-disk3 | 102 x 102 x 9 | 42 | fits |
+| 4-axis3 | axis3-holder1 | 118 x 118 x 32 | 60 | fits |
+| 4-axis3 | axis3-holder2 | 118 x 118 x 34 | 62 | fits |
+| 5-axis4 | axis4_80TGT2-7mm | 53 x 53 x 19 | 21 | fits |
+| 5-axis4 | axis4_OPH | 64 x 64 x 12 | 22 | fits |
+| 5-axis4 | axis4_OPH2 | 64 x 64 x 32 | 55 | fits |
+| 5-axis4 | axis4_Tube | 174 x 62 x 62 | 143 | fits |
+| 5-axis4 | axis4_axis5_holder | 206 x 160 x 103 | 688 | fits |
+| 5-axis4 | axis4_disk1 | 68 x 68 x 7 | 13 | fits |
+| 5-axis4 | axis4_disk2 | 68 x 68 x 7 | 13 | fits |
+| 5-axis4 | axis4_diskCap | 56 x 56 x 2 | 2 | fits |
+| 5-axis4 | axis4_housing | 100 x 80 x 25 | 22 | fits |
+| 5-axis4 | axis4_housingNema | 129 x 100 x 25 | 33 | fits |
+| 5-axis4 | axis4_shaft | 30 x 28 x 13 | 6 | fits |
+| 5-axis4 | axis4_shaft2 | 30 x 28 x 13 | 6 | fits |
+| 5-axis4 | axis4_shaft3 | 32 x 28 x 9 | 4 | fits |
+| 6-axis5-6 | axis5-80T-7mm | 53 x 53 x 19 | 21 | fits |
+| 6-axis5-6 | axis5-80T-rotor | 54 x 54 x 14 | 20 | fits |
+| 6-axis5-6 | axis5-axis6holder1 | 89 x 77 x 45 | 43 | fits |
+| 6-axis5-6 | axis5-axis6holder2 | 93 x 64 x 40 | 59 | fits |
+| 6-axis5-6 | axis5-holder | 209 x 187 x 45 | 246 | fits |
+| 6-axis5-6 | axis5-holder2 | 209 x 187 x 45 | 251 | fits |
+| 6-axis5-6 | axis5-holderNoSplit | 205 x 187 x 89 | 502 | fits |
+| 6-axis5-6 | axis5-pulley | 54 x 54 x 14 | 15 | fits |
+| 6-axis5-6 | axis5-pulleySpacer | 54 x 54 x 29 | 48 | fits |
+| 6-axis5-6 | axis5-quarterTurnBeltDrive | 76 x 20 x 14 | 4 | fits |
+| 6-axis5-6 | axis5_Housing2Attach1 | 100 x 80 x 25 | 20 | fits |
+| 6-axis5-6 | axis5_Housing2Attach2 | 100 x 80 x 25 | 20 | fits |
+| gripper | Axe | 39 x 34 x 6 | 3 | fits |
+| gripper | OPH_To_Gripper | 77 x 68 x 66 | 79 | fits |
+| gripper | T8_Srcew_Holder | 36 x 36 x 14 | 7 | fits |
+| gripper | T8_to_Axes | 26 x 10 x 10 | 1 | fits |
+| gripper | grip | 83 x 41 x 10 | 16 | fits |
+| gripper | mainHolder | 95 x 95 x 73 | 126 | fits |
+
+Total solid volume of all listed parts: 6769 cm3 (before infill; at 40 % infill roughly 4.2 kg of PLA counting walls).
+
+## Parts that do not fit the P2S bed as exported
+
+- **mainBody1.stl** 380 x 142 x 16 mm: SPLIT
+- **mainBody2.stl** 380 x 142 x 16 mm: SPLIT

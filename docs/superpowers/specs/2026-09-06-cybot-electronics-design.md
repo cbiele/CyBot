@@ -57,7 +57,7 @@ board and object training, an enclosure for the electronics, gripper force contr
  │ 24V→5V buck · connectors     │                              │
  └──┬───────────────────────────┘                              │
     │ CAN 500 kbit/s, one twisted pair, 120 Ω both ends         │
-    ├── SERVO57D #1 axis 1 (base yaw)      NEMA23 ─────────────┤
+    ├── SERVO42D #1 axis 1 (base yaw)      NEMA17 ─────────────┤
     ├── SERVO57D #2 axis 2 (shoulder)      NEMA23 ─────────────┤
     ├── SERVO57D #3 axis 3 (elbow)         NEMA23 ─────────────┤
     ├── SERVO42D #4 axis 4 (forearm roll)  NEMA17 ─────────────┤
@@ -80,7 +80,7 @@ Three independent loops:
 
 | Axis | Joint | Reduction | Motor | Driver | CAN ID |
 |---|---|---|---|---|---|
-| 1 | base yaw | 1:23 cycloid + HTD 3M belt | NEMA23 dual-shaft | SERVO57D CAN | 1 |
+| 1 | base yaw | 1:23 cycloid + HTD 3M belt | NEMA17 dual-shaft | SERVO42D CAN | 1 |
 | 2 | shoulder | 1:20 cycloid + HTD 3M belt | NEMA23 dual-shaft | SERVO57D CAN | 2 |
 | 3 | elbow | 1:20 cycloid + HTD 3M belt | NEMA23 dual-shaft | SERVO57D CAN | 3 |
 | 4 | forearm roll | 1:11 cycloid | NEMA17 dual-shaft | SERVO42D CAN | 4 |
@@ -91,25 +91,32 @@ Three independent loops:
 **Motor requirements.** The MKS board mounts on the motor's rear face and reads a
 magnet glued to the rear shaft, so every motor must be a **dual-shaft** part. Front
 shafts must match the pulleys the STLs assume: **6.35 mm** on the NEMA23s (3M 30T
-pulleys) and **5 mm** on the NEMA17s (GT2 pulleys, T8 coupler). Current: NEMA23 at or
-under 3.2 A per phase (57D default working current), NEMA17 at or under 1.7 A (42D
-default 1.6 A). Torque targets follow the assembly guide: 1.2-1.9 N·m for the NEMA23s,
-0.4-0.5 N·m for the NEMA17s.
+pulleys) and **5 mm** on the NEMA17s (GT2 and 3M pulleys, T8 coupler). Current: NEMA23
+at or under 3.2 A per phase (57D default working current), NEMA17 at or under 1.7 A
+(42D default 1.6 A). Torque targets follow the assembly guide: 1.2-1.9 N·m for the
+NEMA23s, 0.4-0.5 N·m for the NEMA17s.
 
-**Length is the open risk.** The guide caps the NEMA23s at 54 mm because they hang
-between the two 16 mm main-body plates, and caps the NEMA17s at 55 mm. The MKS boards
-add roughly 15-18 mm behind the motor (exact figure from the MKS mechanical drawing,
-to be confirmed). A 41 mm NEMA23 plus board lands near 56-59 mm, over the cap. Two
-resolutions, chosen after step 1 of §11:
+**Motor count corrected from the geometry (2026-09-06).** The assembly guide says three
+NEMA23 and four NEMA17, but the v5 STLs carry a 31 mm NEMA17 bolt pattern with a Ø32
+bore on the base holder, so the build is **two NEMA23 (axes 2, 3) and five NEMA17
+(axes 1, 4, 5, 6, gripper)**. See `docs/2026-09-06-stl-reconstruction.md` §4.
 
-1. Measure the true clearance on the printed body. If the cavity is open behind the
-   motor, the cap was about the printed pocket, not the whole envelope.
-2. If it is closed, modify `mainBody1/2` and `axis1-stepperHolder` in Blender to
-   extend the pocket. Everything printed is ours to change; motors are not.
+**Length, measured from the STLs (reconstruction report §5).** The NEMA23s sit between
+the body plates with **61.0 mm** from the pocket floor to the opposite plate. The MKS
+boards add an estimated 15-20 mm (not published; measure the first unit). Resolution,
+decided after the boards are measured:
+
+1. 41 mm dual-shaft NEMA23s if the board measures under about 18 mm, or
+2. a 6-8 mm recess in `mainBody2`'s inner face behind each motor, stopping short of
+   the adjacent encoder pockets. Everything printed is ours to change; motors are not.
+
+The gripper NEMA17 has **55 mm** between its mounting face and the adapter: use a
+34-40 mm pancake NEMA17, or lengthen the printed adapter by 10 mm. Axes 1, 4, 5 and 6
+are in open air.
 
 Prefer buying the MKS "MB" board-only variants plus separately chosen motors so length
 can be picked; the "MT" motor bundles ship fixed lengths (the 57D bundles seen are
-56 mm and 76 mm, both over the cap).
+56 mm and 76 mm, both over the space available).
 
 ### 5.2 CAN bus
 
@@ -309,10 +316,10 @@ first against a single MKS board on the bench, then on the assembled 20:1 joint.
 
 | Item | Qty | Note |
 |---|---|---|
-| MKS SERVO57D CAN, board only | 3 | axes 1-3 |
-| MKS SERVO42D CAN, board only | 4 | axes 4-6 + gripper |
-| NEMA23 dual-shaft, 6.35 mm front shaft, ≤ 3.2 A | 3 | length per §5.1 |
-| NEMA17 dual-shaft, 5 mm front shaft, ≤ 1.7 A | 4 | 47 mm class |
+| MKS SERVO57D CAN, board only | 2 | axes 2-3 |
+| MKS SERVO42D CAN, board only | 5 | axes 1, 4-6 + gripper |
+| NEMA23 dual-shaft, 6.35 mm front shaft, ≤ 3.2 A | 2 | 41 mm class, per §5.1 |
+| NEMA17 dual-shaft, 5 mm front shaft, ≤ 1.7 A | 5 | 47 mm class; gripper 34-40 mm |
 | 24 V 10 A PSU | 1 | |
 | 24 V DC contactor + mushroom e-stop with 2× NC | 1 | |
 | SN65HVD230 module, 120 Ω resistors | 1 + 2 | |
@@ -322,7 +329,7 @@ first against a single MKS board on the bench, then on the assembled 20:1 joint.
 | Small LiPo, JST PH 2.0 | 1 | standalone Heltec buffer |
 | Daughterboard PCB, connectors, passives | 1 | §5.3 |
 
-Rough cost: drivers about 205 USD, motors about 140 USD, PSU and e-stop about 60 USD,
+Rough cost: drivers about 195 USD, motors about 130 USD, PSU and e-stop about 60 USD,
 the rest under 40 USD.
 
 ---
@@ -331,7 +338,7 @@ the rest under 40 USD.
 
 | Risk | Mitigation |
 |---|---|
-| Motor + MKS board too long for the body | Measure first (§11 step 1); modify the printed pocket, not the motor choice |
+| Motor + MKS board too long for the body | 61 mm measured from the STLs; 41 mm motors or a plate recess (§5.1) |
 | CAN bus errors from 7 nodes on hobby wiring | Twisted pair, both terminations, 500 kbit/s not 1 Mbit/s, error counters in `status` |
 | Belt ratio unknown → wrong joint angles | Calibration procedure §6.2 before any coordinated move |
 | Z pulse missed at homing speed | Homing approach at 30 RPM motor speed; Z is 0.36° of encoder shaft, PCNT edge capture, not polling |
@@ -369,8 +376,8 @@ the rest under 40 USD.
 
 ## 11. Phasing
 
-1. **Measure** the motor pocket depth on the printed body and get the MKS board depth
-   from the MKS drawing; pick motor lengths; order drivers, motors, PSU, e-stop.
+1. **Measure** the MKS board depth on one SERVO57D and one SERVO42D (pocket depth is
+   now known from the STLs: 61 mm); pick motor lengths; order the rest.
 2. **Codec and planner on the host**, tests green, while parts ship.
 3. **Single-board bench**: Heltec + transceiver + one SERVO42D on a loose NEMA17.
 4. **Daughterboard v1** once `J_GPIO1` orientation is frozen.
@@ -380,9 +387,9 @@ the rest under 40 USD.
 
 ## 12. Open items
 
-- Motor pocket clearance on the print (founder, calipers).
-- MKS board added depth from the mechanical drawings, and whether the boards carry
-  a termination jumper.
+- MKS board added depth (measure a unit), and whether the boards carry a
+  termination jumper.
+- NEMA23 answer: 41 mm motors vs a `mainBody2` recess.
 - `J_GPIO1` frozen coordinates and vertical vs right-angle (Chopaka session).
 - Carrier F1 hold current (Chopaka first-article).
 - VDD_5V reading on `J_GPIO1` pin 3 under both power sources (Chopaka first-article).
