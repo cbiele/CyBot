@@ -1,6 +1,7 @@
 {
  "axis56/axis5-holderNoSplit": {
   "collection": "alternates",
+  "file": "Cults3d_v5/6-axis5-6/axis5-holderNoSplit.stl",
   "matrix_world": [
    [
     1.0,
@@ -31,6 +32,7 @@
  },
  "axis1/axis-1-rotatingBase1": {
   "collection": "axis1",
+  "file": "Cults3d_v5/2-axis1/axis-1-rotatingBase1.stl",
   "matrix_world": [
    [
     1.0,
@@ -61,6 +63,7 @@
  },
  "axis1/axis-1-rotatingBase2": {
   "collection": "axis1",
+  "file": "Cults3d_v5/2-axis1/axis-1-rotatingBase2.stl",
   "matrix_world": [
    [
     1.0,
@@ -91,6 +94,7 @@
  },
  "axis1/axis-1-rotatingBase3": {
   "collection": "axis1",
+  "file": "Cults3d_v5/2-axis1/axis-1-rotatingBase3.stl",
   "matrix_world": [
    [
     1.0,
@@ -121,6 +125,7 @@
  },
  "axis1/axis1-baseHolder": {
   "collection": "axis1",
+  "file": "Cults3d_v5/2-axis1/axis1-baseHolder.stl",
   "matrix_world": [
    [
     1.0,
@@ -151,6 +156,7 @@
  },
  "axis1/axis1-encoderHolder": {
   "collection": "axis1",
+  "file": "Cults3d_v5/2-axis1/axis1-encoderHolder.stl",
   "matrix_world": [
    [
     1.0,
@@ -181,6 +187,7 @@
  },
  "axis1/axis1-stepperHolder": {
   "collection": "axis1",
+  "file": "Cults3d_v5/2-axis1/axis1-stepperHolder.stl",
   "matrix_world": [
    [
     1.0,
@@ -211,6 +218,7 @@
  },
  "axis2/axis2-GT2-encoder": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-GT2-encoder.stl",
   "matrix_world": [
    [
     -0.9995525479316711,
@@ -241,6 +249,7 @@
  },
  "axis2/axis2-GT2-stepper": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-GT2-stepper.stl",
   "matrix_world": [
    [
     -0.9995525479316711,
@@ -271,6 +280,7 @@
  },
  "axis2/axis2-OPH1": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-OPH1.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -301,6 +311,7 @@
  },
  "axis2/axis2-OPH2": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-OPH2.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -331,6 +342,7 @@
  },
  "axis2/axis2-disk1": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-disk1.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -361,6 +373,7 @@
  },
  "axis2/axis2-disk2": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-disk2.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -391,6 +404,7 @@
  },
  "axis2/axis2-disk3": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-disk3.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -421,6 +435,7 @@
  },
  "axis2/axis2-diskCap": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-diskCap.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -451,6 +466,7 @@
  },
  "axis2/axis2-holder1": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-holder1.stl",
   "matrix_world": [
    [
     1.0,
@@ -481,6 +497,7 @@
  },
  "axis2/axis2-holder2": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-holder2.stl",
   "matrix_world": [
    [
     1.0,
@@ -511,6 +528,7 @@
  },
  "axis2/axis2-housing1": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-housing1.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -541,6 +559,7 @@
  },
  "axis2/axis2-housing2": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-housing2.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -571,6 +590,7 @@
  },
  "axis2/axis2-shaft1": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-shaft1.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -601,6 +621,7 @@
  },
  "axis2/axis2-shaft2": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-shaft2.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -631,6 +652,7 @@
  },
  "axis2/axis2-shaft3": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-shaft3.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -661,6 +683,7 @@
  },
  "axis2/axis2-shaft4": {
   "collection": "axis2",
+  "file": "Cults3d_v5/3-axis2/axis2-shaft4.stl",
   "matrix_world": [
    [
     0.9995525479316711,
@@ -691,6 +714,7 @@
  },
  "axis3/axis3-GT2-encoder": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-GT2-encoder.stl",
   "matrix_world": [
    [
     -0.9999874830245972,
@@ -721,6 +745,7 @@
  },
  "axis3/axis3-GT2-stepper": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-GT2-stepper.stl",
   "matrix_world": [
    [
     0.9999874830245972,
@@ -751,6 +776,7 @@
  },
  "axis3/axis3-OPH1": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-OPH1.stl",
   "matrix_world": [
    [
     -0.9999874830245972,
@@ -781,6 +807,7 @@
  },
  "axis3/axis3-OPH2": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-OPH2.stl",
   "matrix_world": [
    [
     -0.9999874830245972,
@@ -811,6 +838,7 @@
  },
  "axis3/axis3-disk1": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-disk1.stl",
   "matrix_world": [
    [
     -0.9999874830245972,
@@ -841,6 +869,7 @@
  },
  "axis3/axis3-disk2": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-disk2.stl",
   "matrix_world": [
    [
     0.5031409859657288,
@@ -871,6 +900,7 @@
  },
  "axis3/axis3-disk3": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-disk3.stl",
   "matrix_world": [
    [
     0.496846079826355,
@@ -901,6 +931,7 @@
  },
  "axis3/axis3-holder1": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-holder1.stl",
   "matrix_world": [
    [
     -0.9999874830245972,
@@ -931,6 +962,7 @@
  },
  "axis3/axis3-holder2": {
   "collection": "axis3",
+  "file": "Cults3d_v5/4-axis3/axis3-holder2.stl",
   "matrix_world": [
    [
     -0.9999874830245972,
@@ -961,6 +993,7 @@
  },
  "axis4/axis4_80TGT2-7mm": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_80TGT2-7mm.stl",
   "matrix_world": [
    [
     -1.6292068494294654e-07,
@@ -991,6 +1024,7 @@
  },
  "axis4/axis4_OPH": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_OPH.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1021,6 +1055,7 @@
  },
  "axis4/axis4_OPH2": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_OPH2.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1051,6 +1086,7 @@
  },
  "axis4/axis4_Tube": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_Tube.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1081,6 +1117,7 @@
  },
  "axis4/axis4_axis5_holder": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_axis5_holder.stl",
   "matrix_world": [
    [
     1.0,
@@ -1111,6 +1148,7 @@
  },
  "axis4/axis4_disk1": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_disk1.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1141,6 +1179,7 @@
  },
  "axis4/axis4_disk2": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_disk2.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1171,6 +1210,7 @@
  },
  "axis4/axis4_diskCap": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_diskCap.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1201,6 +1241,7 @@
  },
  "axis4/axis4_housing": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_housing.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1231,6 +1272,7 @@
  },
  "axis4/axis4_housingNema": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_housingNema.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1261,6 +1303,7 @@
  },
  "axis4/axis4_shaft": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_shaft.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1291,6 +1334,7 @@
  },
  "axis4/axis4_shaft2": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_shaft2.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1321,6 +1365,7 @@
  },
  "axis4/axis4_shaft3": {
   "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_shaft3.stl",
   "matrix_world": [
    [
     3.1391647326017846e-07,
@@ -1351,23 +1396,24 @@
  },
  "axis56/axis5-80T-7mm": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-80T-7mm.stl",
   "matrix_world": [
    [
-    0.9996353983879089,
-    0.0028271556366235018,
-    0.02685367874801159,
-    249.8992919921875
+    -0.9996353983879089,
+    -0.002827156102284789,
+    -0.026853589341044426,
+    250.10072326660156
    ],
    [
-    0.02683665230870247,
-    0.005899148061871529,
-    -0.9996222257614136,
-    -102.18849182128906
+    -0.026836562901735306,
+    -0.005899147596210241,
+    0.9996221661567688,
+    -106.91084289550781
    ],
    [
     -0.0029845021199434996,
     0.9999786019325256,
-    0.005821124650537968,
+    0.00582112418487668,
     554.9781494140625
    ],
    [
@@ -1381,6 +1427,7 @@
  },
  "axis56/axis5-80T-rotor": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-80T-rotor.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1411,6 +1458,7 @@
  },
  "axis56/axis5-axis6holder1": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-axis6holder1.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1441,6 +1489,7 @@
  },
  "axis56/axis5-axis6holder2": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-axis6holder2.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1471,6 +1520,7 @@
  },
  "axis56/axis5-holder": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-holder.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1501,6 +1551,7 @@
  },
  "axis56/axis5-holder2": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-holder2.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1531,6 +1582,7 @@
  },
  "axis56/axis5-pulley": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-pulley.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1561,6 +1613,7 @@
  },
  "axis56/axis5-pulleySpacer": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-pulleySpacer.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1591,6 +1644,7 @@
  },
  "axis56/axis5-quarterTurnBeltDrive": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5-quarterTurnBeltDrive.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1621,6 +1675,7 @@
  },
  "axis56/axis5_Housing2Attach1": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5_Housing2Attach1.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1651,6 +1706,7 @@
  },
  "axis56/axis5_Housing2Attach2": {
   "collection": "axis56",
+  "file": "Cults3d_v5/6-axis5-6/axis5_Housing2Attach2.stl",
   "matrix_world": [
    [
     0.9996353983879089,
@@ -1681,6 +1737,7 @@
  },
  "gripper/Axe": {
   "collection": "gripper",
+  "file": "4FingersGripper/Axe.stl",
   "matrix_world": [
    [
     1.0,
@@ -1711,6 +1768,7 @@
  },
  "gripper/OPH_To_Gripper": {
   "collection": "gripper",
+  "file": "4FingersGripper/OPH_To_Gripper.stl",
   "matrix_world": [
    [
     1.0,
@@ -1741,6 +1799,7 @@
  },
  "gripper/T8_Srcew_Holder": {
   "collection": "gripper",
+  "file": "4FingersGripper/T8_Srcew_Holder.stl",
   "matrix_world": [
    [
     1.0,
@@ -1771,6 +1830,7 @@
  },
  "gripper/T8_to_Axes": {
   "collection": "gripper",
+  "file": "4FingersGripper/T8_to_Axes.stl",
   "matrix_world": [
    [
     1.0,
@@ -1801,6 +1861,7 @@
  },
  "gripper/grip": {
   "collection": "gripper",
+  "file": "4FingersGripper/grip.stl",
   "matrix_world": [
    [
     1.0,
@@ -1831,6 +1892,7 @@
  },
  "gripper/mainHolder": {
   "collection": "gripper",
+  "file": "4FingersGripper/mainHolder.stl",
   "matrix_world": [
    [
     1.0,
@@ -1859,8 +1921,288 @@
   ],
   "hide": false
  },
+ "gripper/grip.2": {
+  "collection": "gripper",
+  "file": "4FingersGripper/grip.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    7.549790126404332e-08,
+    -1.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    7.549790126404332e-08,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "gripper/Axe.2": {
+  "collection": "gripper",
+  "file": "4FingersGripper/Axe.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    7.549790126404332e-08,
+    -1.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    7.549790126404332e-08,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "gripper/T8_to_Axes.2": {
+  "collection": "gripper",
+  "file": "4FingersGripper/T8_to_Axes.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    7.549790126404332e-08,
+    -1.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    7.549790126404332e-08,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "gripper/grip.3": {
+  "collection": "gripper",
+  "file": "4FingersGripper/grip.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    -1.0,
+    -8.742277657347586e-08,
+    0.0
+   ],
+   [
+    0.0,
+    8.742277657347586e-08,
+    -1.0,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "gripper/Axe.3": {
+  "collection": "gripper",
+  "file": "4FingersGripper/Axe.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    -1.0,
+    -8.742277657347586e-08,
+    0.0
+   ],
+   [
+    0.0,
+    8.742277657347586e-08,
+    -1.0,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "gripper/T8_to_Axes.3": {
+  "collection": "gripper",
+  "file": "4FingersGripper/T8_to_Axes.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    -1.0,
+    -8.742277657347586e-08,
+    0.0
+   ],
+   [
+    0.0,
+    8.742277657347586e-08,
+    -1.0,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "gripper/grip.4": {
+  "collection": "gripper",
+  "file": "4FingersGripper/grip.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    7.549790126404332e-08,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    -1.0,
+    7.549790126404332e-08,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "gripper/Axe.4": {
+  "collection": "gripper",
+  "file": "4FingersGripper/Axe.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    7.549790126404332e-08,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    -1.0,
+    7.549790126404332e-08,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "gripper/T8_to_Axes.4": {
+  "collection": "gripper",
+  "file": "4FingersGripper/T8_to_Axes.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    380.49237060546875
+   ],
+   [
+    0.0,
+    7.549790126404332e-08,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    -1.0,
+    7.549790126404332e-08,
+    555.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
  "mainbody/mainBody1": {
   "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/mainBody1.stl",
   "matrix_world": [
    [
     1.0,
@@ -1891,6 +2233,7 @@
  },
  "mainbody/mainBody2": {
   "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/mainBody2.stl",
   "matrix_world": [
    [
     1.0,
@@ -1921,6 +2264,7 @@
  },
  "mainbody/plateBall": {
   "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/plateBall.stl",
   "matrix_world": [
    [
     1.0,
@@ -1950,25 +2294,26 @@
   "hide": false
  },
  "mainbody/beltTentioner1": {
-  "collection": "unplaced",
+  "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/beltTentioner1.stl",
   "matrix_world": [
    [
-    1.0,
+    -4.371138828673793e-08,
     0.0,
-    0.0,
-    0.0
+    -1.0,
+    45.0
    ],
    [
     0.0,
     1.0,
     0.0,
-    0.0
+    -44.0
    ],
    [
-    0.0,
-    0.0,
     1.0,
-    0.0
+    0.0,
+    -4.371138828673793e-08,
+    255.0
    ],
    [
     0.0,
@@ -1977,46 +2322,79 @@
     1.0
    ]
   ],
-  "hide": true
- },
- "mainbody/beltTentioner2": {
-  "collection": "unplaced",
-  "matrix_world": [
-   [
-    1.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   [
-    0.0,
-    1.0,
-    0.0,
-    0.0
-   ],
-   [
-    0.0,
-    0.0,
-    1.0,
-    0.0
-   ],
-   [
-    0.0,
-    0.0,
-    0.0,
-    1.0
-   ]
-  ],
-  "hide": true
+  "hide": false
  },
  "mainbody/beltTentioner3": {
-  "collection": "unplaced",
+  "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/beltTentioner3.stl",
+  "matrix_world": [
+   [
+    -4.371138828673793e-08,
+    0.0,
+    -1.0,
+    -45.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0,
+    -44.0
+   ],
+   [
+    1.0,
+    0.0,
+    -4.371138828673793e-08,
+    400.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "mainbody/beltTentioner2": {
+  "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/beltTentioner2.stl",
+  "matrix_world": [
+   [
+    4.371138828673793e-08,
+    -8.742277657347586e-08,
+    1.0,
+    -50.0
+   ],
+   [
+    -3.82137093032941e-15,
+    -1.0,
+    -8.742277657347586e-08,
+    44.0
+   ],
+   [
+    1.0,
+    0.0,
+    -4.371138828673793e-08,
+    250.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "mainbody/plateBall.2": {
+  "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/plateBall.stl",
   "matrix_world": [
    [
     1.0,
     0.0,
     0.0,
-    0.0
+    360.418212890625
    ],
    [
     0.0,
@@ -2037,6 +2415,68 @@
     1.0
    ]
   ],
-  "hide": true
+  "hide": false
+ },
+ "mainbody/plateBall.3": {
+  "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/plateBall.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0,
+    -440.40283203125
+   ],
+   [
+    0.0,
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
+ "mainbody/plateBall.4": {
+  "collection": "mainbody",
+  "file": "Cults3d_v5/1-mainbody/plateBall.stl",
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    360.418212890625
+   ],
+   [
+    0.0,
+    1.0,
+    0.0,
+    -440.40283203125
+   ],
+   [
+    0.0,
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
  }
 }

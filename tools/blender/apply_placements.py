@@ -1,4 +1,5 @@
 """Rebuild model/cybot-assembly.blend from the raw STLs and model/placements.json.
+placements.json: {object name: {collection, file, matrix_world, hide}}; instances repeat a file.
 Run: Blender -b -P tools/blender/apply_placements.py
 placements.json is the authority for every hand-seated part (joint stacks, pulleys,
 axis-4 and axis-5 gearboxes, roll stack, gripper); regenerate it from a live session
@@ -28,11 +29,11 @@ def imp(path,cname,m,scale=1.0,name=None):
 mu=mat("urdf")
 for p in sorted(glob.glob(os.path.join(ROOT,"URDF/*.stl"))): imp(p,"urdf",mu,1000.0,"urdf_"+os.path.basename(p)[:-4])
 mats={g:mat(g) for g in GROUPS}
-for g,rel in GROUPS.items():
-    for p in sorted(glob.glob(os.path.join(ROOT,rel,"*.stl"))):
-        nm=g+"/"+os.path.basename(p)[:-4]; entry=P.get(nm)
-        o=imp(p,entry["collection"] if entry else g,mats[g],1.0,nm)
-        if entry: o.matrix_world=Matrix(entry["matrix_world"])
+# one entry per placed object; instances of the same STL share a "file" and get suffixed names
+for nm,entry in P.items():
+    g=nm.split("/")[0]
+    o=imp(os.path.join(ROOT,entry["file"]),entry["collection"],mats[g],1.0,nm)
+    o.matrix_world=Matrix(entry["matrix_world"])
 for cname,entry in {v["collection"]:v for v in P.values()}.items():
     if entry["hide"]: coll(cname).hide_viewport=True; coll(cname).hide_render=True
 for area in bpy.context.screen.areas:
