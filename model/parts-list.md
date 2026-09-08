@@ -1,6 +1,6 @@
 # Cybot print list (from the Cults3D v5 + gripper STLs)
 
-Rule: one STL file = one placed instance, so quantity = number of files (byte-identical files confirmed for axis3 disks). `holderNoSplit` is an ALTERNATIVE to holder+holder2, not an extra part. **Rule exceptions:** `plateBall` prints 4 (one per base corner) and the gripper's `grip`, `Axe` and `T8_to_Axes` print 4 each (four fingers), although each is a single file.
+Rule: one STL file = one placed instance, so quantity = number of files (byte-identical files confirmed for axis3 disks). `holderNoSplit` is an ALTERNATIVE to holder+holder2, not an extra part. **Rule exceptions:** `plateBall` prints 4 (one per base corner) the gripper's `grip`, `Axe` and `T8_to_Axes` print 4 each (four fingers), and `axis2-diskCap` prints 3 (one per cycloid disk; confirmed on the printed part 2026-09-06, and by the same logic `axis4_diskCap` likely prints 2 per 1:11 gearbox, unverified), although each is a single file.
 
 Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = longest dim <= 362 and the part is thin enough to lie flat rotated 45 deg (needs a manual check). Split = longest dim > 362.
 
@@ -25,7 +25,7 @@ Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = 
 | 3-axis2 | axis2-disk1 | 118 x 118 x 9 | 65 | fits |
 | 3-axis2 | axis2-disk2 | 118 x 118 x 9 | 65 | fits |
 | 3-axis2 | axis2-disk3 | 118 x 118 x 9 | 65 | fits |
-| 3-axis2 | axis2-diskCap | 80 x 80 x 3 | 11 | fits |
+| 3-axis2 | axis2-diskCap (x3) | 80 x 80 x 3 | 11 | fits |
 | 3-axis2 | axis2-holder1 | 132 x 130 x 20 | 157 | fits |
 | 3-axis2 | axis2-holder2 | 132 x 130 x 20 | 157 | fits |
 | 3-axis2 | axis2-housing1 | 142 x 142 x 32 | 118 | fits |

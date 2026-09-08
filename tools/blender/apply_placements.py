@@ -1,4 +1,4 @@
-"""Rebuild model/cybot-assembly.blend from the raw STLs and model/placements.json.
+"""Rebuild model/cybot-master.blend from the raw STLs and model/placements.json.
 placements.json: {object name: {collection, file, matrix_world, hide}}; instances repeat a file.
 Run: Blender -b -P tools/blender/apply_placements.py
 placements.json is the authority for every hand-seated part (joint stacks, pulleys,
@@ -40,4 +40,4 @@ for area in bpy.context.screen.areas:
     if area.type=='VIEW_3D':
         sp=area.spaces.active; sp.clip_start=1.0; sp.clip_end=100000.0; sp.shading.type='SOLID'; sp.shading.color_type='MATERIAL'; sp.shading.show_cavity=True
         sp.region_3d.view_distance=1400; sp.region_3d.view_location=(150,0,320)
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT,"cybot-assembly.blend")); print("REBUILT", len(P), "placements")
+bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT,"cybot-master.blend")); print("REBUILT", len(P), "placements")

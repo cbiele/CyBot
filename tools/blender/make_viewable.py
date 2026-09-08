@@ -22,5 +22,5 @@ for area in bpy.context.screen.areas:
         sp.shading.type='SOLID'; sp.shading.color_type='MATERIAL'; sp.shading.show_cavity=True
         r3d=sp.region_3d; r3d.view_distance=1400; r3d.view_location=(150,0,320)
 scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=0.001; scene.unit_settings.length_unit='MILLIMETERS'
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT,"cybot-assembly.blend"))
-print("VIEWABLE DONE", os.path.join(OUT,"cybot-assembly.blend"))
+bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT,"cybot-master.blend"))
+print("VIEWABLE DONE", os.path.join(OUT,"cybot-master.blend"))

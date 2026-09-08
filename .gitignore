@@ -8,3 +8,6 @@ model/*.png
 *.zip
 model/*.blend1
 model/split/*.png
+model/subassemblies/*.blend
+model/subassemblies/*.blend1
+model/subassemblies/*.png
