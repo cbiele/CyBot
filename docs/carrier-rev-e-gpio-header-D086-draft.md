@@ -14,6 +14,19 @@
 >    Conditioning, protection and terminations still belong to the
 >    daughterboard.
 >
+> **PLACEMENT FROZEN 2026-09-07** (from the Chopaka session; layout DRC-clean,
+> netlist 150/150). Footprint `PinHeader_1x10_P2.54mm_Vertical`. Board-relative
+> frame (origin top-left, x right, y down, mm; board 75.0 × 65.0, same frame as
+> the M3 centres): pin 1 GND at (19.34, 5.50), pin 10 GPIO38 at (42.20, 5.50),
+> row along the top edge, pins 1→10 left to right, 2.54 mm pitch. KiCad-absolute:
+> pin 1 at (63.84, 52.00), rotation 90, board edge x 44.5–119.5 / y 46.5–111.5.
+> The header stands ~8.5–9 mm proud and the carrier lives in an enclosure pod
+> with a tight ceiling: a beside-the-carrier daughterboard on a jumper bundle
+> is the default; ask the Chopaka session for the measured pod ceiling before
+> committing to a stacking height. Still owed: VDD_5V first-article reading
+> (expected dead off J2/battery) and F1 hold current; first-article timing
+> depends on an unset fab order date.
+>
 > Also confirmed available to Cybot: `J_EXP1` (8-pin JST SH 1.0 mm: 3V3,
 > TCA9535 P05/P06/P07/P15/P16/P17, GND) — expander spares, idle as
 > driven-low outputs, fine for static I/O such as driver enables or limit

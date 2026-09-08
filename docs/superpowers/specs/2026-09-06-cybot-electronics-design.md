@@ -142,10 +142,13 @@ can be picked; the "MT" motor bundles ship fixed lengths (the 57D bundles seen a
 
 ### 5.3 Daughterboard
 
-A small board that either **stacks on `J_GPIO1`** (vertical header) or **sits beside
-the carrier on shared M3 standoffs** (right-angle header). The Chopaka session sends
-the frozen `J_GPIO1` coordinates and orientation; until then the layout is designed
-for both. Carrier M3 pattern (board-relative, mm, y down): H4 (5, 5), H1 (70, 5),
+A small board that **sits beside the carrier** and connects to `J_GPIO1` with a
+1×10 jumper bundle. `J_GPIO1` is frozen (2026-09-07) as a vertical 1×10 2.54 mm
+header along the carrier's top edge, pin 1 (GND) at (19.34, 5.50) to pin 10
+(GPIO38) at (42.20, 5.50) board-relative, ~8.5–9 mm proud. Stacking on it is
+mechanically possible but the carrier sits in an enclosure pod with a tight
+ceiling, so stacking waits on the measured pod ceiling from the Chopaka session.
+Carrier M3 pattern (board-relative, mm, y down): H4 (5, 5), H1 (70, 5),
 H3 (5, 60), H2 (70, 61). It is not a perfect rectangle.
 
 Contents:
@@ -380,7 +383,7 @@ the rest under 40 USD.
    now known from the STLs: 61 mm); pick motor lengths; order the rest.
 2. **Codec and planner on the host**, tests green, while parts ship.
 3. **Single-board bench**: Heltec + transceiver + one SERVO42D on a loose NEMA17.
-4. **Daughterboard v1** once `J_GPIO1` orientation is frozen.
+4. **Daughterboard v1** (beside the carrier; `J_GPIO1` frozen 2026-09-07).
 5. **Joint bench**: the assembled 20:1 joint, Omron Z homing, calibration.
 6. **Full arm** as printing and assembly complete, one axis at a time.
 7. **Camera**: separate spec.
@@ -390,6 +393,6 @@ the rest under 40 USD.
 - MKS board added depth (measure a unit), and whether the boards carry a
   termination jumper.
 - NEMA23 answer: 41 mm motors vs a `mainBody2` recess.
-- `J_GPIO1` frozen coordinates and vertical vs right-angle (Chopaka session).
+- Enclosure pod ceiling above `J_GPIO1`, only if the daughterboard is to stack (Chopaka session).
 - Carrier F1 hold current (Chopaka first-article).
 - VDD_5V reading on `J_GPIO1` pin 3 under both power sources (Chopaka first-article).
