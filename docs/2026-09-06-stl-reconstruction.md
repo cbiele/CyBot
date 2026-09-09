@@ -184,8 +184,5 @@ each `model/subassemblies/<folder>-assembly.md`):**
 
 ## 8. Next steps
 
-1. Buy one SERVO57D and one SERVO42D board first and measure the added depth.
-2. Decide the NEMA23 answer: 41 mm motors vs the plate recess. If recess, model it in
-   Blender on `mainBody2` and re-run `motor_free_length.py`.
-3. Map bearings for the remaining folders and build their exploded files (axis 1 next, then 3, 4, 5-6, body).
-4. Choose the gripper motor length or lengthen the adapter.
+Superseded 2026-09-09 by `docs/build-plan.md`, which holds the phase order,
+print queue, hardware per phase and the checks that gate each phase.
