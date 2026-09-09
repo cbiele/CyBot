@@ -103,7 +103,78 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
   Heltec + SN65HVD230 + one motor loose. This is why phase B's motors are
   ordered first.
 
-## 6. Phase A, granular
+## 6. Phase A, granular: finishing the 1:20 joint (axis 2)
 
-To be written next: the axis-2 inventory and the step list to finish the
-1:20 joint, from `model/subassemblies/axis2-assembly.md`.
+Source: `model/subassemblies/axis2-assembly.md` and `axis2-exploded.png`.
+Tick the printed column against the pile; the sample joint from `quartit/`
+covers the parts marked (sample) if those prints are being reused.
+
+### 6.1 Print inventory
+
+| # | Part | Qty | Printed | Notes |
+|---|---|---|---|---|
+| 1 | axis2-GT2-stepper | 1 | [ ] | 118 mm pulley, motor side |
+| 2 | axis2-holder1 | 1 | [ ] | motor-side holder, 6 × Ø8 rod holes |
+| 3 | axis2-housing2 | 1 | [ ] (sample) | ring-pin half, Ø85 step |
+| 4 | axis2-OPH1 | 1 | [ ] (sample) | Ø65 boss, Ø32 bore |
+| 5 | axis2-shaft4 | 1 | [ ] (sample) | eccentric, coaxial journal outboard |
+| 6 | axis2-diskCap | 3 | [ ] [ ] [ ] (sample ×1) | one per disk |
+| 7 | axis2-disk3 | 1 | [ ] (sample) | disks are identical files; phase by orientation |
+| 8 | axis2-shaft3 | 1 | [ ] (sample) | |
+| 9 | axis2-disk2 | 1 | [ ] (sample) | |
+| 10 | axis2-shaft2 | 1 | [ ] (sample) | |
+| 11 | axis2-disk1 | 1 | [ ] (sample) | |
+| 12 | axis2-shaft1 | 1 | [ ] (sample) | |
+| 13 | axis2-OPH2 | 1 | [ ] (sample) | |
+| 14 | axis2-housing1 | 1 | [ ] (sample) | |
+| 15 | axis2-holder2 | 1 | [ ] | encoder-side holder |
+| 16 | axis2-GT2-encoder | 1 | [ ] | 118 mm pulley with the Ø20 blind hub |
+
+Not in this folder but needed to mount the joint: the split mainBody plates
+(phase E) and the NEMA23 + SERVO57D + E6B2 (phase E hardware).
+
+### 6.2 Hardware for this joint
+
+| Item | Qty | Have | Where it goes |
+|---|---|---|---|
+| 6813zz 65×85×10 | 2 | [ ] | housing Ø85 step + plate pocket / OPH Ø65 boss |
+| 6804zz 20×32×7 | 5 | [ ] | three disk bores, two OPH bores |
+| 688rs 8×16×5 | 18 | [ ] | six Ø16 pockets per disk |
+| M6×50 pins | 12 (PDF says 14) | [ ] | Ø6 holes in the housing halves; count the printed housing |
+| M4 threaded rod 3.85 mm | 6 lengths | [ ] | through the 688s and the Ø8 holes in holders and pulleys |
+| M4 nuts | 12+ | [ ] | pulley counterbores both ends |
+| M6×70 + nuts | 6 | [ ] | holder-to-housing clamp |
+
+### 6.3 Assembly order (stepper side first, along the joint axis)
+
+1. **Disks.** For each of the three disks, from the recessed side: press
+   the 6804 into the Ø32 centre bore (it stands 2.5 mm proud), press six
+   688s into the Ø16 pockets (1.5 mm proud), drop a diskCap into the Ø84
+   recess so its counterbores sit over the bearings. Do this three times.
+2. **Eccentric shaft.** Assemble shaft4 → shaft3 → shaft2 → shaft1 so the
+   three eccentric sections fall 120° apart. Slide a capped disk onto each
+   eccentric: disk3 on the shaft4/shaft3 section, disk2 on shaft3/shaft2,
+   disk1 on shaft2/shaft1, caps facing the stepper side. Check the six
+   pockets of all three disks line up on the same six rod lines.
+3. **Ring pins.** Push the M6×50 pins into housing2, then set the disk
+   stack into it so the lobes engage the pins, then close with housing1.
+4. **Output side.** Fit a 6804 into each OPH's Ø32 bore; slide OPH1 onto
+   the shaft4 journal and OPH2 onto the shaft1 journal. Seat a 6813 on each
+   OPH's Ø65 boss and into the housing's Ø85 step (5 mm engages here, the
+   other 5 mm sits in the body plate later).
+5. **Rods.** Pass the six M4 rods through OPH → 688 columns → OPH. Bolt
+   holder1 to OPH1 and holder2 to OPH2 face to face (the Ø65 boss on each
+   holder meets the OPH boss), rods through the holders' Ø8 holes.
+6. **Pulleys.** GT2-stepper over the rods on the holder1 side, GT2-encoder
+   on the holder2 side with its Ø20 blind hub over the shaft1 end. Nuts in
+   the pulley counterbores; snug evenly so the disks stay free.
+7. **Check.** Turn the shaft by hand: one input turn should move the output
+   1/20 turn with no tight spots. Tight spots mean a disk is mis-phased or
+   a cap is not fully down.
+
+### 6.4 Open on this joint
+
+- Ring-pin count on the printed housing (12 or 21) — check at step 3.
+- Whether the sample-joint parts are the same v5 geometry as the current
+  STLs (the quartit folder is dated earlier); measure one disk's pocket
+  circle at 57 mm if in doubt.
