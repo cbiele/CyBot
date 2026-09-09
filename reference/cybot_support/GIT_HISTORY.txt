@@ -1,0 +1,7 @@
+2022-10-13 ad06c34 add link6
+2022-10-13 9d25a3e initial version of simplify meshes
+2022-10-13 0567add Add note
+2022-10-13 84317bc remove unused files
+2022-10-13 a122bdc Create test
+2022-10-13 171efa2 init repo
+2022-10-13 9936e29 first commit
