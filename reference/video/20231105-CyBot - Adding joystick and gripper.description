@@ -1,0 +1,6 @@
+CyBot Cycloidal Robot Arm links :
+https://cults3d.com/fr/mod%C3%A8le-3d/gadget/cybot-cycloidal-disk-robot-arm
+
+Robot arm based on Cycloidal gear joints, working on BigTreeTech STM32 board.
+Using ROS joy and Moveit.
+https://hackaday.io/project/182821-cybot-cycloidal-6-axis-3d-printed-robot-arm

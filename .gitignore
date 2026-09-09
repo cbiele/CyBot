@@ -11,3 +11,6 @@ model/split/*.png
 model/subassemblies/*.blend
 model/subassemblies/*.blend1
 model/subassemblies/*.png
+reference/video/*.mp4
+reference/video/*.webm
+reference/video/*.mkv

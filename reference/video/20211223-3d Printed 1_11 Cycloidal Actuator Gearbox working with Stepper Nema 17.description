@@ -1,0 +1,4 @@
+Here is my progress on the 1:11 gearbox. This is a 2 disks versions with 6811 and 6705 bearings.
+I m waiting the 6mm output pins from Aliexpress and I created those one myself, there are not really precise but that s ok for a first try.
+Three of this actuators will be used for axis 4, 5 and 6.
+Need to make some adjustment as the stepper holder is a bit weak. I will also replace the GT2 2mm gear with a GT3 3mm. And I would like to change the nema 17 to a nema 23, but I m afraid the axis will become too heavy.

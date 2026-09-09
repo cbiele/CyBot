@@ -1,0 +1,13 @@
+CyBoT -CYcloidal roBOT - Starting analysis of Axis 4
+This week I will analyze how we can design the axis 4. I have added the openCyRe from Damian Lickindorf as a guide but I won't use it, since I d like to design all by myself. This new cyloidal gearbox should be the same for axis 4, 5 and 6 with a minimum of 1:11 ratio and will be drive by a nema17.
+Not sure yet if I will add an extra encoder.
+In Atlas, the axis 4 use an aluminium tube, which is not really conveniant for a DIY project. I will probably replace it by a printed component, reinforced by metalic part.
+
+------------
+No need to subscribe or like my video :) But if you want to make objective comments to help me to progress, I would be happy.
+This is an ongoing project I wanted to do for a while. I take my inspiration from the Atlas Robot Arm videos.
+I have another video showing how the cylcoidal disks work together.
+
+Thanks
+
+My work in progress on thingiverse : https://www.thingiverse.com/thing:514...

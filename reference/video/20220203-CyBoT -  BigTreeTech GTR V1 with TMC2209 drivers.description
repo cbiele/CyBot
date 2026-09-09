@@ -1,0 +1,5 @@
+I bought a BigTreeTech GTR v1 boars and TMC2209 drivers to be able to run +6 steppers.
+Amazing to hear the sound of those steppers comparing to A4988 or DRV8825.
+
+I m currently working on the migration of the SpeedyStepper arduino library to make it compatible with the STM32. I still have to make some adjustment, but the acceleration and synchronization are already working.  
+Next step is to try to link it on my Raspberry PI ubuntu and control it with ROS. Still don't know what I have to do on the STM32 side, but will be fun to learn.

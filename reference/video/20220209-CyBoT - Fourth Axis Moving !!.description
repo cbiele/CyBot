@@ -1,0 +1,3 @@
+This is the first move of the fourth axis.
+I also added a Raspberry PI 4 to control the STM32 board (Serial UART Com).
+Raspberry has Ubuntu install, this way I will setup ROS, communicate by wifi and will be able to add Moveit and pendants.
