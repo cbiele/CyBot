@@ -1,7 +1,7 @@
 # Cybot build plan — print and assembly order
 
-**Set 2026-09-09.** One joint at a time, in this order: **1:20 (axis 2) →
-both 1:11 units and the wrist (axes 4, 5, 6) → 1:23 (axis 3) → base (axis
+**Set 2026-09-09, ratios corrected 2026-09-10.** One joint at a time, in this order: **1:23 (axis 2) →
+both 1:11 units and the wrist (axes 4, 5, 6) → 1:20 (axis 3) → base (axis
 1)**, with the body plates and gripper folded in where they are needed. This
 file is the standing list; per-part detail lives in `model/parts-list.md`,
 `model/bearings.json` and the exploded models in `model/subassemblies/`.
@@ -10,9 +10,9 @@ file is the standing list; per-part detail lives in `model/parts-list.md`,
 
 | Phase | Folders | Exploded model | Gate to start |
 |---|---|---|---|
-| **A. 1:20 axis 2** (now) | 3-axis2 | axis2.blend (verified on printed parts) | printer back from maintenance |
+| **A. 1:23 axis 2** (mostly assembled 2026-09-10; POC proven) | 3-axis2 | axis2.blend (verified on printed parts) | done except final clamp-up |
 | **B. 1:11 ×2 + wrist** (axes 4, 5, 6) | 5-axis4 ×2, 6-axis5-6 | axis4.blend, axis56.blend | A assembled; 1:11 hardware in hand |
-| **C. 1:23 axis 3** | 4-axis3 + second set of axis2 shafts and caps | axis3.blend (stack needs re-seat) | B; 1:23 hardware in hand |
+| **C. 1:20 axis 3** | 4-axis3 + second set of axis2 shafts and caps | axis3.blend (stack needs re-seat) | B; 1:20 hardware in hand |
 | **D. Base axis 1** | 2-axis1, plateBall feet | axis1.blend | C |
 | **E. Body plates, tensioners, motors** | 1-mainbody (split plates) | mainbody.blend | NEMA23 length decision, MKS board measured |
 | **F. Gripper** | 4FingersGripper | gripper.blend | gripper motor length decision |
@@ -50,15 +50,17 @@ about 2.8 L.
 
 From the PDF hardware lists, corrected where the STLs disagree.
 
-**Phase B, 1:11 ×2 and wrist — order now**
-- 6705zz ×8, 6812zz ×4 (STL seats are Ø78; the author's early 6811 does not fit)
+**Phase B, 1:11 ×2 and wrist — ordered 2026-09-10**
+- 6705 ×8, 6812 ×6 (four for the two gearboxes, two for the wrist; STL
+  seats are Ø78 so the author's early 6811 does not fit)
 - brass bushings 8×10×6 ×24, pins Ø6×25 ×12
-- M4 and M3 threaded rod (cut to length), M5×20 ×16, nuts
-- wrist: 6810zz ×2, 6804zz ×2, HK0608 ×4, M6×25 ×2, GT2 belts 232 ×1 and
-  308 ×3, GT2 40T pulleys ×2, GT2 20T ×1
+- M4 rod 1 m (output rods), M3 rod 1 m (cam lock rods), M5×20 ×16, nuts
+- wrist: 6810 ×2, 6804 ×2, HK0608 ×4, M6×25 ×2, GT2 belts 232 ×1 and
+  308 ×3 (6 mm wide), GT2 40T ×2 and 20T ×1 with 5 mm bore
+- ZZ or 2RS on any bearing: same dimensions, seal type is the only difference
 - 3× NEMA17 dual-shaft (47 mm class) + 3× MKS SERVO42D (axes 4, 5, 6)
 
-**Phase C, 1:23 — order now, ships with the above**
+**Phase C, 1:20 — order now, ships with the above**
 - 6813zz ×2, 6804zz ×5, 688rs ×18
 - M6×50 pins: each axis3 holder has 14 Ø6 holes, buy 28
 - M4 threaded rod, M6×70 ×6 with nuts
@@ -82,9 +84,11 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
 
 ## 4. Checks that gate phases
 
-- **Ring-pin count** on the printed axis-2 housing: 12 per STL half vs 21
-  in the author's 1:20 render. Settles which joint is 1:20 vs 1:23 and the
-  pin quantity. Do at the phase A inventory.
+- ~~Ring-pin count~~ **Settled 2026-09-10:** the axis-2 housing halves have
+  12 pin holes and the axis-3 holders 7 each (14). The PDF's "12 for 1:23,
+  14 for 1:20" makes axis 2 the 1:23 and axis 3 the 1:20 (the profile is cut
+  for 24 or 21 pin positions and only every other one, or two of three, is
+  populated). The videos' "1:24" is this same joint.
 - **Cap fit on axis 3**: confirm `axis2-diskCap` fits the axis-3 disks
   (same Ø80 recess and Ø57 pitch circle) with the first axis-3 disk print,
   before printing three more.
@@ -103,7 +107,7 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
   Heltec + SN65HVD230 + one motor loose. This is why phase B's motors are
   ordered first.
 
-## 6. Phase A, granular: finishing the 1:20 joint (axis 2)
+## 6. Phase A, granular: finishing the 1:23 joint (axis 2)
 
 Source: `model/subassemblies/axis2-assembly.md` and `axis2-exploded.png`.
 Tick the printed column against the pile; the sample joint from `quartit/`
@@ -172,9 +176,27 @@ Not in this folder but needed to mount the joint: the split mainBody plates
    1/20 turn with no tight spots. Tight spots mean a disk is mis-phased or
    a cap is not fully down.
 
-### 6.4 Open on this joint
+### 6.4 What assembly taught us (2026-09-10, joint mostly built, POC proven)
 
-- Ring-pin count on the printed housing (12 or 21) — check at step 3.
+- **Cam lock.** The four shaft pieces are locked together and phased by
+  three M4 rods pushed cold through the three small holes that run the length
+  of the train; the rods' ends are the studs the two big pulleys bolt onto.
+  The stepper pulley is held by those studs and rides on the 6804 in OPH1;
+  the motor only pulls the belt.
+- **Output rods.** Six more M4 lengths (same stock, about 68 mm) run through
+  the six 688s of all three disks and the rim holes of both OPHs. They must
+  float: 8 mm bore minus 3.85 mm rod is twice the 1.9 mm cam throw. Not
+  glued, not heated, nuts only snug. The M6×70 ×12 are the clamp bolts
+  (holder + plate + housing half, six per side), not the rods.
+- **Ring pins** are the twelve smooth Ø6 × 50 pins in the housing slots.
+- **Holders** are a mirrored pair: `axis2-holder2` is holder1 mirrored, and
+  differs from a flipped holder1 by a 31 × 4 mm feature at the bore, so
+  both files print.
+- **Rod stock:** one metre of M4 covers the nine pieces for one joint.
+- PDF figure crops for this joint are in `reference/pdf-figures/`.
+
+### 6.5 Open on this joint
+
 - Whether the sample-joint parts are the same v5 geometry as the current
   STLs (the quartit folder is dated earlier); measure one disk's pocket
   circle at 57 mm if in doubt.

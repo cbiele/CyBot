@@ -20,9 +20,9 @@
    "6813zz x2",
    "6804zz x5",
    "688rs x18",
-   "M6x50 pins x12 in the housing halves' O6 holes (PDF says x14 for 1:20; the STL has 12)",
-   "M4 threaded rod (3.85 mm) cut to length x6, through the 688s on the O57 pitch circle and the O8 holes in both holders and both pulleys, nuts in the pulley counterbores",
-   "M6x70 screws x6 (PDF) for the holder-to-housing clamp"
+   "M6x50 pins x12 in the housing halves' O6 holes (12 pins = the PDF's 1:23; axis 3 with 14 is the 1:20)",
+   "M4 threaded rod (3.85 mm): 3 lengths through the shaft train's small holes lock the cam pieces and become the pulley studs; 6 lengths (~68 mm) float through the 688s and the OPH rim holes",
+   "M6x70 x12 (PDF): six per side clamp holder + body plate + housing half"
   ],
   "bearings": [
    {

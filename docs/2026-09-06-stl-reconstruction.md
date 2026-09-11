@@ -139,7 +139,7 @@ couples). `tools/blender/explode_group.py -- <folder>` builds
 (hidden) and the exploded stack, bearings floated above the part they seat in,
 and writes `<folder>-assembly.md` with the stack order and hardware.
 
-**Axis 2 (1:20), stack along y, joint centre (0.3, y, 203.1):**
+**Axis 2 (1:23 — 12 ring pins; axis 3 with 14 is the 1:20), stack along y, joint centre (0.3, y, 203.1):**
 
 | Bearing | Qty | Seat | Where |
 |---|---|---|---|
@@ -164,8 +164,8 @@ The 688 bore is 8 mm and the PDF specifies M4 threaded rod (3.85 mm) cut to
 length, so the rods roll inside the 688s with 4 mm clearance = twice the 2 mm
 eccentricity; the same Ø57 circle carries six Ø8 holes in both holders and both
 pulleys, so the rods tie pulley, holder and disks together. Each housing half
-has twelve Ø6 holes for the M6×50 ring pins (the PDF says 14 for 1:20; the STL
-has 12). The 6813 outer ring is split 5 mm in the housing and 5 mm in the
+has twelve Ø6 holes for the M6×50 ring pins, which per the PDF's pin counts
+makes this the 1:23 joint (axis 3's holders have 14 and are the 1:20). The 6813 outer ring is split 5 mm in the housing and 5 mm in the
 main-body plate's Ø85 pocket (y ±28..33). Inferred, not proven: the pocket side
 of the 688s and the nut stack on the M4 rods.
 
