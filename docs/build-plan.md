@@ -122,7 +122,10 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
 - **Driver pivot 2026-09-12:** MKS smart-steppers dropped (~$70 per axis).
   A PakaNode daughterboard (seven TMC5160-class drivers on SPI, MT6701
   output encoders over J_QWIIC1, own fused 24 V entry, lives in the Cybot
-  base beside the node) is being designed in the Chopaka session; the Cybot
+  base beside the node) is being designed in the Chopaka session as their
+  PakaNode V2 board (DECISIONS.md D-087, 2026-09-12: MT6701 encoders,
+  external-MOSFET TMC5160-class for the 2.8 A axes, our pin plan adopted,
+  24 V entry with a local buck feeding the node's J2). The Cybot
   electronics spec is rewritten once its interface contract is published.
 - Single-board bench once a first driver channel exists:
   Heltec + SN65HVD230 + one motor loose. This is why phase B's motors are
