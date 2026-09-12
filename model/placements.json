@@ -1239,6 +1239,37 @@
   ],
   "hide": false
  },
+ "axis4/axis4_diskCap.2": {
+  "collection": "axis4",
+  "file": "Cults3d_v5/5-axis4/axis4_diskCap.stl",
+  "matrix_world": [
+   [
+    3.1391647326017846e-07,
+    -1.0,
+    4.059983460535932e-09,
+    72.3
+   ],
+   [
+    1.0,
+    3.1391647326017846e-07,
+    1.7607808544539694e-09,
+    -1.3589859008789062e-05
+   ],
+   [
+    -1.7607820756992965e-09,
+    4.059983016446722e-09,
+    1.0,
+    554.9985961914062
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "hide": false
+ },
  "axis4/axis4_housing": {
   "collection": "axis4",
   "file": "Cults3d_v5/5-axis4/axis4_housing.stl",

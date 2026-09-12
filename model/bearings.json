@@ -1221,7 +1221,7 @@
    "brass bushings 8x10x6 x12 (six O10 holes per disk)",
    "M4 rod (through the bushings) and M3 rod, M5x20",
    "axis4_OPH (short, ends x 85) and axis4_OPH2 (long, ends x 105 with the O60 tube seat) are alternatives: OPH2 for this axis, OPH for the axis-5 copy",
-   "axis4_diskCap likely prints one per disk (x2 per gearbox), unverified",
+   "axis4_diskCap prints one per disk (x2 per gearbox), per the bench order 2026-09-12; second cap's assembled seat is a placeholder",
    "this folder prints twice: axis 4 here and the axis-5 pitch gearbox inside 6-axis5-6"
   ],
   "bearings": [
@@ -1330,6 +1330,26 @@
     ],
     "note": "O32 bore 7 mm deep (x 73-80) in the OPH, shaft journal x 76-78"
    }
+  ],
+  "order": [
+   "axis4_80TGT2-7mm",
+   "axis4_housingNema",
+   "axis4_OPH",
+   "axis4_shaft2",
+   "axis4_disk1",
+   "axis4_diskCap",
+   "axis4_shaft3",
+   "axis4_disk2",
+   "axis4_diskCap.2",
+   "axis4_shaft",
+   "axis4_OPH2",
+   "axis4_housing",
+   "axis4_axis5_holder",
+   "axis4_Tube"
+  ],
+  "order_note": "2026-09-12, provisional until the gearbox is built",
+  "flip": [
+   "axis4_housingNema"
   ]
  },
  "axis56": {

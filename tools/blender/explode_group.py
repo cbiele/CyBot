@@ -62,6 +62,11 @@ for i,b in enumerate(BG["bearings"]):
 order=sorted(parts,key=lambda o:(along(o)[0],o.name)); rmax_all=max(radial(o) for o in parts)
 for name,anchor in BG.get("order_after",{}).items():
     o=next(x for x in order if x.name==name); order.remove(o); order.insert(order.index(next(x for x in order if x.name==anchor))+1,o)
+# "order": an explicit left-to-right list from the bench; unlisted parts trail it in their natural order
+if BG.get("order"):
+    byname={o.name:o for o in order}; listed=[byname[n] for n in BG["order"]]
+    order=listed+[o for o in order if o not in listed]
+FLIP=set(BG.get("flip",[]))   # parts shown turned 180 deg about the up axis in the exploded row only
 newt={}; prev_end=None
 for o in order:
     t,ext=along(o)
@@ -72,6 +77,8 @@ def dup(o,shift):
 labels=[]
 for i,o in enumerate(order):
     t,ext=along(o); d=dup(o,A*(newt[o.name]-t))
+    if o.name in FLIP:
+        c=O+A*newt[o.name]; d.matrix_world=Matrix.Translation(c)@Matrix.Rotation(math.pi,4,U)@Matrix.Translation(-c)@d.matrix_world
     labels.append((o.name,newt[o.name],-(rmax_all+12+22*(i%3))))   # three staggered rows so short parts' labels do not collide
 hosts={o.name:o for o in parts}; cluster={}
 for b in bearings:
@@ -107,8 +114,10 @@ ASM.hide_viewport=True; ASM.hide_render=True
 # assembly notes
 lines=[f"# {GROUP}: stack order along the joint axis {tuple(BG['axis'])} (assembled coordinates, mm)\n",
        "Parts in the order they sit along the axis; bearings listed under the part they seat in.\n"]
+if BG.get("order"): lines.append(f"Order set by hand on the bench ({BG.get('order_note','')}); parts after the listed ones are unplaced.\n")
 for o in order:
-    t,ext=along(o); lines.append(f"- {o.name}  (centre {t:+.1f}, {ext:.0f} mm long)")
+    t,ext=along(o); flag=" [flipped]" if o.name in FLIP else ""; flag+=" [not in the bench order]" if BG.get("order") and o.name not in BG["order"] else ""
+    lines.append(f"- {o.name}  (centre {t:+.1f}, {ext:.0f} mm long){flag}")
     seen={}
     for b in bearings:
         if b["host"]!=o.name: continue

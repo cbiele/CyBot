@@ -58,7 +58,14 @@ From the PDF hardware lists, corrected where the STLs disagree.
 - wrist: 6810 ×2, 6804 ×2, HK0608 ×4, M6×25 ×2, GT2 belts 232 ×1 and
   308 ×3 (6 mm wide), GT2 40T ×2 and 20T ×1 with 5 mm bore
 - ZZ or 2RS on any bearing: same dimensions, seal type is the only difference
-- 3× NEMA17 dual-shaft (47 mm class) + 3× MKS SERVO42D (axes 4, 5, 6)
+- ~~3× NEMA17 dual-shaft (47 mm class) + 3× MKS SERVO42D (axes 4, 5, 6)~~
+  **Bought 2026-09-11:** 4× 17HS8401B (42×42×48 mm, 1.8 A, 52 N·cm, Ø5
+  front shaft 24 mm, Ø5 rear stub 10-13 mm, bare leads) for axes 4, 5, 6
+  and 1, plus 1× MKS SERVO42C kit (board + matched motor). The 42C is the
+  UART/step-dir board, not CAN: it is the mechanical reference for the
+  rear-stub length and magnet gap, not the CAN bench unit. Still to buy:
+  3× SERVO42D boards for the phase B motors (+1 for axis 1). Expect to trim
+  each 17HS8401B rear stub to match the kit motor before gluing the magnet.
 
 **Phase C, 1:20 — order now, ships with the above**
 - 6813zz ×2, 6804zz ×5, 688rs ×18
@@ -94,6 +101,9 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
   before printing three more.
 - **MKS board depth**: measure a SERVO57D; decide 41 mm NEMA23 vs a
   mainBody2 recess. Gates phase E. Measure a SERVO42D too for the gripper.
+- **Rear-stub length**: measure the SERVO42C kit motor's rear stub and
+  magnet gap, then cut the four 17HS8401B stubs to match. Gates the first
+  42D board mount.
 - **Axis-3 stack re-seat** in the model with printed parts in hand (the
   export has OPH1 overlapping the encoder pulley). Gates phase C assembly.
 - **Gripper motor**: 34-40 mm pancake NEMA17 or a 10 mm longer
@@ -103,7 +113,8 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
 
 - Founder review of `docs/superpowers/specs/2026-09-06-cybot-electronics-design.md`,
   then the implementation plan for the host-tested MKS CAN codec and planner.
-- Single-board bench as soon as the first SERVO42D and NEMA17 arrive:
+- Single-board bench as soon as the first SERVO42D board arrives (the
+  motors are here; the 42C kit cannot stand in, it has no CAN):
   Heltec + SN65HVD230 + one motor loose. This is why phase B's motors are
   ordered first.
 
