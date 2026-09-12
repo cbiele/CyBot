@@ -71,18 +71,24 @@ From the PDF hardware lists, corrected where the STLs disagree.
 - 6813zz ×2, 6804zz ×5, 688rs ×18
 - M6×50 pins: each axis3 holder has 14 Ø6 holes, buy 28
 - M4 threaded rod, M6×70 ×6 with nuts
-- 1× NEMA23 dual-shaft ≤41 mm + 1× MKS SERVO57D, 1× Omron E6B2-CWZ6C
+- ~~1× NEMA23 dual-shaft ≤41 mm + 1× MKS SERVO57D, 1× Omron E6B2-CWZ6C~~
+  **Bought 2026-09-12:** 2× STEPPERONLINE 23HS22-2804S (56 mm, 2.8 A,
+  1.26 N·m, single shaft 6.35 mm) for axes 2 and 3. Fits the 61 mm pocket
+  because the MKS board is gone: drivers move to a PakaNode daughterboard
+  (TMC5160-class SPI chain, MT6701 output encoders) being designed in the
+  Chopaka session. No SERVO42D/57D boards will be bought; the Omron E6B2
+  plan is dropped pending that design.
 
 **Phase D, base**
 - 6816zz ×2, 6804zz ×2, 625zz ×8, 606zz ×4
 - M5×20 ×8, M6×50 ×8, M6×40 ×12, M6 nuts ×8
 - 3M 30T pulleys ×2 (12 mm), HTD648-3M belts ×2
-- NEMA17 dual-shaft + SERVO42D, E6B2-CWZ6C
+- NEMA17: one of the four 17HS8401B already bought; driver channel on the daughterboard
 
 **Phase E, body**
 - 606zz ×8 (tensioners), M6 screws for the arms
 - HTD477-3M belts ×4, 3M 20T (15 mm) ×1, 3M 30T (12 mm) ×3
-- axis-2 NEMA23 dual-shaft + SERVO57D + E6B2-CWZ6C
+- axis-2 NEMA23: bought, see phase C
 - 24 V 10 A PSU, contactor, e-stop, SN65HVD230 daughterboard parts
   (electronics spec §7)
 
@@ -113,8 +119,12 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
 
 - Founder review of `docs/superpowers/specs/2026-09-06-cybot-electronics-design.md`,
   then the implementation plan for the host-tested MKS CAN codec and planner.
-- Single-board bench as soon as the first SERVO42D board arrives (the
-  motors are here; the 42C kit cannot stand in, it has no CAN):
+- **Driver pivot 2026-09-12:** MKS smart-steppers dropped (~$70 per axis).
+  A PakaNode daughterboard (seven TMC5160-class drivers on SPI, MT6701
+  output encoders over J_QWIIC1, own fused 24 V entry, lives in the Cybot
+  base beside the node) is being designed in the Chopaka session; the Cybot
+  electronics spec is rewritten once its interface contract is published.
+- Single-board bench once a first driver channel exists:
   Heltec + SN65HVD230 + one motor loose. This is why phase B's motors are
   ordered first.
 
