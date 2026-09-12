@@ -127,9 +127,28 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
   external-MOSFET TMC5160-class for the 2.8 A axes, our pin plan adopted,
   24 V entry with a local buck feeding the node's J2). The Cybot
   electronics spec is rewritten once its interface contract is published.
-- Single-board bench once a first driver channel exists:
-  Heltec + SN65HVD230 + one motor loose. This is why phase B's motors are
-  ordered first.
+- **Interim bench driver: BTT Octopus Pro (2026-09-12).** Until the
+  Chopaka daughterboard exists, the arm runs from an Octopus Pro in Marlin
+  6-axis mode (X, Y, Z, I, J, K = joints 1-6), with the Heltec as G-code
+  host keeping the planner, kinematics, host protocol and the encoder
+  loop. Needs no J_GPIO1: the Heltec's GNSS port (8-pin SH1.25, buy a
+  pre-crimped pigtail) supplies the GPIOs and the carrier's QWIIC jack the
+  I2C.
+  - GNSS port: GPIO39 TX / GPIO40 RX to an Octopus UART header at 250 kbaud,
+    GND; GPIO41 e-stop status; GPIO38/42 spare (motion-done or sync line).
+    Never use GPIO34 (GNSS power FET). No L76K plugged in.
+  - QWIIC: TCA9548A at 0x70, seven MT6701 at 0x06 behind it, PCA9615
+    differential I2C pair down the arm (base after the mux, elbow feeding
+    the wrist). BME688 stays; addresses do not collide. ~1 kHz sweep.
+  - Octopus: TMC5160 Plus with heatsinks for the two 2.8 A NEMA23 slots,
+    TMC2209 for the NEMA17s; limit switches on Octopus endstop inputs and
+    StallGuard via Marlin, not the carrier expander; 24 V in behind the
+    e-stop copper; Octopus 5 V out to the carrier's J2 by pigtail.
+  - Steps per degree per joint = motor steps x microsteps x total ratio /
+    360 (axis 2: 1.5 belt x 23; axis 3: 1.5 x 20; axes 4, 5: 11; axis 1
+    and 6: belt ratios TBD from the pulleys).
+  - When Rev E arrives the pigtail moves to J_GPIO1; when the daughterboard
+    arrives the Octopus goes and only the Heltec driver layer changes.
 
 ## 6. Phase A, granular: finishing the 1:23 joint (axis 2)
 
