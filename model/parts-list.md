@@ -1,6 +1,6 @@
 # Cybot print list (from the Cults3D v5 + gripper STLs)
 
-Rule: one STL file = one placed instance, so quantity = number of files (byte-identical files confirmed for axis3 disks). `holderNoSplit` is an ALTERNATIVE to holder+holder2, not an extra part. **Rule exceptions:** `plateBall` prints 4 (one per base corner) the gripper's `grip`, `Axe` and `T8_to_Axes` print 4 each (four fingers), and `axis2-diskCap` prints 3 (one per cycloid disk; confirmed on the printed part 2026-09-06, and by the same logic `axis4_diskCap` likely prints 2 per 1:11 gearbox, unverified), although each is a single file.
+Rule: one STL file = one placed instance, so quantity = number of files (byte-identical files confirmed for axis3 disks). `holderNoSplit` is an ALTERNATIVE to holder+holder2, not an extra part. **Rule exceptions:** `plateBall` prints 4 (one per base corner) the gripper's `grip`, `Axe` and `T8_to_Axes` print 4 each (four fingers), and `axis2-diskCap` prints 3 (one per cycloid disk; confirmed on the printed part 2026-09-06, and `axis4_diskCap` prints 2 per 1:11 gearbox, confirmed on the bench 2026-09-12), although each is a single file.
 
 Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = longest dim <= 362 and the part is thin enough to lie flat rotated 45 deg (needs a manual check). Split = longest dim > 362.
 
@@ -83,3 +83,18 @@ Resolved: print `model/split/mainBody1_lower`, `mainBody1_upper`, `mainBody2_low
 
 - **mainBody1.stl** 380 x 142 x 16 mm: SPLIT
 - **mainBody2.stl** 380 x 142 x 16 mm: SPLIT
+
+## Hardware per 1:11 gearbox (5-axis4, bench-verified 2026-09-12)
+
+The folder prints twice (axes 4 and 5), so double these for the arm.
+
+| Item | Qty per gearbox | Where |
+|---|---|---|
+| 6812zz 60x78x10 | 2 | one on each OPH's O60 boss, outer ring in the O78 pocket of housing / housingNema |
+| 6705zz 25x32x4 | 4 | one inside each OPH on the shaft journal, one in each disk's centre bore |
+| brass bushing 8x10x6 | 12 | six per disk, in the O10 holes; M4 output rods pass through |
+| pins O6x25 | 6 | housing ring pins |
+| M4 rod | 6 output rods + cam lock rods | cut from the 1 m stock |
+| M3 rod, M5x20 | per PDF | clamp-up |
+
+Elbow pivot, not part of the gearbox but in the same folder: 2x 6804zz 20x32x7 in `axis4_axis5_holder`'s O32 x 10 side pockets on the elbow axis (z 453). The holder's two O78 pockets are not bearing seats in this arrangement.
