@@ -1215,8 +1215,9 @@
    1
   ],
   "hardware": [
-   "6705zz x4 (3 located: two disk bores, one OPH bore; 4th not found)",
-   "6812zz x2 (output located in the elbow holder; a second O78 x 10 pocket exists at the holder's back end, x -3..7, mating part unknown)",
+   "6804zz x2 in the elbow holder's side pockets (O32 x 10, z 453, both faces): fitted 2026-09-12; inner ring rides a O20 stub from the axis-3 side",
+   "6812zz x2, one on each OPH's O60 boss, seated in the O78 x 10 pockets of housing and housingNema (fitted 2026-09-12). The elbow holder's own O78 pockets (x 75-85 and x -3..7) are not bearing seats in this arrangement; mate TBD",
+   "6705zz x4, all located: two disk bores, one inside each OPH (fitted 2026-09-12)",
    "pins 6x25 x6 (housing has 6 O6 through-holes)",
    "brass bushings 8x10x6 x12 (six O10 holes per disk)",
    "M4 rod (through the bushings) and M3 rod, M5x20",
@@ -1231,7 +1232,7 @@
     "id": 60,
     "w": 10,
     "center": [
-     80,
+     78,
      0,
      555
     ],
@@ -1241,10 +1242,10 @@
      0
     ],
     "between": [
-     "axis4_axis5_holder",
-     "axis4_OPH2"
+     "axis4_OPH2",
+     "axis4_housing"
     ],
-    "note": "O78 pocket x 75-85 in the elbow holder; inner ring on the OPH O60 boss x 73-83"
+    "note": "inner ring on the OPH2 O60 boss x 73-83, outer ring in the housing's O78 x 10 pocket (x 63-73 in the export); user fitted 2026-09-12"
    },
    {
     "type": "6812zz",
@@ -1252,7 +1253,7 @@
     "id": 60,
     "w": 10,
     "center": [
-     2,
+     78,
      0,
      555
     ],
@@ -1262,10 +1263,10 @@
      0
     ],
     "between": [
-     "axis4_axis5_holder",
-     "unknown"
+     "axis4_OPH",
+     "axis4_housingNema"
     ],
-    "note": "O78 x 10 pocket at the holder's back end; nothing with a O60 boss lands here in the model"
+    "note": "inner ring on the OPH O60 boss x 73-83, outer ring in housingNema's O78 x 10 pocket; both OPHs export at the same x, positions are per the bench order"
    },
    {
     "type": "6705zz",
@@ -1329,6 +1330,69 @@
      "axis4_shaft"
     ],
     "note": "O32 bore 7 mm deep (x 73-80) in the OPH, shaft journal x 76-78"
+   },
+   {
+    "type": "6804zz",
+    "od": 32,
+    "id": 20,
+    "w": 7,
+    "center": [
+     0,
+     -42.3,
+     453
+    ],
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "between": [
+     "axis4_axis5_holder",
+     "axis3 side (O20 stub, mate TBD)"
+    ],
+    "note": "O32 x 10 side pocket at y -38.8..49 on the elbow axis z 453; user fitted 2026-09-12"
+   },
+   {
+    "type": "6804zz",
+    "od": 32,
+    "id": 20,
+    "w": 7,
+    "center": [
+     0,
+     42.3,
+     453
+    ],
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "between": [
+     "axis4_axis5_holder",
+     "axis3 side (O20 stub, mate TBD)"
+    ],
+    "note": "O32 x 10 side pocket at y +38.8..49 on the elbow axis z 453; user fitted 2026-09-12"
+   },
+   {
+    "type": "6705zz",
+    "od": 32,
+    "id": 25,
+    "w": 4,
+    "center": [
+     76.5,
+     0,
+     555
+    ],
+    "axis": [
+     1,
+     0,
+     0
+    ],
+    "between": [
+     "axis4_OPH",
+     "axis4_shaft2"
+    ],
+    "note": "O32 bore inside the short OPH, journal of the motor-end shaft piece; user fitted 2026-09-12 (the fourth 6705)"
    }
   ],
   "order": [
