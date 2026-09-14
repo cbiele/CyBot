@@ -147,9 +147,12 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
   - Steps per degree per joint = motor steps x microsteps x total ratio /
     360 (axis 2: 1.5 belt x 23; axis 3: 1.5 x 20; axes 4, 5: 11; axis 1
     and 6: belt ratios TBD from the pulleys).
-  - Power, shore (bench, first): Mean Well LRS-350-24 (24 V, 14.6 A;
-    LRS-200-24 at 8.8 A is the floor). Expected draw with every axis moving
-    is ~7 A. Feed the Octopus main input and the driver-power input from the
+  - Power, shore (bench, first): a 19.5 V 9.3 A laptop brick on a 5.5x2.5
+    barrel-to-screw-terminal adapter (ordered 2026-09-14; meter the polarity,
+    centre positive, and watch the barrel for heat above ~5 A). Same operating
+    point as the DeWalt pack below. Upgrade: Mean Well LRS-350-24 (24 V,
+    14.6 A; LRS-200-24 at 8.8 A is the floor). Expected draw with every
+    axis moving is ~7 A. Feed the Octopus main input and the driver-power input from the
     same 24 V, but route only the driver input through the e-stop so a stop
     kills the motors and leaves the MCU, USB, encoder mux and node alive
     (verify the driver-power jumper and input labels on the board's
