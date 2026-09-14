@@ -89,8 +89,8 @@ From the PDF hardware lists, corrected where the STLs disagree.
 - 606zz ×8 (tensioners), M6 screws for the arms
 - HTD477-3M belts ×4, 3M 20T (15 mm) ×1, 3M 30T (12 mm) ×3
 - axis-2 NEMA23: bought, see phase C
-- 24 V 10 A PSU, contactor, e-stop, SN65HVD230 daughterboard parts
-  (electronics spec §7)
+- 24 V PSU and e-stop: see the Octopus bench notes in §5 (shore first,
+  DeWalt 20 V pack as the mobile option)
 
 **Phase F, gripper:** hardware list is in the separate Cults gripper
 project; the STLs show one 6804 and a T8 lead screw and nut.
@@ -147,6 +147,24 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
   - Steps per degree per joint = motor steps x microsteps x total ratio /
     360 (axis 2: 1.5 belt x 23; axis 3: 1.5 x 20; axes 4, 5: 11; axis 1
     and 6: belt ratios TBD from the pulleys).
+  - Power, shore (bench, first): Mean Well LRS-350-24 (24 V, 14.6 A;
+    LRS-200-24 at 8.8 A is the floor). Expected draw with every axis moving
+    is ~7 A. Feed the Octopus main input and the driver-power input from the
+    same 24 V, but route only the driver input through the e-stop so a stop
+    kills the motors and leaves the MCU, USB, encoder mux and node alive
+    (verify the driver-power jumper and input labels on the board's
+    silkscreen). E-stop contacts rated 24 V DC, 10 A+, in the positive lead.
+    IEC inlet with fuse and switch; cover the open-frame supply's mains
+    terminals.
+  - Power, battery (mobile option, later): one DeWalt 20 V / FlexVolt pack on
+    the 20 V tap (16-20.5 V) into both Octopus inputs, driver jumper on VIN.
+    Same holding and low-speed torque, ~25 % less torque headroom at speed,
+    not noticed on 30:1 joints; 9 Ah = ~160 Wh, over an hour of continuous
+    motion. Pack has no cutoff: add a low-voltage disconnect at ~16.5 V, a
+    20-30 A fuse on 14 AWG leads at a printed DeWalt adapter, and the e-stop
+    in the driver lead. Upgrade path is a 300 W boost to 24 V, not a second
+    pack: two packs in series (32-41 V) exceed the TMC2209s' 29 V and the
+    main input's 24 V, and the 60 V tap sits above 62 V at full charge.
   - When Rev E arrives the pigtail moves to J_GPIO1; when the daughterboard
     arrives the Octopus goes and only the Heltec driver layer changes.
 
