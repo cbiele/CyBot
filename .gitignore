@@ -14,3 +14,5 @@ model/subassemblies/*.png
 reference/video/*.mp4
 reference/video/*.webm
 reference/video/*.mkv
+firmware/marlin/upstream/
+firmware/marlin/out/
