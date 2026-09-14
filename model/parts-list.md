@@ -98,3 +98,24 @@ The folder prints twice (axes 4 and 5), so double these for the arm.
 | M3 rod, M5x20 | per PDF | clamp-up |
 
 Elbow pivot, not part of the gearbox but in the same folder: 2x 6804zz 20x32x7 in `axis4_axis5_holder`'s O32 x 10 side pockets on the elbow axis (z 453). The holder's two O78 pockets are not bearing seats in this arrangement.
+
+## Repaired meshes (2026-09-14)
+
+Four exports failed slicing (naked and non-manifold edges, inverted normals,
+degenerate faces) and were run through an online repair tool. Print the
+`_fixed` file in place of the original:
+
+| Original | Repaired | Triangles | Max surface deviation |
+|---|---|---|---|
+| `Cults3d_v5/6-axis5-6/axis5-holder.stl` | `axis5-holder_fixed.stl` | 21626 -> 22004 | 0.03 mm |
+| `Cults3d_v5/6-axis5-6/axis5-holder2.stl` | `axis5-holder2_fixed.stl` | 105908 -> 29754 | see note |
+| `model/split/mainBody1_upper.stl` | `mainBody1_upper_fixed.stl` | 8504 -> 8644 | 0.02 mm |
+| `model/split/mainBody2_lower.stl` | `mainBody2_lower_fixed.stl` | 5044 -> 5062 | 0.02 mm |
+
+`axis5-holder2`: every vertex of the repaired mesh lies on the original
+surface (0.004 mm) and the bounding box is unchanged, but the original had
+a second, overlapping shell about 1 mm inside it (13 non-manifold edges,
+inverted normals) that the repair merged away, which is where 72 % of the
+triangles went. The outer envelope is intact; check the 6812 / 6810 seats
+on the print with the bearings before assembly.
+
