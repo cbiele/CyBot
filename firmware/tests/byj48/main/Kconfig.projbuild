@@ -1,0 +1,19 @@
+menu "28BYJ-48 test"
+    config BYJ_IN1
+        int "GPIO to ULN2003 IN1"
+        default 16
+    config BYJ_IN2
+        int "GPIO to ULN2003 IN2"
+        default 17
+    config BYJ_IN3
+        int "GPIO to ULN2003 IN3"
+        default 18
+    config BYJ_IN4
+        int "GPIO to ULN2003 IN4"
+        default 19
+    config BYJ_STEP_US
+        int "Half-step period (microseconds)"
+        default 2000
+        help
+            2000 us is about 7 rpm at the output; the motor stalls below ~1200 us at 5 V.
+endmenu

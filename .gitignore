@@ -16,3 +16,6 @@ reference/video/*.webm
 reference/video/*.mkv
 firmware/marlin/upstream/
 firmware/marlin/out/
+firmware/tests/*/build/
+firmware/tests/*/sdkconfig
+firmware/tests/*/sdkconfig.old
