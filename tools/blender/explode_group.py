@@ -67,11 +67,22 @@ if BG.get("order"):
     byname={o.name:o for o in order}; listed=[byname[n] for n in BG["order"]]
     order=listed+[o for o in order if o not in listed]
 FLIP=set(BG.get("flip",[]))   # parts shown turned 180 deg about the up axis in the exploded row only
+# "together": lists of parts that stay mated in the exploded row (split shells), laid out as one unit
+unit_of={}
+for grp in BG.get("together",[]):
+    for n in grp: unit_of[n]=grp[0]
+def unit_span(lead):
+    members=[x for x in order if unit_of.get(x.name,x.name)==lead]
+    lo=min(along(x)[0]-along(x)[1]/2 for x in members); hi=max(along(x)[0]+along(x)[1]/2 for x in members)
+    return (lo+hi)/2, hi-lo
 newt={}; prev_end=None
 for o in order:
-    t,ext=along(o)
+    lead=unit_of.get(o.name,o.name)
+    if lead!=o.name and lead in newt:
+        newt[o.name]=along(o)[0]+(newt[lead]-along(order[[x.name for x in order].index(lead)])[0]); continue
+    t,ext=unit_span(o.name) if o.name in unit_of else along(o)
     t2=t if prev_end is None else max(t,prev_end+GAP+ext/2)
-    newt[o.name]=t2; prev_end=t2+ext/2
+    newt[o.name]=along(o)[0]+(t2-t); prev_end=t2+ext/2
 def dup(o,shift):
     d=o.copy(); d.data=o.data; d.name=o.name+".x"; d.matrix_world=Matrix.Translation(shift)@o.matrix_world; EXP.objects.link(d); return d
 labels=[]

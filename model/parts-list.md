@@ -86,7 +86,12 @@ Resolved: print `model/split/mainBody1_lower`, `mainBody1_upper`, `mainBody2_low
 
 ## Hardware per 1:11 gearbox (5-axis4, bench-verified 2026-09-12)
 
-The folder prints twice (axes 4 and 5), so double these for the arm.
+The arm has two 1:11 gearboxes (axes 4 and 5; axis 6 is the belt-driven
+rotor), so double these. Only the internals print twice: the axis-5 unit
+uses `axis5_Housing2Attach1/2` (same 12 pin holes as `axis4_housing`) as
+its housing halves, `axis5-axis6holder2` as its output plate and
+`axis5-80T-7mm` as its pulley, so the second set is disk1, disk2,
+diskCap ×2, shaft, shaft2, shaft3 and OPH only (2026-09-15).
 
 | Item | Qty per gearbox | Where |
 |---|---|---|

@@ -1427,6 +1427,12 @@
    0,
    555
   ],
+  "together": [
+   [
+    "axis5-holder",
+    "axis5-holder2"
+   ]
+  ],
   "up": [
    0,
    0,
@@ -1438,7 +1444,8 @@
    "6804zz x2 (one located in axis6holder2; second not found)",
    "HK0608 x4 (needle rollers; 3 O10 bores found on quarterTurnBeltDrive)",
    "M6x25 x2, belts 232-2GT x1 and 308-2GT x3, GT2 40T x2, GT2 20T x1",
-   "NOT IN THIS FOLDER: the pitch gearbox internals are a second print of 5-axis4 (disks, shafts, housing, OPH, cap, 80T pulley)"
+   "axis-5 1:11 internals are a second print of 5-axis4: disk1, disk2, diskCap x2, shaft, shaft2, shaft3, OPH (short) only; Housing2Attach1/2 are its housing halves and axis6holder2 its output plate",
+   "per that gearbox: 6705zz x4, brass bushings 8x10x6 x12, pins O6x25 x6, M4/M3 rod (positions provisional until the gearbox is built, 2026-09-15)"
   ],
   "bearings": [
    {
@@ -1458,7 +1465,7 @@
     ],
     "between": [
      "axis5_Housing2Attach1",
-     "axis-5 gearbox (axis4 files)"
+     "axis5_OPH"
     ],
     "note": "O78 x 10 pocket y -97.5..-87.5; also the yoke's O78 bore at y -95.5"
    },
@@ -1526,10 +1533,10 @@
     "note": "O65 x 7 seat in the +y yoke arm (y 84-91)"
    },
    {
-    "type": "6804zz",
+    "type": "6705zz",
     "od": 32,
-    "id": 20,
-    "w": 7,
+    "id": 25,
+    "w": 4,
     "center": [
      251.1,
      -57,
@@ -1542,9 +1549,9 @@
     ],
     "between": [
      "axis5-axis6holder2",
-     "roll shaft"
+     "axis5_shaft"
     ],
-    "note": "O32 bore 7 mm deep y -60.6..-53.6"
+    "note": "O32 bore 7 mm deep y -60.6..-53.6; the output plate of the axis-5 1:11, so a 6705 on the shaft journal as in the axis-4 unit (PDF wrist list says 6804 x2: bench check)"
    },
    {
     "type": "HK0608",
@@ -1587,6 +1594,69 @@
      "M6 axle"
     ],
     "note": "O10 bore, idler roller"
+   },
+   {
+    "type": "6705zz",
+    "od": 32,
+    "id": 25,
+    "w": 4,
+    "center": [
+     250,
+     -94,
+     555
+    ],
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "between": [
+     "axis5_OPH",
+     "axis5_shaft2"
+    ],
+    "note": "inside the OPH on the shaft2 journal"
+   },
+   {
+    "type": "6705zz",
+    "od": 32,
+    "id": 25,
+    "w": 4,
+    "center": [
+     250,
+     -78.5,
+     555
+    ],
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "between": [
+     "axis5_disk1",
+     "axis5_shaft3"
+    ],
+    "note": "disk centre bore on the shaft3 eccentric"
+   },
+   {
+    "type": "6705zz",
+    "od": 32,
+    "id": 25,
+    "w": 4,
+    "center": [
+     250,
+     -71.5,
+     555
+    ],
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "between": [
+     "axis5_disk2",
+     "axis5_shaft"
+    ],
+    "note": "disk centre bore on the shaft eccentric"
    }
   ]
  },

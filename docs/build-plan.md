@@ -29,8 +29,10 @@ other, so their print slots come right after phase C's parts, before the base.
 2. **5-axis4, first set** (13 files, 1.0 L): disk1, disk2, diskCap ×2,
    shaft, shaft2, shaft3, housing, housingNema, OPH2 (long, carries the
    tube), 80TGT2-7mm, axis4_axis5_holder, Tube.
-3. **5-axis4, second set** for axis 5: same minus the elbow holder and
-   tube, with OPH (short) instead of OPH2.
+3. **5-axis4, second set** for axis 5 (corrected 2026-09-15): only disk1,
+   disk2, diskCap ×2, shaft, shaft2, shaft3 and OPH (short). Its housing
+   halves are Housing2Attach1/2, its output plate is axis6holder2 and its
+   pulley is 80T-7mm, all in 6-axis5-6. No housing, housingNema or OPH2.
 4. **6-axis5-6** (12 files, 1.2 L): holder + holder2 (or holderNoSplit, 209
    mm, if you prefer one piece), axis6holder1, axis6holder2,
    Housing2Attach1/2, 80T-rotor, pulley, pulleySpacer,
