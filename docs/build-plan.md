@@ -63,9 +63,13 @@ From the PDF hardware lists, corrected where the STLs disagree.
   front shaft 24 mm, Ø5 rear stub 10-13 mm, bare leads) for axes 4, 5, 6
   and 1, plus 1× MKS SERVO42C kit (board + matched motor). The 42C is the
   UART/step-dir board, not CAN: it is the mechanical reference for the
-  rear-stub length and magnet gap, not the CAN bench unit. Still to buy:
-  3× SERVO42D boards for the phase B motors (+1 for axis 1). Expect to trim
-  each 17HS8401B rear stub to match the kit motor before gluing the magnet.
+  rear-stub length and magnet gap, not the CAN bench unit. ~~Still to buy:
+  3× SERVO42D boards~~ (dropped, see the driver pivot in §5).
+  **Received 2026-09-15:** all four 17HS8401B. Rear stub measures 10 mm,
+  the short end of the listed range, so no trimming is expected. Coil pairs
+  by meter: green + red = phase A, yellow + blue = phase B (same on all
+  four; keep that assignment when wiring the Octopus headers, one pair on
+  each end of the 4-pin connector).
 
 **Phase C, 1:20 — order now, ships with the above**
 - 6813zz ×2, 6804zz ×5, 688rs ×18
@@ -77,7 +81,8 @@ From the PDF hardware lists, corrected where the STLs disagree.
   because the MKS board is gone: drivers move to a PakaNode daughterboard
   (TMC5160-class SPI chain, MT6701 output encoders) being designed in the
   Chopaka session. No SERVO42D/57D boards will be bought; the Omron E6B2
-  plan is dropped pending that design.
+  plan is dropped pending that design. Coil pairs confirmed by meter
+  2026-09-15: black + green = phase A, red + blue = phase B.
 
 **Phase D, base**
 - 6816zz ×2, 6804zz ×2, 625zz ×8, 606zz ×4
@@ -107,9 +112,10 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
   before printing three more.
 - **MKS board depth**: measure a SERVO57D; decide 41 mm NEMA23 vs a
   mainBody2 recess. Gates phase E. Measure a SERVO42D too for the gripper.
-- **Rear-stub length**: measure the SERVO42C kit motor's rear stub and
-  magnet gap, then cut the four 17HS8401B stubs to match. Gates the first
-  42D board mount.
+- **Rear-stub length**: measured 10 mm on the 17HS8401B (2026-09-15).
+  Whether the stub carries an MT6701 magnet at all is decided by the
+  daughterboard design (output encoders are the current plan), so leave
+  the stubs uncut until Chopaka's interface contract says otherwise.
 - **Axis-3 stack re-seat** in the model with printed parts in hand (the
   export has OPH1 overlapping the encoder pulley). Gates phase C assembly.
 - **Gripper motor**: 34-40 mm pancake NEMA17 or a 10 mm longer
