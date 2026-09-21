@@ -19,3 +19,4 @@ firmware/marlin/out/
 firmware/tests/*/build/
 firmware/tests/*/sdkconfig
 firmware/tests/*/sdkconfig.old
+model/electronics/*.png

@@ -74,6 +74,7 @@ Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = 
 | gripper | T8_to_Axes | 26 x 10 x 10 | 1 | fits |
 | gripper | grip | 83 x 41 x 10 | 16 | fits |
 | gripper | mainHolder | 95 x 95 x 73 | 126 | fits |
+| electronics | octopus-pro-plate (tools/blender/octopus_plate.py) | 184 x 110 x 12 | 70 | fits |
 
 Total solid volume of all listed parts: 6769 cm3 (before infill; at 40 % infill roughly 4.2 kg of PLA counting walls).
 
