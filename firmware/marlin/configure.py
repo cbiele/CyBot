@@ -73,7 +73,8 @@ EDITS = [
     (A, "    #define STEALTHCHOP_J", "    //#define STEALTHCHOP_J"),
     (A, "    #define STEALTHCHOP_K", "    //#define STEALTHCHOP_K"),
     (A, "  //#define MONITOR_DRIVER_STATUS", "  #define MONITOR_DRIVER_STATUS"),
-    (A, "  //#define TMC_DEBUG", "  #define TMC_DEBUG"),
+    # TMC_DEBUG stays off: its M122 table reads every register of every driver with no watchdog
+    # refresh, and the UART timeouts on empty TMC2209 sockets trip the 4 s watchdog (board reset).
     (C, "//#define I_ENABLE_ON LOW", "#define I_ENABLE_ON LOW"),
     (C, "//#define J_ENABLE_ON LOW", "#define J_ENABLE_ON LOW"),
     (C, "//#define K_ENABLE_ON LOW", "#define K_ENABLE_ON LOW"),

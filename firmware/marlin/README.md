@@ -47,6 +47,9 @@ so the arm holds position; `M18` releases it.
 2. Copy `out/firmware.bin` to a FAT32 SD card root as `firmware.bin`.
 3. Power the board with the card in; the bootloader flashes and renames it
    `FIRMWARE.CUR`. `M115` over USB should answer `Cybot`.
+4. `M122` prints one connection line per driver (`OK`, or `All LOW` for an
+   empty socket). The full TMC_DEBUG table is off: with empty TMC2209
+   sockets it overruns the 4 s watchdog and resets the board.
 
 ## First motion: the 28BYJ-48
 
