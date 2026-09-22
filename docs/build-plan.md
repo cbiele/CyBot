@@ -59,6 +59,9 @@ From the PDF hardware lists, corrected where the STLs disagree.
 - M4 rod 1 m (output rods), M3 rod 1 m (cam lock rods), M5×20 ×16, nuts
 - wrist: 6810 ×2, 6804 ×2, HK0608 ×4, M6×25 ×2, GT2 belts 232 ×1 and
   308 ×3 (6 mm wide), GT2 40T ×2 and 20T ×1 with 5 mm bore
+  **In hand 2026-09-15:** 40T ×2 and 20T ×2 (5 mm bore) and 232 belts ×5.
+  308 belts ×3 ordered from AliExpress, 1-2 weeks. See the pulley table
+  after phase E.
 - ZZ or 2RS on any bearing: same dimensions, seal type is the only difference
 - ~~3× NEMA17 dual-shaft (47 mm class) + 3× MKS SERVO42D (axes 4, 5, 6)~~
   **Bought 2026-09-11:** 4× 17HS8401B (42×42×48 mm, 1.8 A, 52 N·cm, Ø5
@@ -89,15 +92,43 @@ From the PDF hardware lists, corrected where the STLs disagree.
 **Phase D, base**
 - 6816zz ×2, 6804zz ×2, 625zz ×8, 606zz ×4
 - M5×20 ×8, M6×50 ×8, M6×40 ×12, M6 nuts ×8
-- 3M 30T pulleys ×2 (12 mm), HTD648-3M belts ×2
+- 3M 30T pulleys ×2 (12 mm), HTD648-3M belts ×2 — only one pulley (5 mm
+  bore) and one belt are needed now that the encoder is dropped. The
+  stepper holder's motor axis sits 139 mm from the base axis, which computes
+  to a ~620-3M belt for 175T/30T, not the PDF's 648: measure on the built
+  base before buying.
 - NEMA17: one of the four 17HS8401B already bought; driver channel on the daughterboard
 
 **Phase E, body**
 - 606zz ×8 (tensioners), M6 screws for the arms
 - HTD477-3M belts ×4, 3M 20T (15 mm) ×1, 3M 30T (12 mm) ×3
+  **Ordered 2026-09-15 (AliExpress, 1-2 weeks):** 3M 30T ×2 with 6.35 mm
+  bore and 477-3M belts ×2. The other two 30T, the 20T and two belts were
+  for the Omron encoders and are dropped.
 - axis-2 NEMA23: bought, see phase C
 - 24 V PSU and e-stop: see the Octopus bench notes in §5 (shore first,
   DeWalt 20 V pack as the mobile option)
+
+**Pulleys and belt ratios (measured from the STLs, 2026-09-15).** Tooth
+counts come from the printed pulleys' meshes (the three 80T files read
+exactly 80, validating the method). The body pulleys are HTD 3M despite
+their "GT2" file names. Motor pulley assignments for axes 2, 3 and 6 are
+by inference (tensioners absorb the body belt length; axes 4 and 5 are
+identical drives, so the 20T is the odd one out on axis 6); confirm on
+the bench.
+
+| Joint | Motor pulley | Driven pulley (printed) | Belt | Belt ratio | Reducer | Total |
+|---|---|---|---|---|---|---|
+| 1 | 3M 30T, 5 mm bore | 175T ring on rotatingBase1/2 | HTD 3M ~620 (PDF: 648) | 5.83 | none | 5.83 |
+| 2 | 3M 30T, 6.35 mm bore | axis2-GT2-stepper, 120T | 477-3M (462 without tensioner) | 4.0 | 1:23 | 92 |
+| 3 | 3M 30T, 6.35 mm bore | axis3-GT2-stepper, 108T | 477-3M (420 without tensioner) | 3.6 | 1:20 | 72 |
+| 4 | GT2 40T, 5 mm bore | axis4_80TGT2-7mm | 308-2GT-6 | 2.0 | 1:11 | 22 |
+| 5 | GT2 40T, 5 mm bore | axis5-80T-7mm | 308-2GT-6 | 2.0 | 1:11 | 22 |
+| 6 | GT2 20T, 5 mm bore | axis5-pulley 72T, then 80T rotor | 308-2GT-6 + 232-2GT-6 | 3.6 x 80/72 = 4.0 | none | 4.0 |
+
+Body belts are 9 or 10 mm wide (12 mm between the printed flanges); wrist
+belts 6 mm. Centre distances from the plate geometry: axis 2 motor pocket
+to joint 110 mm, axis 3 100 mm, matched by the two encoder pilots.
 
 **Phase F, gripper:** hardware list is in the separate Cults gripper
 project; the STLs show one 6804 and a T8 lead screw and nut.
@@ -153,8 +184,11 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     StallGuard via Marlin, not the carrier expander; 24 V in behind the
     e-stop copper; Octopus 5 V out to the carrier's J2 by pigtail.
   - Steps per degree per joint = motor steps x microsteps x total ratio /
-    360 (axis 2: 1.5 belt x 23; axis 3: 1.5 x 20; axes 4, 5: 11; axis 1
-    and 6: belt ratios TBD from the pulleys).
+    360, with the total ratios from the pulley table in §3 (5.83, 92, 72,
+    22, 22, 4.0). At 200 steps and 16 microsteps: 51.9, 817.8, 640, 195.6,
+    195.6, 35.6. `firmware/marlin/configure.py` still carries the earlier
+    placeholders (1:10, 1.5 x 23, 1.5 x 20, 11, 11, 1:10) until the
+    first motion test confirms the pulley assignments.
   - Power, shore (bench, first): a 19.5 V 9.3 A laptop brick on a 5.5x2.5
     barrel-to-screw-terminal adapter (ordered 2026-09-14; meter the polarity,
     centre positive, and watch the barrel for heat above ~5 A). Same operating
@@ -178,6 +212,21 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     main input's 24 V, and the 60 V tap sits above 62 V at full charge.
   - When Rev E arrives the pigtail moves to J_GPIO1; when the daughterboard
     arrives the Octopus goes and only the Heltec driver layer changes.
+  - **Bench log 2026-09-21.** Board flashed from the SD card (21 Sep build)
+    and driven from the Mac over USB-C at 250 kbaud. Quarter-turn tests at
+    1.2 A, 1 unit = 1 motor degree, 10 deg/s, nothing saved with M500:
+    all six sockets pass on the final crimped cables: MOTOR0/4/5/6
+    (X/I/J/K) TMC2209 + 17HS8401B, MOTOR1 and MOTOR2_1 (Y/Z) TMC5160 +
+    23HS22-2804S, clean both ways with the coil pairs from §3, each run
+    twice. One MOTOR0 stutter cleared after a reseat and power cycle and
+    did not return. Lessons:
+    a TMC2209 socket needs UART mode (one jumper on the far-left two-pin
+    position, nothing else; SPI mode is the row of four) or M122 reads
+    "All LOW"; power both cords off before touching a motor plug or driver;
+    TMC_DEBUG is off because its M122 table overran the 4 s watchdog on
+    empty sockets. Next on the bench: direction per joint (INVERT_*_DIR)
+    and steps/deg once each motor is on its belt. The board sits in the
+    printed tray `model/electronics/octopus-pro-plate.stl`.
 
 ## 6. Phase A, granular: finishing the 1:23 joint (axis 2)
 
