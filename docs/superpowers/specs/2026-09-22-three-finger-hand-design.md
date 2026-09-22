@@ -73,6 +73,7 @@ wrist  ── OPH_To_Gripper (Cults, 55 mm tube) ── palm flange Ø62
 | Tendon channel | 2 mm, on the palm side, 6 mm off each knuckle axis |
 | Wire channel | 1.5 mm, beside the tendon channel |
 | Return | TPU strip 8 × 2 mm along the back, printed flat, clipped into a slot on each phalanx; length sets the open pretension |
+| Grip pad (added 2026-09-22) | snap-on TPU pad on the proximal's inside face, 14 mm long, slotted for the tendon, lips into side grooves and two front dots into dimples; the distal's grip surface is the skin's wrap (§5.5) |
 
 Tendon: 0.5 mm stainless leader wire, crimped with a fishing ferrule into a
 pocket at the fingertip and to the whiffletree at the other end. Full curl of
@@ -123,9 +124,12 @@ the worm meshes with the wheel.
 
 ### 5.5 Sensors and wiring
 
-- Fingertip caps: PLA, two M2 into the distal phalanx, FSR 400 in a pocket
-  with tail relief, 3 mm dome over its centre, 1.5 mm TPU skin snapped over a
-  lip. Same cap on the thumb.
+- Fingertip skin (amended 2026-09-22): the return strip and the fingertip
+  skin are one TPU part. Its dorsal run is the return spring, it wraps the
+  R6 tip, and its palmar pad covers an FSR 400 pocket on the distal's inside
+  face, with a 1.5 mm dome moulded into the pad over the sensor, ending in a
+  T bar held by two M2 screws either side of the tendon groove. No PLA cap.
+  Same arrangement on the thumb.
 - Palm pad: FSR 402 under 2 mm TPU in the front-face pocket.
 - Wire: 30 AWG PTFE, two per sensor, through the pins. At each knuckle the
   wire enters the pin's open end from a channel in the cheek, runs inside to
