@@ -51,7 +51,7 @@ not redesigned; one drilling note applies (§5.6).
 
 ```
 wrist  ── OPH_To_Gripper (Cults, 55 mm tube) ── palm flange Ø62
-                    NEMA11 inside the tube ──▶ worm ──▶ 20T wheel + spool
+        NEMA11 worm-gear unit, motor in the tube ──▶ 20:1 gearbox in the palm ──▶ spool
                                                    └─▶ whiffletree ─▶ two pair tendons
            28BYJ-48 on the palm wall ──▶ thumb hub, hard stop at pinch
            FSR ×3 tips + palm pad ──▶ wires through pins ──▶ ADS1115 in the palm
@@ -91,9 +91,10 @@ it, and the pinch load goes into PLA instead of the motor's plastic gears.
 ### 5.3 Palm
 
 Two PLA halves split on the spool axis, closed with two M3 × 20 and nuts.
-About 60 mm wide, 50 mm deep, 50 mm tall on a Ø62 rear flange. Contents:
+About 60 mm wide, 65 mm deep, 50 mm tall on a Ø62 rear flange. Contents:
 
-- worm, wheel, spool and whiffletree on the pair side (§5.4)
+- the pair drive's gearbox on a web, with the spool and whiffletree in
+  front of it (§5.4)
 - the 28BYJ-48 by its two ear tabs on the inside of the thumb-side wall, M4
   × 8 into printed bosses, shaft through the wall
 - palm pad pocket on the front face between the finger roots, FSR 402 under
@@ -108,19 +109,23 @@ About 60 mm wide, 50 mm deep, 50 mm tall on a Ø62 rear flange. Contents:
 
 | Item | Value |
 |---|---|
-| Motor | NEMA11, 32 mm long class, about 120 mN·m, 0.67 A |
-| Worm | printed, module 1, single start, Ø10 pitch, 20 mm long, grub-screw hub on the 5 mm shaft |
-| Wheel | printed, 20 teeth, module 1, 20:1 |
-| Self-locking | lead angle about 6°, below the PLA friction angle, so the grasp holds unpowered |
-| Spool | Ø16, on the wheel's axis, parallel to the finger knuckles; one tendon |
+| Motor | JUGETEK 28H51-WG20 (amended 2026-09-23, two bought): NEMA11, 51 mm body, 98 mN·m holding, 3.1 Ω, 1.9 mH, with an integral metal 20:1 worm gearbox |
+| Gearbox | 46 × 32 × 30 mm; output at right angles to the motor: Ø8 shaft with a 7 mm flat, 20 mm long, on a Ø15.3 × 2 boss; 4 × M3, 5 deep, on 33 × 20 around the shaft |
+| Self-locking | single-start steel worm at 20:1, so the grasp holds unpowered (checked in acceptance 4) |
+| Spool | Ø16, on the output shaft with an M3 grub screw on the flat, parallel to the finger knuckles; one tendon |
 | Whiffletree | 20 mm floating bar on a 4 × 20 spring pin; spool tendon at the centre, finger tendons at the ends |
 | Close time | about 1.5 s at 300 rpm (a third of a spool turn) |
-| Tension | up to about 50 N per finger at full current; the current setting is the force limit |
+| Tension | about 0.8 N·m at the shaft, so up to about 50 N per finger at full current; the current setting is the force limit |
 
-The motor sits inside the `OPH_To_Gripper` tube, which is 55 mm deep and
-about Ø60 inside (it held a NEMA17), bolted to the palm's back wall on the NEMA11 pattern (23 mm
-square, M2.5). Its 20 mm shaft passes through the wall into the palm where
-the worm meshes with the wheel.
+The gearbox sits in the palm, bolted from behind to a 4 mm web in the
+pair-side half by four M3 × 8, the boss in a Ø15.5 hole; the spool runs on the
+front of the web. The motor points back through a 30 mm square opening in the
+flange into the `OPH_To_Gripper` tube, which is 55 mm deep and about Ø60
+inside (it held a NEMA17); the 51 mm body and its rear shaft reach about
+52 mm past a 4 mm flange, so the rear wall clears by about 3 mm. The printed
+worm and wheel this replaces were a wear risk and a mesh-alignment risk; a
+Ø12 spool is the fallback if the gearbox turns out less efficient than the
+40 % assumed.
 
 ### 5.5 Sensors and wiring
 
@@ -152,8 +157,9 @@ face carrying the NEMA17 pattern (Ø3 on a 31.6 mm square) and a Ø30 centre.
 The palm's rear flange copies that Ø62 face. It is fixed to the adapter by
 four M3 × 12 through the adapter's front ring at a 27 mm radius, 45° off the
 finger plane. The adapter has no holes there: drill four Ø3.2 on assembly, or
-reprint the adapter with them. The NEMA11 inside the tube bolts to the flange
-from the tube side, so the adapter must be fitted before the motor.
+reprint the adapter with them. The gearbox is bolted inside the palm first and
+the motor slides into the tube as the palm goes on, so the adapter can be
+fitted in either order.
 
 ### 5.7 Stainless and other non-printed parts
 
@@ -161,13 +167,13 @@ from the tube side, so the adapter must be fitted before the motor.
 |---|---|---|
 | ISO 8752 4 × 20 stainless spring pins (4 knuckles + whiffletree + 1 spare) | 6 | $5 |
 | 0.5 mm stainless leader wire and crimp ferrules | 1 m, 10 | $8 |
-| NEMA11, 32 mm, 0.67 A | 1 | $20 |
+| NEMA11 worm-gear unit 28H51-WG20 (in hand, two) | 1 | $49 |
 | 28BYJ-48 (in hand), converted to bipolar | 1 | — |
 | TMC2209 with UART jumper | 2 | $20 |
 | FSR 400 ×3, FSR 402 ×1, ADS1115 breakout, 10 kΩ ×4 | 1 set | $45 |
 | 30 AWG PTFE wire, QWIIC cable, M2/M3/M4 stainless hardware, two microswitches | 1 set | $15 |
 
-About $115 beyond filament.
+About $145 beyond filament.
 
 ## 6. Firmware (Marlin on the Octopus, then the Heltec)
 
@@ -195,10 +201,9 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
 - Phalanges and thumb print lying on a cheek so every pin bore is vertical
   and round. Tendon and wire channels are then horizontal and get a teardrop
   top.
-- Palm halves print open face up; the worm prints standing on its hub with a
-  brim; the wheel and spool print flat.
+- Palm halves print open face up; the spool prints flat.
 - PLA at 0.2 mm, four walls, 40 % infill in phalanges and palm; 100 % in the
-  worm and wheel.
+  spool.
 - TPU parts (three skins, four return strips, palm pad) print separately at
   0.2 mm, 95A.
 - No supports anywhere by design; a part that needs them is a design error.
@@ -208,9 +213,9 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
 - **Pin press fit in PLA.** Too tight splits a cheek, too loose walks out.
   The coupon in phase 1 exists for this, and a 4 mm pin in 5 mm cheeks is the
   most forgiving version of the joint.
-- **Printed worm wear.** PLA on PLA at 50 N tendon loads will wear; 100 %
-  infill and a little PTFE grease. If it wears fast, the wheel becomes the
-  sacrificial part, one gram to reprint.
+- **Gearbox efficiency.** The 40 % worm efficiency is an assumption; the
+  tendon target has a 2× margin on it and the Ø12 spool is the fallback.
+  Backlash does not matter, the tendon only pulls.
 - **Thumb gearbox.** The 28BYJ-48's plastic train strips near 0.1 N·m. The
   hard stop and the tactile force limit are the protection; a pinch
   without the thumb on its stop is a firmware bug.
@@ -253,15 +258,16 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
 
 1. Coupon, then one pair finger with TPU return and a wire through the pins.
 2. Both pair fingers, palm shell, whiffletree, hand-turned spool.
-3. NEMA11, worm and wheel, U axis in `configure.py`, close and hold.
+3. Worm-gear NEMA11 on the palm web, spool, U axis in `configure.py`, close
+   and hold.
 4. 28BYJ-48 conversion, thumb, hard stop, V axis, pinch.
 5. Caps, skins, palm pad, ADS1115 in the palm, tactile spec phases.
 6. Adapter drilled or reprinted, hand on the wrist.
 
 ## 12. Open items
 
-- NEMA11 part choice: the 32 mm, 0.67 A class; confirm shaft length is
-  20 mm so the worm clears the palm wall.
+- Rated current of the 28H51 is not on the listing; read it off the motor
+  label for the U axis `M906` (3.1 Ω suggests 0.67 A).
 - Whether to reprint `OPH_To_Gripper` with the four flange holes instead of
   drilling.
 - Palm pad thickness versus the mug wrap: 2 mm TPU is a starting point.

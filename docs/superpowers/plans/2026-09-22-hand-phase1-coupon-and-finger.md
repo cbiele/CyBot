@@ -580,7 +580,7 @@ Add the five parts and both coupons to `model/parts-list.md` under a `hand` grou
 
 | Item | Qty | Note |
 |---|---|---|
-| NEMA11 stepper, 0.67 A, 45 mm (e.g. STEPPERONLINE 11HS18-0674S, about 95 mN·m) | 1 | corrects the spec's "32 mm class": 32 mm bodies are 60 mN·m; 45 mm fits the 55 mm adapter tube with the shaft length 20 mm |
+| NEMA11 worm-gear unit, JUGETEK 28H51-WG20 (51 mm motor, 98 mN·m, integral metal 20:1 gearbox) | 1 | two bought 2026-09-23; replaces the bare NEMA11 and the printed worm and wheel |
 | TMC2209 driver modules for the Octopus, with UART jumper | 2 | MOTOR7 and MOTOR3 |
 | FSR 400 (7.6 mm) | 3 | fingertips |
 | FSR 402 (18 mm) | 1 | palm pad |
@@ -589,11 +589,10 @@ Add the five parts and both coupons to `model/parts-list.md` under a `hand` grou
 | QWIIC cable 500 mm | 1 | palm to wrist segment |
 | Microswitch with lever, 12 × 6 mm | 2 | U and V homing |
 | M2 × 4 screws | 8 | skin T bars (2 per finger) |
-| M2.5 × 6 screws | 4 | NEMA11 to the palm |
+| M3 × 8 screws | 4 | gearbox to the palm web |
 | M3 × 12 and M3 × 20 stainless, nuts | 4 + 2 | flange and palm halves |
-| M3 grub screws | 2 | worm hub |
+| M3 grub screw | 1 | spool hub on the shaft flat |
 | M4 × 8 | 2 | 28BYJ-48 ears |
-| PTFE grease, small tube | 1 | worm |
 
 ---
 
