@@ -20,3 +20,5 @@ firmware/tests/*/build/
 firmware/tests/*/sdkconfig
 firmware/tests/*/sdkconfig.old
 model/electronics/*.png
+__pycache__/
+model/hand/*.png

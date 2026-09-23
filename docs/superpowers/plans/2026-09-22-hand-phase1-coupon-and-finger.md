@@ -277,7 +277,7 @@ Expected: one `COUPON {...}` line with `"non_manifold": 0` for both parts and `b
 
 - [ ] **Step 4: Break it on purpose, then restore**
 
-Change `FORK_BORES = (3.80, 3.85, 3.90)` to `(3.80, 3.85, 4.90)` and rerun. Expected: `AssertionError: ('coupon-forks', 4.9, 3.897)` or similar, proving the measurement is live. Restore the line and rerun to green.
+Change the fork loop's `L.bore_cheeks(forks, xa, d)` to `L.bore_cheeks(forks, xa, d + 0.5)` so the cut no longer matches the nominal, and rerun. Expected: `AssertionError: ('coupon-forks', 3.8, 4.297)` or similar, proving the measurement is live. (Changing `FORK_BORES` itself does not break it, because the cut and the expectation move together.) Restore the line and rerun to green.
 
 - [ ] **Step 5: Stage and propose the commit** (the user approves commits)
 
