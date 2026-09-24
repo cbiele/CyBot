@@ -77,9 +77,9 @@ def tongue(target, xa, direction=1):
     tx0, tx1 = sorted((xa - s * TAB_BACK, x_body + s * 0.01))
     union(target, box("tab", tx0, tx1, TAB_Y0, TAB_Y1, -W / 2, W / 2))
 
-def bore_tongue(target, xa, direction=1):
+def bore_tongue(target, xa, direction=1, d=TONGUE_BORE):
     s = direction
-    cut(target, cyl_z("tongue_bore", xa, 0, TONGUE_BORE / 2, -W / 2 - 1, W / 2 + 1))
+    cut(target, cyl_z("tongue_bore", xa, 0, d / 2, -W / 2 - 1, W / 2 + 1))
     # wire chamber: where the wire leaves the pin slot and twists
     cx0, cx1 = sorted((xa + s * 1.5, xa + s * (1.5 + CHAMBER)))
     cut(target, box("chamber", cx0, cx1, -CHAMBER / 2, CHAMBER / 2, -CHAMBER / 2, CHAMBER / 2))

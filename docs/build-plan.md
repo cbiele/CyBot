@@ -227,6 +227,16 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     empty sockets. Next on the bench: direction per joint (INVERT_*_DIR)
     and steps/deg once each motor is on its belt. The board sits in the
     printed tray `model/electronics/octopus-pro-plate.stl`.
+  - **Hand pin coupon 2026-09-23.** ISO 8752 4 × 20 spring pins (black
+    steel) in the PLA fork coupon: the 3.90 bore is the fit, so
+    `model/hand/params.json` carries `cheek_bore 3.90` and the phase 1
+    finger parts were regenerated with it. The pin held the 5 kg axial
+    pull in that bore without moving. Tongue coupon on a pin held in the
+    3.90 fork: 4.1 felt too stiff for a knuckle, and the first printed
+    proximal and distal at 4.3 still had to be drilled out to 11/64 in
+    (4.37 mm) for free movement, so the params file carries
+    `tongue_bore 4.37` (the library defaults stay 3.85/4.2). Sweep
+    unchanged after regeneration.
 
 ## 6. Phase A, granular: finishing the 1:23 joint (axis 2)
 

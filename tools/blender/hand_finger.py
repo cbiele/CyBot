@@ -7,8 +7,10 @@ import hand_lib as L
 OUT = os.environ.get("HAND_OUT", os.path.join("/Users/claytonbiele/dev/Claude/Projects/cybot", "model", "hand"))
 os.makedirs(OUT, exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
-PARAMS = os.path.join(OUT, "params.json")          # written after the coupon test: {"cheek_bore": 3.85}
-CHEEK_BORE = json.load(open(PARAMS))["cheek_bore"] if os.path.exists(PARAMS) else L.CHEEK_BORE
+PARAMS = os.path.join(OUT, "params.json")          # written after the coupon test: {"cheek_bore": 3.9, "tongue_bore": 4.1}
+_params = json.load(open(PARAMS)) if os.path.exists(PARAMS) else {}
+CHEEK_BORE = _params.get("cheek_bore", L.CHEEK_BORE)
+TONGUE_BORE = _params.get("tongue_bore", L.TONGUE_BORE)
 PROX_LEN, DIST_LEN = 40.0, 30.0
 W2, R = L.W / 2, L.R
 
@@ -16,7 +18,7 @@ W2, R = L.W / 2, L.R
 prox = L.box("finger-proximal", L.TONGUE_LEN, PROX_LEN - L.FORK_LEN, -R, R, -W2, W2)
 L.tongue(prox, 0.0, direction=1)
 L.fork(prox, PROX_LEN)
-L.bore_tongue(prox, 0.0, direction=1)
+L.bore_tongue(prox, 0.0, direction=1, d=TONGUE_BORE)
 L.bore_cheeks(prox, PROX_LEN, CHEEK_BORE)
 L.tendon_groove(prox, 0.0, PROX_LEN - L.FORK_LEN + 0.1)
 L.strip_pocket(prox, PROX_LEN - L.FORK_LEN - 2 - L.PAD_L, PROX_LEN - L.FORK_LEN - 2)
@@ -35,7 +37,7 @@ L.finish(prox)
 dist = L.box("finger-distal", L.TONGUE_LEN, DIST_LEN - R, -R, R, -W2, W2)
 L.union(dist, L.cyl_z("tip", DIST_LEN - R, 0, R, -W2, W2))
 L.tongue(dist, 0.0, direction=1)
-L.bore_tongue(dist, 0.0, direction=1)
+L.bore_tongue(dist, 0.0, direction=1, d=TONGUE_BORE)
 TENDON_ANCHOR_X = 14.0
 L.tendon_groove(dist, 0.0, TENDON_ANCHOR_X + 1.0)
 L.cut(dist, L.cyl_between("anchor_hole", (TENDON_ANCHOR_X, -R - 1, 0), (TENDON_ANCHOR_X, R + 1, 0), 0.75))
@@ -103,5 +105,5 @@ report["skin_dorsal_run"] = round(DORSAL, 1); report["skin_wrap"] = round(WRAP, 
 for name in ("finger-proximal", "finger-distal", "finger-fixture", "finger-skin", "finger-pad-proximal"):
     assert report[name]["non_manifold"] == 0, name
 assert abs(report["cheek_bore_measured"] - CHEEK_BORE) < 0.02
-assert abs(report["tongue_bore_measured"] - L.TONGUE_BORE) < 0.02
+assert abs(report["tongue_bore_measured"] - TONGUE_BORE) < 0.02
 print("FINGER", json.dumps(report))
