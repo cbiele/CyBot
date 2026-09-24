@@ -245,6 +245,13 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     cannot see two clean shells. Fixed with a 6 mm root plate that the
     tenon grows out of and a one-shell assertion on every base part.
     Reprint the arm before the tenon dry-fit.
+  - **Finger with straight channels 2026-09-24.** The tendon pulls
+    cleanly through the new channels and the pulley motion works, but the
+    knuckles, PLA turning on the 4 mm spring pins, need finesse and are
+    not consistent joint to joint. Next print turns each knuckle on a
+    Ø2 × 8 stainless dowel pressed into the tongue's core with 4 × 8
+    spring pins sliding over it (steel on steel); the tongue bore becomes
+    a 4.7 clearance. Dowels ordered, fit to be checked when they arrive.
 
 ## 6. Phase A, granular: finishing the 1:23 joint (axis 2)
 

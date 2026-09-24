@@ -7,10 +7,11 @@ import hand_lib as L
 OUT = os.environ.get("HAND_OUT", os.path.join("/Users/claytonbiele/dev/Claude/Projects/cybot", "model", "hand"))
 os.makedirs(OUT, exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
-PARAMS = os.path.join(OUT, "params.json")          # written after the coupon test: {"cheek_bore": 3.9, "tongue_bore": 4.1}
+PARAMS = os.path.join(OUT, "params.json")          # measured fits from the bench, e.g. {"cheek_bore": 3.9, "core_bore": 2.0}
 _params = json.load(open(PARAMS)) if os.path.exists(PARAMS) else {}
 CHEEK_BORE = _params.get("cheek_bore", L.CHEEK_BORE)
 TONGUE_BORE = _params.get("tongue_bore", L.TONGUE_BORE)
+CORE_BORE = _params.get("core_bore", L.CORE_BORE)
 PROX_LEN, DIST_LEN = 40.0, 30.0
 W2, R = L.W / 2, L.R
 
@@ -18,7 +19,7 @@ W2, R = L.W / 2, L.R
 prox = L.box("finger-proximal", L.TONGUE_LEN, PROX_LEN - L.FORK_LEN, -R, R, -W2, W2)
 L.tongue(prox, 0.0, direction=1)
 L.fork(prox, PROX_LEN)
-L.bore_tongue(prox, 0.0, direction=1, d=TONGUE_BORE)
+L.bore_tongue(prox, 0.0, direction=1, d=TONGUE_BORE, d_core=CORE_BORE)
 L.bore_cheeks(prox, PROX_LEN, CHEEK_BORE)
 L.strip_pocket(prox, PROX_LEN - L.FORK_LEN - 2 - L.PAD_L, PROX_LEN - L.FORK_LEN - 2)
 PAD_X0, PAD_X1 = 12.0, 26.0                        # snap-on grip pad on the inside of the proximal
@@ -42,7 +43,7 @@ L.finish(prox)
 dist = L.box("finger-distal", L.TONGUE_LEN, DIST_LEN - R, -R, R, -W2, W2)
 L.union(dist, L.cyl_z("tip", DIST_LEN - R, 0, R, -W2, W2))
 L.tongue(dist, 0.0, direction=1)
-L.bore_tongue(dist, 0.0, direction=1, d=TONGUE_BORE)
+L.bore_tongue(dist, 0.0, direction=1, d=TONGUE_BORE, d_core=CORE_BORE)
 # tendon: enclosed channel from the tongue's mouth to an open pocket in the palmar face, where a
 # knot or crimp too big for the channel stops against the pocket's rear wall
 ANCHOR_X0, ANCHOR_X1 = 8.0, 15.5
@@ -79,11 +80,15 @@ L.finish(pad)
 fix = L.box("finger-fixture", -30, -L.FORK_LEN, -R, R, -W2, W2)
 L.fork(fix, 0.0)
 L.bore_cheeks(fix, 0.0, CHEEK_BORE)
-# the foot stays behind the fork (x <= -8.5) so the curling finger never sweeps into it
-L.union(fix, L.box("foot", -30, -8.5, -R - 12, -R + 0.01, -W2 - 10, W2 + 10))
-L.channel(fix, L.TENDON_Y, -L.FORK_LEN + 1, -31, 2.5)
+# the foot stays behind the fork web so the curling finger never sweeps into it
+L.union(fix, L.box("foot", -30, -L.FORK_LEN + 0.01, -R - 12, -R + 0.01, -W2 - 10, W2 + 10))
+# the tendon leaves the fixture 1 mm below the finger's channel line: the span to the proximal's
+# mouth then slopes less as the finger curls, so the line drags less on the exit (bench, 2026-09-24)
+FIX_TENDON_Y = L.TENDON_Y - 1.0
+L.channel(fix, FIX_TENDON_Y, -L.FORK_LEN + 1, -31, 2.5)
 L.channel(fix, 0.0, -L.FORK_LEN + 1, -31, L.WIRE_D)
 L.flare(fix, -L.FORK_LEN, 0.0, -1, L.WIRE_D, 2.8)
+L.flare(fix, -L.FORK_LEN, FIX_TENDON_Y, -1, 2.5, 4.5)
 L.strip_pocket(fix, -8 - 2 - L.PAD_L, -8 - 2)
 for x in (-24, -14):
     for z in (-W2 - 5, W2 + 5):
@@ -114,15 +119,17 @@ report = {}
 for o in (prox, dist, fix, skin, pad):
     report[o.name] = L.stats(o); L.export(o, os.path.join(OUT, o.name + ".stl"))
 report["cheek_bore_measured"] = L.hole_diameter(prox, PROX_LEN, 0, 7.5)
-report["tongue_bore_measured"] = L.hole_diameter(dist, 0, 0, 3.5)
-report["tongue_bore_floor"] = L.bore_floor_z(dist, 0.5, 1.5, W2 + 1)   # inside the bore, clear of the wire channel and pocket
+report["tongue_bore_measured"] = L.hole_diameter(dist, 0, 0, L.PIN_GAP / 2 + 1.0)
+report["core_bore_measured"] = L.hole_diameter(dist, 0, 0, (L.PIN_GAP / 2 + L.CORE_FLOOR) / 2)
+report["tongue_bore_floor"] = L.bore_floor_z(dist, 1.5, 1.5, W2 + 1)   # inside the clearance bore, outside the core bore
+report["core_bore_floor"] = L.bore_floor_z(dist, 0.3, 0.7, W2 + 1)     # inside the core bore, clear of the wire channel and pocket
 # straight channels: a line pushed along each channel axis meets nothing until it should
 report["wire_line_prox"] = L.first_hit_x(prox, 0.0, -10.0)
 report["wire_line_dist"] = L.first_hit_x(dist, 0.0, -10.0)
 report["tendon_line_prox"] = L.first_hit_x(prox, L.TENDON_Y, -10.0)
 report["tendon_line_dist"] = L.first_hit_x(dist, L.TENDON_Y, -10.0)
 report["wire_line_fix"] = L.first_hit_x(fix, 0.0, -40.0)
-report["tendon_line_fix"] = L.first_hit_x(fix, L.TENDON_Y, -40.0)
+report["tendon_line_fix"] = L.first_hit_x(fix, FIX_TENDON_Y, -40.0)
 report["skin_flat_length"] = span
 report["skin_dorsal_run"] = round(DORSAL, 1); report["skin_wrap"] = round(WRAP, 1)
 print("FINGER", json.dumps(report))
@@ -130,7 +137,9 @@ for name in ("finger-proximal", "finger-distal", "finger-fixture", "finger-skin"
     assert report[name]["non_manifold"] == 0, name
 assert abs(report["cheek_bore_measured"] - CHEEK_BORE) < 0.02
 assert abs(report["tongue_bore_measured"] - TONGUE_BORE) < 0.02
+assert abs(report["core_bore_measured"] - CORE_BORE) < 0.02
 assert abs(report["tongue_bore_floor"] - L.PIN_GAP / 2) < 0.05
+assert abs(report["core_bore_floor"] - L.CORE_FLOOR) < 0.05
 assert report["wire_line_prox"] is None and report["wire_line_fix"] is None and report["tendon_line_fix"] is None
 assert report["tendon_line_prox"] is None
 assert report["wire_line_dist"] is None                     # out of the tip pocket

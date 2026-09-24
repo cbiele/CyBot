@@ -3,13 +3,17 @@ finger from base to tip, +y dorsal, z across the width. Knuckle axes run along z
 import bpy, bmesh, math
 from mathutils import Vector, Matrix
 
-PIN_L, PIN_GAP = 10.0, 3.0   # ISO 8752 4 x 10, one pressed flush from each cheek; the gap between their ends
-W, H = 2 * PIN_L + PIN_GAP, 12.0   # finger width across the pins (23), height
+W, H = 23.0, 12.0            # finger width across the pins, height
 CHEEK, TONGUE, GAP = 5.0, 12.0, 0.5
+PIN_L = 8.0                  # ISO 8752 4 x 8 cheek pins, one pressed flush from each cheek face
+PIN_GAP = W - 2 * PIN_L      # 7 mm between the cheek pins' ends: the tongue's core
+CORE_PIN_L, CORE_BORE = 8.0, 2.0   # O2 x 8 stainless dowel pressed into each core face; the cheek pin slides over it
+WIRE_GAP = 3.0               # open width between the two core pins where the wire crosses the axis
+CORE_FLOOR = 2.0             # core bores stop here, 0.5 mm before the wire gap so the press has a solid floor
 R = H / 2                    # rounded knuckle ends
 FORK_LEN = 8.0               # web to axis
 TONGUE_LEN = 7.0             # axis to the wide body
-CHEEK_BORE, TONGUE_BORE = 3.85, 4.2
+CHEEK_BORE, TONGUE_BORE = 3.85, 4.7    # cheek press fit; tongue clearance round the cheek pin (it turns on the core pin)
 TAB_Y0, TAB_Y1, TAB_BACK = 6.3, 7.8, 3.0          # dorsal extension stop over the cheeks
 HEEL_X0, HEEL_X1, HEEL_Y = -8.0, -3.5, -7.2       # palmar flexion stop under the cheeks (~87 deg)
 WIRE_D = 1.8                 # two 30 AWG PTFE wires as a pair, on the knuckle axis line
@@ -80,13 +84,15 @@ def tongue(target, xa, direction=1):
     tx0, tx1 = sorted((xa - s * TAB_BACK, x_body + s * 0.01))
     union(target, box("tab", tx0, tx1, TAB_Y0, TAB_Y1, -W / 2, W / 2))
 
-def bore_tongue(target, xa, direction=1, d=TONGUE_BORE):
-    """Blind pin bores from each tongue face that stop PIN_GAP short of each other, and the open
-    pocket between the pin ends where the wire and the tendon cross the joint."""
-    s = direction; hz = PIN_GAP / 2
+def bore_tongue(target, xa, direction=1, d=TONGUE_BORE, d_core=CORE_BORE):
+    """From each tongue face: a clearance bore round the cheek pin as far as it reaches, then a
+    press bore for the core pin down to just short of the wire gap. The cheek pin slides over the
+    core pin, so the joint turns steel on steel and the tongue never rubs the cheek pin. Between
+    the cores, the open pocket where the wire and the tendon cross the joint."""
+    s = direction; hz = WIRE_GAP / 2; hp = PIN_GAP / 2
     for zs in (1, -1):
-        z0, z1 = sorted((zs * hz, zs * (W / 2 + 1)))
-        cut(target, cyl_z("tongue_bore", xa, 0, d / 2, z0, z1))
+        cut(target, cyl_z("clear_bore", xa, 0, d / 2, *sorted((zs * hp, zs * (W / 2 + 1)))))
+        cut(target, cyl_z("core_bore", xa, 0, d_core / 2, *sorted((zs * CORE_FLOOR, zs * (hp + 1)))))
     # the rear palmar quarter of the tongue, axis to rounded end: it faces the fork web at every
     # angle from extension to 90 deg, so the wire on the axis line bends freely in it
     x0, x1 = sorted((xa - s * (R + 0.5), xa))

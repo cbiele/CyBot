@@ -16,7 +16,7 @@
 
 - Finger frame: x along the finger from base to tip, +y dorsal, z across the width; knuckle axes run along z.
 - Finger width across the pins 23 mm: two 5 mm cheeks, 12 mm tongue, 0.5 mm clearance each side. Height 12 mm. Phalanges 40 mm proximal, 30 mm distal.
-- Pins: two ISO 8752 4 × 10 mm stainless per knuckle, flush from each cheek face, 3 mm apart. Cheek bore 3.90 through; tongue bore 4.37 blind, 4.5 deep (both from the 2026-09-23 coupon, `model/hand/params.json`).
+- Pins: two ISO 8752 4 × 8 mm spring pins per knuckle, flush from each cheek face, over two Ø2 × 8 stainless dowels pressed into the tongue's core (amended again 2026-09-24: the spring pin turns on the dowel). Cheek bore 3.90 through (`model/hand/params.json`); tongue clearance bore 4.7, 2.5 deep; dowel bore 2.0 from 3.5 to 2.0 mm off centre (`core_bore` in params once measured).
 - Tendon channel Ø2 enclosed on the centre plane, 4 mm below the axis line, opening at each tongue into the 3 mm slot between the pin ends up to a flared mouth 4 mm past the axis. Wire channel Ø1.8 enclosed on the axis line, tip to base.
 - Return and grip are one TPU part: an 8 × 1.8 mm dorsal run, a 14 mm wide wrap and palmar pad with a moulded dome over the sensor, a 20 mm T bar with two M2 holes. Printed flat. Wire 30 AWG PTFE, two per sensor.
 - Distal phalanx carries the FSR 400 pocket on its palmar face (phase 5 fits the sensor; phase 1 prints the pocket).
@@ -540,7 +540,7 @@ Also in TPU on the A1: `finger-pad-proximal`, plate face down, wings up; the 1 m
 
 - [ ] **Step 8: Bench — assemble**
 
-1. Distal onto the proximal: tongue into the fork, tab up. Press a 4 × 10 pin flush from each cheek face; each stops on the floor of its blind bore, 3 mm short of the other. Same for the proximal onto the fixture. Check every pin end is flush.
+1. Press a Ø2 × 8 dowel into each face of each tongue until it stops, 6.5 mm proud. Distal onto the proximal: tongue into the fork, tab up. Press a 4 × 8 spring pin flush from each cheek face; it slides over the dowel and stops flush 2.5 mm into the tongue. Same for the proximal onto the fixture. Check every pin end is flush and each joint swings freely with no plastic rubbing.
 2. Hold the finger straight. Push the 30 AWG pair in at the tip pocket and down the axis-line channel: through the distal, across the knuckle gap into the proximal's flared mouth, through the proximal, across the base knuckle and out the back of the fixture. Knot the pair in the tip pocket.
 3. Tendon: 0.5 mm stainless leader (or 20 lb braided line for the first try) pushed in from the back of the fixture along the lower channel, across both knuckle gaps into their flared mouths, out into the pocket in the distal's palm face. Tie a knot or crimp a sleeve there bigger than the Ø2 channel and pull it back against the pocket's rear wall.
 4. Skin: seat the dorsal end in the fixture pocket with CA and let it cure. With the finger straight, lay the run over both tabs and along the distal's back, wrap it around the tip, and bring the pad back along the inside so the dome sits over the sensor pocket. Fix the T bar with two M2 × 4 screws into the pilot holes either side of the anchor pocket. The wrap should be just taut with the finger straight; if it is slack, shorten the dorsal end by 2 mm and re-glue.
@@ -566,7 +566,8 @@ Add the five parts and both coupons to `model/parts-list.md` under a `hand` grou
 
 | Item | Qty | Note |
 |---|---|---|
-| ISO 8752 slotted spring pin 4 × 10, stainless (A2 / 1.4310) | 10 | in hand; two per knuckle, 8 in the full hand |
+| ISO 8752 slotted spring pin 4 × 8, stainless (A2 / 1.4310) | 10 | two per knuckle, 8 in the full hand |
+| Ø2 × 8 stainless dowel pin | 10 | ordered 2026-09-24; two per knuckle |
 | ISO 8752 slotted spring pin 4 × 20, stainless | 2 | in hand; whiffletree |
 | 30 AWG PTFE-insulated wire, silver-plated, two colours | 5 m each | must be PTFE; PVC is too thick for the pin bore |
 | Stainless leader wire, 1×7, 0.45 to 0.5 mm (about 20 lb) | 5 m | nylon-coated is fine |

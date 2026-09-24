@@ -71,9 +71,9 @@ wrist  ── OPH_To_Gripper (Cults, 55 mm tube) ── palm flange Ø62
 | Phalanges | proximal 40 mm, distal 30 mm, 23 mm wide (amended 2026-09-24, was 20), 12 mm tall, PLA |
 | Knuckles | two per finger, 90° curl each, printed stop |
 | Fork / tongue | two 5 mm cheeks, 12 mm tongue, 0.5 mm clearance each side |
-| Pins (amended 2026-09-24) | two ISO 8752 4 × 10 mm stainless per knuckle, one pressed flush from each cheek face; they stop 3 mm apart on the floors of the blind tongue bores |
+| Pins (amended 2026-09-24) | two ISO 8752 4 × 8 mm stainless spring pins per knuckle, one pressed flush from each cheek face, reaching 2.5 mm into the tongue; and two Ø2 × 8 stainless dowels pressed into the tongue's core, standing 6.5 mm proud inside the spring pins. The spring pin turns on the dowel, steel on steel; the tongue never touches the spring pin |
 | Cheek bore | 3.90 mm through (the 2026-09-23 coupon value) |
-| Tongue bore | 4.37 mm (the coupon value), blind from each tongue face, 4.5 mm deep |
+| Tongue bores | Ø4.7 clearance from each face, 2.5 deep, round the spring pin; then Ø2.0 press for the dowel, from 3.5 to 2.0 mm off the centre plane. The 3 mm between the dowel ends is the wire gap |
 | Wire channel | Ø1.8 enclosed, on the axis line down the centre of the finger, straight from the tip to the base; it crosses each knuckle through the gap between the pin ends |
 | Tendon channel | Ø2 enclosed, on the centre plane 4 mm below the axis line, straight the length of each phalanx; at each tongue it opens into a 3 mm slot between the pin ends that runs from the rounded end to a flared mouth 4 mm past the axis |
 | Return | TPU strip 8 × 2 mm along the back, printed flat, clipped into a slot on each phalanx; length sets the open pretension |
@@ -246,10 +246,13 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
   tendon's full tension on a small radius. Wear there is what the phase 1
   hundred cycles look for; a stainless or PTFE liner in the mouth is the
   fix if it grooves.
-- **Blind bore floors.** Only 0.6 mm of PLA separates each bore floor from
-  the wire channel. A bore printed short leaves the pin proud; one printed
-  deep lets the pin end crush the floor into the channel. Check both pins sit
-  flush and the pair still pushes through before the skin goes on.
+- **Dowel grip.** Each Ø2 dowel is held by only 1.5 mm of PLA between the
+  clearance bore's floor and its own; that is the whole of its retention,
+  and the bore prints about 0.1 mm under size, so 2.0 may need a 5/64 in
+  drill. The dowel cannot leave the joint while the spring pin is in, and
+  the spring pin's bore is about 2.3 mm, so expect about 0.15 mm of play at
+  the tongue. A dowel that spins in the tongue instead of the spring pin
+  still turns steel on PLA and still beats the old bore.
 - **Adapter drilling.** Four holes in a Cults part; a reprinted adapter with
   the holes removes the risk of a misdrilled one.
 
