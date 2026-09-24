@@ -59,18 +59,18 @@ def boolean(target, tool, op):
 def union(target, tool): boolean(target, tool, 'UNION')
 def cut(target, tool): boolean(target, tool, 'DIFFERENCE')
 
-def fork(target, xa, with_heels=True):
-    """Add a fork whose axis is at x=xa: two cheeks from the web at xa-FORK_LEN, rounded R
-    about the axis, plus the palmar heel stops. Cheek bore left to bore_cheeks()."""
+def fork(target, xa, with_heels=True, zc=0.0):
+    """Add a fork whose axis is at x=xa, centred on z=zc: two cheeks from the web at xa-FORK_LEN,
+    rounded R about the axis, plus the palmar heel stops. Cheek bore left to bore_cheeks()."""
     for zs in (1, -1):
-        z0, z1 = sorted((zs * (TONGUE / 2 + GAP), zs * W / 2))
+        z0, z1 = sorted((zc + zs * (TONGUE / 2 + GAP), zc + zs * W / 2))
         union(target, box("cheek", xa - FORK_LEN, xa, -R, R, z0, z1))
         union(target, cyl_z("cheek_end", xa, 0, R, z0, z1))
         if with_heels:
             union(target, box("heel", xa + HEEL_X0, xa + HEEL_X1, HEEL_Y, -R + 0.01, z0, z1))
 
-def bore_cheeks(target, xa, d=CHEEK_BORE):
-    cut(target, cyl_z("cheek_bore", xa, 0, d / 2, -W / 2 - 1, W / 2 + 1))
+def bore_cheeks(target, xa, d=CHEEK_BORE, zc=0.0):
+    cut(target, cyl_z("cheek_bore", xa, 0, d / 2, zc - W / 2 - 1, zc + W / 2 + 1))
 
 def tongue(target, xa, direction=1):
     """Add a tongue whose axis is at x=xa, body side toward +x*direction. Rounded end R about
@@ -184,12 +184,12 @@ def bore_floor_z(o, x, y, z_start):
     h = tree.ray_cast(Vector((x, y, z_start)), Vector((0, 0, -1)))[0]; bm.free()
     return round(h.z, 3) if h is not None else None
 
-def first_hit_x(o, y, x_start, r=0.4):
+def first_hit_x(o, y, x_start, r=0.4, z=0.0):
     """Push a line along x at (y, z=0) from x_start: the x of the first thing it meets, or None.
     Four rays r off the axis so the line's own thickness counts and no ray rides an edge."""
     tree, bm = _tree(o); xs = []
     for dy, dz in ((r, 0), (-r, 0), (0, r), (0, -r)):
-        h = tree.ray_cast(Vector((x_start, y + dy, dz)), Vector((1, 0, 0)))
+        h = tree.ray_cast(Vector((x_start, y + dy, z + dz)), Vector((1, 0, 0)))
         if h[0] is not None: xs.append(h[0].x)
     bm.free()
     return round(min(xs), 3) if xs else None
