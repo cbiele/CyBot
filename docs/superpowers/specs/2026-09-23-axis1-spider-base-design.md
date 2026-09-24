@@ -87,6 +87,7 @@ arm axis and the bolts come down from above.
 | Web | Warren diagonals 3 mm thick, four bays |
 | Skin | 2 mm bottom skin, closing the section into a channel |
 | Foot | 90 × 25 × 8 mm, Ø5.5 through the centre with a Ø10 × 3 counterbore on top; outer face flat and vertical |
+| Root plate (added 2026-09-24) | 6 mm end plate closing the root of the channel section, full width and height; the tenon grows out of its outer face and the rails, skin and web start inside it |
 | Tenon | 39.7 × 26.7 × 13.7 mm (0.3 mm under the mortise in every direction), two M5 cross nut pockets 6.5 mm from the end, open at the top so the nuts drop in before the tenon slides home |
 | Mass | about 185 g |
 

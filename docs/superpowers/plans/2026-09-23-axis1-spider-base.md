@@ -33,6 +33,7 @@
 - The ring's bounding box is 190.8 across the flats, not 200.
 - Any face of a tool lying exactly on an existing face breaks the exact boolean: ribs start 1 mm inside the hub wall, the bracket walls are inset 0.3 mm from the rail faces and start 1 mm below the rail top, the plate overhangs the walls by 0.3 mm.
 - `hand_lib.hole_diameter` averages 24 rays and a ray that lands on a polygon vertex passes through; the generator has its own `bore()` using a median over half-step-offset rays.
+- (2026-09-24, from the first arm print) The tenon was unioned to the arm's root face, where only the skin and the rails exist, so it came out as a second shell and printed loose. The arm now starts with a 6 mm root plate the tenon grows out of, rails, skin and web start 1 mm inside it, and every part asserts one connected shell.
 
 ---
 

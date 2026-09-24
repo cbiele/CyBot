@@ -237,6 +237,14 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     (4.37 mm) for free movement, so the params file carries
     `tongue_bore 4.37` (the library defaults stay 3.85/4.2). Sweep
     unchanged after regeneration.
+  - **Spider arm first print 2026-09-24.** `spider-arm.stl` printed
+    overnight on the A1 and came off the plate as two pieces: the tenon
+    was a separate shell in the STL. The generator had unioned it to the
+    arm's root face, where the section is only the 2 mm skin and the two
+    rails at the edges, so nothing touched it, and the manifold check
+    cannot see two clean shells. Fixed with a 6 mm root plate that the
+    tenon grows out of and a one-shell assertion on every base part.
+    Reprint the arm before the tenon dry-fit.
 
 ## 6. Phase A, granular: finishing the 1:23 joint (axis 2)
 

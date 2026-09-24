@@ -31,6 +31,7 @@ HALF_W0, HALF_W1 = 30.0, 45.0                                 # outer faces: 60 
 SKIN_T, WEB_T, BAYS = 2.0, 3.0, 4
 FOOT_L, FOOT_T, FOOT_HOLE_D, FOOT_CB_D, FOOT_CB_DEPTH = 25.0, 8.0, 5.5, 10.0, 3.0
 TENON_L = MORTISE_DEPTH - FIT                                 # 0.3 mm short of the back wall
+ROOT_T = 6.0                                                 # end plate at the root that the tenon grows out of
 NUT_SLOT_X0, NUT_SLOT_W, NUT_SLOT_Z0 = 6.5, 4.5, 12.5          # cross pocket in the tenon for the joint nut; nut corners span 12.65 to 22.35
 BED_DIAG_MAX = 250.0
 
@@ -132,6 +133,7 @@ def ring():
 
 def check_ring(r, report):
     st = L.stats(r); assert st["non_manifold"] == 0, st
+    st["shells"] = shells(r); assert st["shells"] == 1, st
     holes = [bore(r, *polar(HOLE_R, d), RING_H - 1) for d in HOLE_ANGLES]
     assert all(abs(h - HOLE_D) < 0.05 for h in holes), holes
     pockets = [bore(r, *polar(HOLE_R, d), RING_H - RING_PLATE_T - 2) for d in HOLE_ANGLES]
@@ -155,10 +157,14 @@ def arm(name):
     """Two tapered rails on a 2 mm skin with a Warren web, a wide foot with one hole, and the
     tenon that plugs into a ring facet. Root face at x=FACET_X, foot end at FACET_X + ARM_LEN."""
     x0, x1 = FACET_X, FACET_X + ARM_LEN; xf = x1 - FOOT_L
-    a = slab(name, x0, xf, -rail_outer(x0), rail_outer(x0), -rail_outer(xf), rail_outer(xf), 0, SKIN_T, SKIN_T)
+    # the root plate is the only thing with a face at x0; rails, skin and web start 1 mm inside it
+    # (coincident faces break the exact boolean), and the tenon grows out of its outer face
+    a = L.box(name, x0, x0 + ROOT_T, -rail_outer(x0), rail_outer(x0), 0, rail_top(x0))
+    xs0 = x0 + 1.0
+    L.union(a, slab("skin", xs0, xf, -rail_outer(xs0), rail_outer(xs0), -rail_outer(xf), rail_outer(xf), 0, SKIN_T, SKIN_T))
     for s in (-1, 1):
-        yo0, yo1 = s * rail_outer(x0), s * rail_outer(xf); yi0, yi1 = yo0 - s * RAIL_T, yo1 - s * RAIL_T
-        L.union(a, slab("rail", x0, xf, min(yo0, yi0), max(yo0, yi0), min(yo1, yi1), max(yo1, yi1), 0, rail_top(x0), rail_top(xf)))
+        yo0, yo1 = s * rail_outer(xs0), s * rail_outer(xf); yi0, yi1 = yo0 - s * RAIL_T, yo1 - s * RAIL_T
+        L.union(a, slab("rail", xs0, xf, min(yo0, yi0), max(yo0, yi0), min(yo1, yi1), max(yo1, yi1), 0, rail_top(xs0), rail_top(xf)))
     nodes = []
     for k in range(BAYS + 1):
         x = x0 + (xf - x0) * k / BAYS; s = -1 if k % 2 == 0 else 1
@@ -168,14 +174,27 @@ def arm(name):
     L.union(a, L.box("foot", xf - 0.01, x1, -HALF_W1, HALF_W1, 0, FOOT_T))
     L.cut(a, L.cyl_z("foot_hole", x1 - FOOT_L / 2, 0, FOOT_HOLE_D / 2, -1, FOOT_T + 1))
     L.cut(a, L.cyl_z("foot_cb", x1 - FOOT_L / 2, 0, FOOT_CB_D / 2, FOOT_T - FOOT_CB_DEPTH, FOOT_T + 1))
-    L.union(a, L.box("tenon", x0 - TENON_L, x0 + 0.01, -(MORTISE_W - FIT) / 2, (MORTISE_W - FIT) / 2, MORTISE_Z0 + FIT / 2, MORTISE_Z1 - FIT / 2))
+    L.union(a, L.box("tenon", x0 - TENON_L, x0 + 1.0, -(MORTISE_W - FIT) / 2, (MORTISE_W - FIT) / 2, MORTISE_Z0 + FIT / 2, MORTISE_Z1 - FIT / 2))
     for y in (-JOINT_BOLT_Y, JOINT_BOLT_Y):
         L.cut(a, L.cyl_between("bolt", (x0 - TENON_L - 1, y, JOINT_BOLT_Z), (x0 + 3, y, JOINT_BOLT_Z), JOINT_BOLT_D / 2))
         L.cut(a, L.box("nut_slot", x0 - TENON_L + NUT_SLOT_X0, x0 - TENON_L + NUT_SLOT_X0 + NUT_SLOT_W, y - NUT_AF / 2, y + NUT_AF / 2, NUT_SLOT_Z0, MORTISE_Z1 + 1))
     L.finish(a); return a
 
+def shells(o):
+    """Number of separate connected shells: a part that prints as one piece has exactly one."""
+    bm = bmesh.new(); bm.from_mesh(o.data); seen = set(); n = 0
+    for v in bm.verts:
+        if v.index in seen: continue
+        n += 1; stack = [v]
+        while stack:
+            u = stack.pop()
+            if u.index in seen: continue
+            seen.add(u.index); stack.extend(e.other_vert(u) for e in u.link_edges)
+    bm.free(); return n
+
 def check_arm(a, report):
     st = L.stats(a); assert st["non_manifold"] == 0, st
+    st["shells"] = shells(a); assert st["shells"] == 1, st
     diag = diagonal_extent(a); assert max(diag) <= BED_DIAG_MAX, diag
     x0, x1 = FACET_X, FACET_X + ARM_LEN
     ys = [v.co.y for v in a.data.vertices if v.co.x < x0 - 3]
@@ -233,6 +252,7 @@ def pad():
 
 def check_pad(p, report):
     st = L.stats(p); assert st["non_manifold"] == 0, st
+    st["shells"] = shells(p); assert st["shells"] == 1, st
     assert PAD_T + PEG_L + HEAD_T < PAD_T + FOOT_T and PAD_T + PEG_L > PAD_T + FOOT_T - FOOT_CB_DEPTH, "head must sit inside the counterbore"
     report["spider-pad"] = st
 
