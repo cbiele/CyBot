@@ -252,6 +252,15 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     Ø2 × 8 stainless dowel pressed into the tongue's core with 4 × 8
     spring pins sliding over it (steel on steel); the tongue bore becomes
     a 4.7 clearance. Dowels ordered, fit to be checked when they arrive.
+  - **Dowel knuckles 2026-09-24 (later).** Test print of the proximal and
+    distal: one Ø2 × 18 dowel per knuckle instead of two 8 mm ones. The
+    tongue was drilled Ø2 right through, the dowel pushed in with the
+    knuckle assembled, then a 4 × 8 spring pin driven in from each cheek
+    over the dowel's ends. Very smooth movement. The model changes to a
+    through bore and an 18 mm dowel; the sensor wire can no longer cross on
+    the axis and moves to a slot over the dowel (see the wire entry that
+    follows). Next: the palm front plate and the pair test (phase 2 plan
+    Task 3).
 
 ## 6. Phase A, granular: finishing the 1:23 joint (axis 2)
 
