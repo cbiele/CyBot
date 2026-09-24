@@ -94,27 +94,58 @@ knuckles takes about 16 mm of tendon.
 
 One rigid curved segment, 60 mm long, 20 mm wide, PLA, no knuckle. Its hub
 takes the 28BYJ-48's 5 mm D-shaft on one side and carries a hollow Ø6 stub on
-the other, running in a bore in the far palm wall, through which the thumb's
-sensor wire passes on the axis. A printed boss on the palm wall is the hard
-stop at the pinch angle: the thumb drives to the stop, the pair closes against
-it, and the pinch load goes into PLA instead of the motor's plastic gears.
+the other, running in a bore in the far wall of its cradle, through which the
+thumb's sensor wire passes on the axis. A printed boss on the cradle is the
+hard stop at the pinch angle: the thumb drives to the stop, the pair closes
+against it, and the pinch load goes into PLA instead of the motor's plastic
+gears. The cradle (amended 2026-09-24) is its own print, bolted to the lower
+front of the palm's front plate (§5.3) on four M3, with the axle across the
+hand parallel to the knuckle pins along the palm's front bottom edge, so the
+thumb sweeps up in front of the palm pad to meet the curled fingertips. Its
+length and the pinch point are set against printed, curled fingers before the
+cradle is drawn.
 
-### 5.3 Palm
+### 5.3 Palm (amended 2026-09-24)
 
-Two PLA halves split on the spool axis, closed with two M3 × 20 and nuts.
-About 60 mm wide, 65 mm deep, 50 mm tall on a Ø62 rear flange. Contents:
+Three PLA prints, each flat with its bores vertical, instead of two halves
+split on the spool axis. About 68 mm wide, 65 mm deep, 50 mm tall on a Ø62
+rear flange. The palm frame is the finger frame of a finger on the centre
+line: x along the fingers, +y dorsal, z across the hand; the two finger axes
+are at x = 0, y = 0, z = ±22.5.
 
-- the pair drive's gearbox on a web, with the spool and whiffletree in
-  front of it (§5.4)
-- the 28BYJ-48 by its two ear tabs on the inside of the thumb-side wall, M4
-  × 8 into printed bosses, shaft through the wall
-- palm pad pocket on the front face between the finger roots, FSR 402 under
-  2 mm TPU
-- ADS1115 slot behind the palm pad, with a cavity where all four sensor pairs
-  and the 3.3 V and ground gather
-- rear cavity for the NEMA11 leads, the thumb leads and the QWIIC cable to
-  exit together through a Ø14 hole in the flange, which lines up with the
-  Ø14 hole already in the adapter's rear wall
+**Front plate**, 68 × 50 × 12 mm with the two fork cheek pairs standing 8 mm
+proud of its front face. It is the bench fixture's fork twice over, on the
+same library call, and it carries everything the fingers and the thumb bear
+on:
+
+- two forks on 45 mm centres, outer cheeks flush with the plate's ends,
+  cheek bores at the coupon value; each finger's tendon channel (Ø2.5, flared,
+  5 mm below the axis line as on the fixture) and wire channel (Ø1.8, flared,
+  on the axis line) run straight back through the plate to its rear face
+- palm pad pocket on the front face between the inner cheeks: Ø19 × 0.6 for
+  the FSR 402, centred 2 mm below the axis line, its tail through a 7 × 1.2
+  slot to the rear face; 2 mm TPU pad over it (§5.5)
+- four Ø3.2 through-holes on a 56 × 40 rectangle for the rear shell, heads
+  counterbored Ø6 × 3 in the front face; the bench foot bolts to the same
+  four holes, so the pair test also proves the shell interface
+- four Ø2.8 M3 thread-forming pilots in the front face, 8 deep, on a 40 × 10
+  rectangle 12 to 22 mm below the axis line, for the thumb cradle (§5.2)
+
+**Rear shell**, bolted behind the plate: the Ø62 flange (§5.6), the pair
+drive's gearbox on a 4 mm web with the spool in front of it (§5.4), the
+whiffletree on a 4 × 20 spring pin between the spool and the plate, the
+ADS1115 slot behind the pad with a cavity where all four sensor pairs and the
+3.3 V and ground gather, and a rear cavity for the NEMA11 leads, the thumb
+leads and the QWIIC cable to exit together through a Ø14 hole in the flange
+that lines up with the Ø14 hole already in the adapter's rear wall. The
+28BYJ-48 no longer lives in the shell; it is on the thumb cradle.
+
+**Thumb cradle** (§5.2), bolted to the plate's lower front.
+
+Bench parts for phase 2: a foot that bolts to the plate's rear face with four
+M3 × 20 and clamps to the bench, with pass-through holes for both tendons and
+both wire pairs, and a 50 mm whiffletree bar with a hole at each end for the
+finger tendons and one in the middle for a hand-pulled line.
 
 ### 5.4 Pair drive
 
@@ -124,7 +155,7 @@ About 60 mm wide, 65 mm deep, 50 mm tall on a Ø62 rear flange. Contents:
 | Gearbox | 46 × 32 × 30 mm; output at right angles to the motor: Ø8 shaft with a 7 mm flat, 20 mm long, on a Ø15.3 × 2 boss; 4 × M3, 5 deep, on 33 × 20 around the shaft |
 | Self-locking | single-start steel worm at 20:1, so the grasp holds unpowered (checked in acceptance 4) |
 | Spool | Ø16, on the output shaft with an M3 grub screw on the flat, parallel to the finger knuckles; one tendon |
-| Whiffletree | 20 mm floating bar on a 4 × 20 spring pin; spool tendon at the centre, finger tendons at the ends |
+| Whiffletree | 50 mm floating bar on a 4 × 20 spring pin (amended 2026-09-24: the finger tendons run straight back on 45 mm centres); spool tendon at the centre, finger tendons at the ends |
 | Close time | about 1.5 s at 300 rpm (a third of a spool turn) |
 | Tension | about 0.8 N·m at the shaft, so up to about 50 N per finger at full current; the current setting is the force limit |
 
@@ -289,9 +320,10 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
 ## 11. Phasing
 
 1. Coupon, then one pair finger with TPU return and a wire through the knuckles.
-2. Both pair fingers, palm shell, whiffletree, hand-turned spool.
-3. Worm-gear NEMA11 on the palm web, spool, U axis in `configure.py`, close
-   and hold.
+2. Both pair fingers on the palm front plate with the bench foot, whiffletree
+   bar pulled by hand (amended 2026-09-24; the shell and spool move to 3).
+3. Rear shell: worm-gear NEMA11 on the web, spool, whiffletree on its pin,
+   U axis in `configure.py`, close and hold.
 4. 28BYJ-48 conversion, thumb, hard stop, V axis, pinch.
 5. Caps, skins, palm pad, ADS1115 in the palm, tactile spec phases.
 6. Adapter drilled or reprinted, hand on the wrist.
