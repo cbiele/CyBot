@@ -27,6 +27,13 @@
 - The mortise keeps a 4 mm sill at the bottom of the boss so the tenon bears top and bottom: mortise 40 × 27 (z 4 to 31), tenon 39.7 × 26.7.
 - The bracket walls stand on the rails, following the rails' plan taper, and the belt clearance is a window through both walls (x 108 to 136, z 58 to 84 in the ground frame) instead of a cut-down near wall, because the belt runs cross the wall plane between 108 and 125 mm radius.
 
+**Found during execution (the code below is as written; these are what changed while running it):**
+- Radial bolts cannot pass through an open mortise, the boss has no material there. The mortise is blind with a 4 mm back wall (boss 18 deep, mortise 14), the bolts go through that wall and sit 28 mm apart (y ±14) so their holes stay inside it, and they shorten to M5 × 20. Tenon 13.7 long, nut slots 6.5 mm from its end.
+- Tools placed by `cyl_between` carry a world matrix, so `turned()` composes the facet rotation onto the matrix rather than setting `rotation_euler`.
+- The ring's bounding box is 190.8 across the flats, not 200.
+- Any face of a tool lying exactly on an existing face breaks the exact boolean: ribs start 1 mm inside the hub wall, the bracket walls are inset 0.3 mm from the rail faces and start 1 mm below the rail top, the plate overhangs the walls by 0.3 mm.
+- `hand_lib.hole_diameter` averages 24 rays and a ray that lands on a polygon vertex passes through; the generator has its own `bore()` using a median over half-step-offset rays.
+
 ---
 
 ## File structure

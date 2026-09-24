@@ -69,9 +69,9 @@ stated. Arms at 0°, 90°, 180°, 270°; the motor arm at 180°, the Cults side.
 | Envelope | Ø200 outside, Ø50 centre hole, 35 mm tall |
 | Construction | 4 mm top plate, 3 mm outer and inner walls, eight radial ribs, open underneath |
 | Base holder bolts | 8 × Ø5.5 on Ø141 at the Cults angles: pairs at 11.3° and 33.7° from each 90° step; M5 hex nut pocket under each, reached from the open bottom; Cults M5 × 20 |
-| Arm facets | at 0/90/180/270°, the outer wall flattened at 97 mm radius over 60 mm width and thickened to a 15 mm deep boss |
-| Mortise | 40 wide × 31 tall through each boss, directly under the top plate |
-| Joint bolts | 2 × M5 × 30 per facet, radial, heads inside the ring cavity, at mid-height, 36 mm apart, into cross nut pockets in the tenon |
+| Arm facets | at 0/90/180/270°, the outer wall flattened over 60 mm width (which puts the face at 95.4 mm radius) and thickened to an 18 mm deep boss |
+| Mortise | 40 wide × 27 tall (z 4 to 31, a 4 mm sill below and the top plate above), 14 mm deep, blind: a 4 mm back wall closes it toward the cavity |
+| Joint bolts | 2 × M5 × 20 per facet, radial through the back wall, heads inside the ring cavity, at mid-height, 28 mm apart so the holes clear the mortise cheeks, into cross nut pockets in the tenon |
 | Mass | about 300 g |
 
 The base holder's bottom flange is 10 mm thick with the Ø5.5 holes straight
@@ -87,7 +87,7 @@ arm axis and the bolts come down from above.
 | Web | Warren diagonals 3 mm thick, four bays |
 | Skin | 2 mm bottom skin, closing the section into a channel |
 | Foot | 90 × 25 × 8 mm, Ø5.5 through the centre with a Ø10 × 3 counterbore on top; outer face flat and vertical |
-| Tenon | 40 × 31 × 15 mm less 0.3 mm on width and height, two M5 cross nut pockets 10 mm from the end |
+| Tenon | 39.7 × 26.7 × 13.7 mm (0.3 mm under the mortise in every direction), two M5 cross nut pockets 6.5 mm from the end, open at the top so the nuts drop in before the tenon slides home |
 | Mass | about 185 g |
 
 Fits the A1 laid on the bed diagonal: length plus foot width over 1.41 is
@@ -99,14 +99,14 @@ The plain arm plus a bracket. Radii are from the base axis.
 
 | Item | Value |
 |---|---|
-| Walls | 2 × 5 mm, on the rails, from 112 to 177 mm radius, vertical |
+| Walls | 2 × 4.4 mm standing on the rails (inset 0.3 mm from the rail faces), from 108 to 177 mm radius, vertical |
 | Plate | 5 mm, top face 53 mm above the ring top, underside at 48 |
 | Motor axis | 139 mm radius, the Cults distance, so the ~620-3M belt estimate stands |
 | Pattern | NEMA17, 31 mm square, four 3.4 × 8 mm radial slots for ±4 mm belt tension |
 | Pilot | Ø23 |
 | Motor | 17HS8401B on top, flange on the plate, body 53 to 101 mm, rear stub to 111 mm, leads outboard |
 | Pulley | 3M 30T, 5 mm bore, on the 24 mm shaft below the plate; 6 mm hub against the plate underside at 42 to 48, teeth 30 to 42 mm above the ring top, shaft tip at 29 |
-| Belt clearance | near wall cut down to 20 mm above the ring top over a 30 mm width on the belt line; the wall at 112 mm radius is 27 mm clear of the Ø170 skirt |
+| Belt clearance | the belt runs cross the wall plane between 108 and 125 mm radius, so both walls have a window from 108 to 136 mm radius between 23 and 49 mm above the ring top; the plate bridges it. The wall at 108 mm radius is 23 mm clear of the Ø170 skirt |
 
 ### 5.4 Foot pad plug (×4, TPU)
 
@@ -123,7 +123,7 @@ arms at ground level.
 
 | Part | Qty | Note |
 |---|---|---|
-| M5 × 30 + nut | 8 | arm joints |
+| M5 × 20 + nut | 8 | arm joints, through the 4 mm back wall of each mortise |
 | M5 × 20 + nut | 8 | base holder, already on the Cults list |
 | M3 × 10 | 4 | motor |
 | 3M 30T pulley, 5 mm bore, 12 mm | 1 | phase D list; confirm one is in hand |
@@ -144,7 +144,9 @@ rotating base placed on it. Self-tests, all asserted:
   height, hub length and shaft length, and the shaft tip below the teeth
 - a ray cast along the belt line from the pulley tangent to the rotating base
   band hits nothing but the two
-- mortise minus tenon equals 0.3 mm in width and height
+- mortise minus tenon equals 0.3 mm in width, height and depth
+- bore measurements use a median over rays offset from the polygon vertices, because a ray that
+  lands exactly on a vertex passes through the mesh
 
 ## 7. Print rules
 

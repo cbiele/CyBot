@@ -75,6 +75,10 @@ Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = 
 | gripper | grip | 83 x 41 x 10 | 16 | fits |
 | gripper | mainHolder | 95 x 95 x 73 | 126 | fits |
 | electronics | octopus-pro-plate (tools/blender/octopus_plate.py) | 184 x 110 x 12 | 70 | fits |
+| base | spider-ring (tools/blender/spider_base.py) | 191 x 191 x 35 | ~300 | fits, top plate down |
+| base | spider-arm ×3 | 274 x 90 x 35 | ~185 each | A1 on the bed diagonal (239 mm) |
+| base | spider-arm-motor | 274 x 90 x 88 | ~230 | A1 on the bed diagonal (239 mm) |
+| base | spider-pad ×4 (TPU) | 24 x 24 x 13 | ~3 each | A1 |
 
 Total solid volume of all listed parts: 6769 cm3 (before infill; at 40 % infill roughly 4.2 kg of PLA counting walls).
 
