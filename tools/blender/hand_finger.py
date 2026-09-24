@@ -20,47 +20,53 @@ L.tongue(prox, 0.0, direction=1)
 L.fork(prox, PROX_LEN)
 L.bore_tongue(prox, 0.0, direction=1, d=TONGUE_BORE)
 L.bore_cheeks(prox, PROX_LEN, CHEEK_BORE)
-L.tendon_groove(prox, 0.0, PROX_LEN - L.FORK_LEN + 0.1)
 L.strip_pocket(prox, PROX_LEN - L.FORK_LEN - 2 - L.PAD_L, PROX_LEN - L.FORK_LEN - 2)
 PAD_X0, PAD_X1 = 12.0, 26.0                        # snap-on grip pad on the inside of the proximal
 L.snap_grooves(prox, PAD_X0, PAD_X1)
 L.snap_dimples(prox, PAD_X0, PAD_X1)
-# wire: out of the tip pin's open end into a turn pocket on the cheek face, then one straight
-# enclosed tunnel down to the base cavity (straight so the pair can be pushed through)
-L.cut(prox, L.box("turn_pocket", PROX_LEN - 4.5, PROX_LEN + 2.2, -1.6, 1.6, W2 - 2.2, W2 + 0.1))
-L.cut(prox, L.cyl_between("tunnel", (PROX_LEN - 4.2, 0, W2 - 1.4), (3.5, 0, 0.6), L.WIRE_D / 2))
+# two straight enclosed channels the length of the body: the sensor pair on the axis line and the
+# tendon 4 mm below it, both opening into the base tongue's pocket and out of the fork web. With
+# the finger straight both run in one line from the fixture to the distal, so they can be pushed in.
+WEB_X = PROX_LEN - L.FORK_LEN
+L.channel(prox, 0.0, -1.0, WEB_X + 1.0, L.WIRE_D)
+L.channel(prox, L.TENDON_Y, L.TENDON_MOUTH - 0.5, WEB_X + 1.0, L.TENDON_D)
+L.flare(prox, 0.0, 0.0, 1, L.WIRE_D, 2.8)
+L.flare(prox, L.TENDON_MOUTH, L.TENDON_Y, 1, L.TENDON_D, 4.0)
+L.flare(prox, WEB_X, 0.0, -1, L.WIRE_D, 2.8)
+L.flare(prox, WEB_X, L.TENDON_Y, -1, L.TENDON_D, 4.0)
 L.finish(prox)
 
 # ---- distal phalanx: base tongue at x=0, rounded tip at x=DIST_LEN. The TPU skin wraps the
-# tip and covers the palmar face, so the sensor pocket, its tail cavity and the skin's two
-# M2 anchor holes are on the palmar side; the tendon anchors just past the knuckle.
+# tip and covers the palmar face, so the sensor pocket, its tail cavity, the tendon anchor and
+# the skin's two M2 anchor holes are all on the palmar side.
 dist = L.box("finger-distal", L.TONGUE_LEN, DIST_LEN - R, -R, R, -W2, W2)
 L.union(dist, L.cyl_z("tip", DIST_LEN - R, 0, R, -W2, W2))
 L.tongue(dist, 0.0, direction=1)
 L.bore_tongue(dist, 0.0, direction=1, d=TONGUE_BORE)
-TENDON_ANCHOR_X = 14.0
-L.tendon_groove(dist, 0.0, TENDON_ANCHOR_X + 1.0)
-L.cut(dist, L.cyl_between("anchor_hole", (TENDON_ANCHOR_X, -R - 1, 0), (TENDON_ANCHOR_X, R + 1, 0), 0.75))
-L.cut(dist, L.box("ferrule", TENDON_ANCHOR_X - 1.5, TENDON_ANCHOR_X + 1.5, R - 2.0, R + 0.5, -1.5, 1.5))
+# tendon: enclosed channel from the tongue's mouth to an open pocket in the palmar face, where a
+# knot or crimp too big for the channel stops against the pocket's rear wall
+ANCHOR_X0, ANCHOR_X1 = 8.0, 15.5
+L.channel(dist, L.TENDON_Y, L.TENDON_MOUTH - 0.5, ANCHOR_X0 + 0.5, L.TENDON_D)
+L.flare(dist, L.TENDON_MOUTH, L.TENDON_Y, 1, L.TENDON_D, 4.0)
+L.cut(dist, L.box("anchor_pocket", ANCHOR_X0, ANCHOR_X1, -R - 0.1, L.TENDON_Y + L.TENDON_D / 2 + 0.2, -1.5, 1.5))
 # skin anchor: two M2 pilot holes on the palmar face, either side of the tendon groove
 SKIN_EAR_X, SKIN_EAR_Z = 10.0, 6.0
 for z in (-SKIN_EAR_Z, SKIN_EAR_Z):
     L.cut(dist, L.cyl_between("ear_pilot", (SKIN_EAR_X, -R - 1, z), (SKIN_EAR_X, -R + 4, z), 0.8))
 # FSR 400 pocket on the palmar face (7.6 mm body). Its tail runs toward the tip in a 0.6 mm
 # groove round the R6 end to a solder pocket at the very tip, where the wire pair comes out of
-# one straight channel from the knuckle cavity; the pair is pushed in at the tip, knotted there,
-# and soldered to the tail last. All of it sits under the skin's tip wrap.
+# the straight channel on the axis line; the pair is pushed in at the tip, knotted there, and
+# soldered to the tail last. All of it sits under the skin's tip wrap.
 SENSOR_X = 21.0
 TIP_C = DIST_LEN - R                                  # centre of the rounded tip
 L.cut(dist, L.cyl_between("fsr_pocket", (SENSOR_X, -R - 1, 0), (SENSOR_X, -R + 0.6, 0), 4.0))
 band = L.cyl_z("tail_band", TIP_C, 0, R + 0.1, -2.5, 2.5)
 L.boolean(band, L.cyl_z("band_in", TIP_C, 0, R - 0.6, -3, 3), 'DIFFERENCE')
-L.boolean(band, L.box("band_clip", TIP_C, TIP_C + R + 1, -R - 1, -1.0, -3, 3), 'INTERSECT')
+L.boolean(band, L.box("band_clip", TIP_C, TIP_C + R + 1, -R - 1, 0.5, -3, 3), 'INTERSECT')
 L.cut(dist, band)
-a = math.radians(-30)                                  # solder pocket 30 deg below the tip centreline
-L.cut(dist, L.cyl_between("tip_pocket", (TIP_C + 4.0 * math.cos(a), 4.0 * math.sin(a), 2.5),
-                          (TIP_C + 8.5 * math.cos(a), 8.5 * math.sin(a), 2.5), 2.25))
-L.cut(dist, L.cyl_between("tip_channel", (DIST_LEN + 1.0, -3.0, 3.5), (3.4, 0.0, 1.2), L.WIRE_D / 2))
+L.cut(dist, L.cyl_between("tip_pocket", (TIP_C + 4.0, 0, 0), (TIP_C + R + 2.5, 0, 0), 2.25))
+L.channel(dist, 0.0, -1.0, TIP_C + 4.5, L.WIRE_D)
+L.flare(dist, 0.0, 0.0, 1, L.WIRE_D, 2.8)
 L.finish(dist)
 
 # ---- snap-on TPU grip pad for the proximal's inside face, modelled in place then exported
@@ -68,16 +74,17 @@ pad = L.snap_pad("finger-pad-proximal", PAD_X1 - PAD_X0)
 pad.location.x = PAD_X0
 L.finish(pad)
 
-# ---- bench fixture: a block with the palm-side fork for the proximal base, a tendon exit
-# hole, a strip pocket, and a foot to clamp to the bench
+# ---- bench fixture: a block with the palm-side fork for the proximal base, the tendon and
+# wire channels continued out of the back, a strip pocket, and a foot to clamp to the bench
 fix = L.box("finger-fixture", -30, -L.FORK_LEN, -R, R, -W2, W2)
 L.fork(fix, 0.0)
 L.bore_cheeks(fix, 0.0, CHEEK_BORE)
 # the foot stays behind the fork (x <= -8.5) so the curling finger never sweeps into it
 L.union(fix, L.box("foot", -30, -8.5, -R - 12, -R + 0.01, -W2 - 10, W2 + 10))
-L.cut(fix, L.cyl_between("tendon_exit", (-8, -R + 1, 0), (-31, -R + 1, 0), 1.5))
+L.channel(fix, L.TENDON_Y, -L.FORK_LEN + 1, -31, 2.5)
+L.channel(fix, 0.0, -L.FORK_LEN + 1, -31, L.WIRE_D)
+L.flare(fix, -L.FORK_LEN, 0.0, -1, L.WIRE_D, 2.8)
 L.strip_pocket(fix, -8 - 2 - L.PAD_L, -8 - 2)
-L.cut(fix, L.box("wire_groove", -30.1, 0.1, -L.WIRE_D / 2, L.WIRE_D / 2, W2 - L.WIRE_D, W2 + 0.1))
 for x in (-24, -14):
     for z in (-W2 - 5, W2 + 5):
         L.cut(fix, L.cyl_between("clamp", (x, -R - 12.1, z), (x, -R + 0.1, z), 2.2))
@@ -108,10 +115,23 @@ for o in (prox, dist, fix, skin, pad):
     report[o.name] = L.stats(o); L.export(o, os.path.join(OUT, o.name + ".stl"))
 report["cheek_bore_measured"] = L.hole_diameter(prox, PROX_LEN, 0, 7.5)
 report["tongue_bore_measured"] = L.hole_diameter(dist, 0, 0, 3.5)
+report["tongue_bore_floor"] = L.bore_floor_z(dist, 0.5, 1.5, W2 + 1)   # inside the bore, clear of the wire channel and pocket
+# straight channels: a line pushed along each channel axis meets nothing until it should
+report["wire_line_prox"] = L.first_hit_x(prox, 0.0, -10.0)
+report["wire_line_dist"] = L.first_hit_x(dist, 0.0, -10.0)
+report["tendon_line_prox"] = L.first_hit_x(prox, L.TENDON_Y, -10.0)
+report["tendon_line_dist"] = L.first_hit_x(dist, L.TENDON_Y, -10.0)
+report["wire_line_fix"] = L.first_hit_x(fix, 0.0, -40.0)
+report["tendon_line_fix"] = L.first_hit_x(fix, L.TENDON_Y, -40.0)
 report["skin_flat_length"] = span
 report["skin_dorsal_run"] = round(DORSAL, 1); report["skin_wrap"] = round(WRAP, 1)
+print("FINGER", json.dumps(report))
 for name in ("finger-proximal", "finger-distal", "finger-fixture", "finger-skin", "finger-pad-proximal"):
     assert report[name]["non_manifold"] == 0, name
 assert abs(report["cheek_bore_measured"] - CHEEK_BORE) < 0.02
 assert abs(report["tongue_bore_measured"] - TONGUE_BORE) < 0.02
-print("FINGER", json.dumps(report))
+assert abs(report["tongue_bore_floor"] - L.PIN_GAP / 2) < 0.05
+assert report["wire_line_prox"] is None and report["wire_line_fix"] is None and report["tendon_line_fix"] is None
+assert report["tendon_line_prox"] is None
+assert report["wire_line_dist"] is None                     # out of the tip pocket
+assert abs(report["tendon_line_dist"] - ANCHOR_X1) < 0.1    # stops at the anchor pocket's end wall

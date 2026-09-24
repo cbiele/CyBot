@@ -2,7 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Print-validate the knuckle: find the cheek bore that grips an ISO 8752 4 × 20 spring pin in PLA, then print one pair finger on a bench fixture that curls on a string, springs back on its TPU skin, and carries a sensor wire through both pins for 100 cycles. The skin is one TPU part: return spring along the back, wrap around the tip, grip pad over the sensor pocket on the inside.
+**Goal:** Print-validate the knuckle: find the cheek bore that grips an ISO 8752 4 mm spring pin in PLA, then print one pair finger on a bench fixture that curls on a string, springs back on its TPU skin, and carries a sensor wire through both knuckles for 100 cycles.
+
+> **Amended 2026-09-24.** The knuckle is now two 4 × 10 pins per joint with a 3 mm gap, the sensor pair runs in one straight Ø1.8 channel on the axis line and the tendon in one straight Ø2 channel 4 mm below it (spec §5.1 and §5.5). The code blocks in Tasks 2 and 3 are the 2026-09-22 version; `tools/blender/hand_lib.py` and `hand_finger.py` in the repo are current. The constraints, assembly steps and BOM below are updated. The skin is one TPU part: return spring along the back, wrap around the tip, grip pad over the sensor pocket on the inside.
 
 **Architecture:** Geometry is generated headlessly in Blender from one shared library (`hand_lib.py`) so the palm in later phases reuses the same fork, tongue, bore and groove definitions. Each generator script is also its own test: it measures the bores it cut and asserts manifold meshes, and a separate check script assembles the finger at a sweep of angles and asserts zero interference between the stops and contact beyond them. The bench steps are the physical tests and their results are written back into the repo.
 
@@ -13,12 +15,12 @@
 ## Global Constraints
 
 - Finger frame: x along the finger from base to tip, +y dorsal, z across the width; knuckle axes run along z.
-- Finger width across the pin 20 mm: two 5 mm cheeks, 9 mm tongue, 0.5 mm clearance each side. Height 12 mm. Phalanges 40 mm proximal, 30 mm distal.
-- Pin ISO 8752 4 × 20 mm stainless 1.4310. Cheek bore 3.85 mm nominal, coupon at 3.80, 3.85, 3.90. Tongue bore 4.2 mm.
-- Tendon channel 2 mm on the palm side, 6 mm off each knuckle axis (it rides the R6 rounded tongue end). Wire channel 1.5 mm. Wire chamber 4 mm.
+- Finger width across the pins 23 mm: two 5 mm cheeks, 12 mm tongue, 0.5 mm clearance each side. Height 12 mm. Phalanges 40 mm proximal, 30 mm distal.
+- Pins: two ISO 8752 4 × 10 mm stainless per knuckle, flush from each cheek face, 3 mm apart. Cheek bore 3.90 through; tongue bore 4.37 blind, 4.5 deep (both from the 2026-09-23 coupon, `model/hand/params.json`).
+- Tendon channel Ø2 enclosed on the centre plane, 4 mm below the axis line, opening at each tongue into the 3 mm slot between the pin ends up to a flared mouth 4 mm past the axis. Wire channel Ø1.8 enclosed on the axis line, tip to base.
 - Return and grip are one TPU part: an 8 × 1.8 mm dorsal run, a 14 mm wide wrap and palmar pad with a moulded dome over the sensor, a 20 mm T bar with two M2 holes. Printed flat. Wire 30 AWG PTFE, two per sensor.
 - Distal phalanx carries the FSR 400 pocket on its palmar face (phase 5 fits the sensor; phase 1 prints the pocket).
-- Proximal phalanx carries a snap-on TPU grip pad on its inside face: 14 mm long, 1.8 mm plate with a 2.6 mm through-slot for the tendon, 2 mm wings up the sides and 1 mm lips into side grooves at y −4 to −2.5, plus two Ø2.4 snap dots standing 1 mm proud of its inner face on a diagonal, into Ø2.7 dimples in the phalanx's palmar face.
+- Proximal phalanx carries a snap-on TPU grip pad on its inside face: 14 mm long, 1.8 mm plate, 2 mm wings up the sides and 1 mm lips into side grooves at y −4 to −2.5, plus two Ø2.4 snap dots standing 1 mm proud of its inner face on a diagonal, into Ø2.7 dimples in the phalanx's palmar face.
 - Flexion stop about 87°, extension stop about 3° of hyperextension, both printed (spec 5.1 says "printed stop").
 - Print rule (spec 7): phalanges print lying on a cheek so the pin bores are vertical; no supports anywhere.
 - Repo conventions: scripts in `tools/blender/`, one `ROOT`-style absolute path, exports under `model/`, PNG renders gitignored, one logical change per commit, ask before committing.
@@ -538,13 +540,12 @@ Also in TPU on the A1: `finger-pad-proximal`, plate face down, wings up; the 1 m
 
 - [ ] **Step 8: Bench — assemble**
 
-1. Thread two 30 AWG PTFE wires through a 4 × 20 pin; repeat for a second pin.
-2. Distal onto the proximal: tongue into the fork, wires from the distal's wire channel into the chamber; push the pin through with the slot toward the tongue, wires exiting the slot into the chamber, wire ends out the pin end on the +z face. Press the pin flush.
-3. Proximal onto the fixture the same way; the proximal's wires run in the +z face groove from the tip pin end, down the diving channel into the base chamber, through the base pin's slot, and out that pin's end at the fixture.
-4. Tendon: 0.5 mm stainless leader (or 20 lb braided line for the first try) from the fixture's exit hole, along the palmar groove, over both rounded tongue ends, up the anchor hole at the distal tip, crimped or knotted in the ferrule pocket.
-5. Skin: seat the dorsal end in the fixture pocket with CA and let it cure. With the finger straight, lay the run over both tabs and along the distal's back, wrap it around the tip, and bring the pad back along the inside so the dome sits over the sensor pocket. Fix the T bar with two M2 × 4 screws into the pilot holes either side of the tendon groove. The wrap should be just taut with the finger straight; if it is slack, shorten the dorsal end by 2 mm and re-glue.
-6. Snap the proximal pad on: the two dots are on a diagonal, so it only fits one way round; line them up with the dimples, spread the wings over the phalanx sides with the slot over the tendon groove, and press until the dots seat and both lips drop into the side grooves. It should need a fingernail to remove and not peel off the front when you push a thumb across it.
-7. Clamp the fixture to the bench edge, finger overhanging.
+1. Distal onto the proximal: tongue into the fork, tab up. Press a 4 × 10 pin flush from each cheek face; each stops on the floor of its blind bore, 3 mm short of the other. Same for the proximal onto the fixture. Check every pin end is flush.
+2. Hold the finger straight. Push the 30 AWG pair in at the tip pocket and down the axis-line channel: through the distal, across the knuckle gap into the proximal's flared mouth, through the proximal, across the base knuckle and out the back of the fixture. Knot the pair in the tip pocket.
+3. Tendon: 0.5 mm stainless leader (or 20 lb braided line for the first try) pushed in from the back of the fixture along the lower channel, across both knuckle gaps into their flared mouths, out into the pocket in the distal's palm face. Tie a knot or crimp a sleeve there bigger than the Ø2 channel and pull it back against the pocket's rear wall.
+4. Skin: seat the dorsal end in the fixture pocket with CA and let it cure. With the finger straight, lay the run over both tabs and along the distal's back, wrap it around the tip, and bring the pad back along the inside so the dome sits over the sensor pocket. Fix the T bar with two M2 × 4 screws into the pilot holes either side of the anchor pocket. The wrap should be just taut with the finger straight; if it is slack, shorten the dorsal end by 2 mm and re-glue.
+5. Snap the proximal pad on: the two dots are on a diagonal, so it only fits one way round; line them up with the dimples, spread the wings over the phalanx sides, and press until the dots seat and both lips drop into the side grooves. It should need a fingernail to remove and not peel off the front when you push a thumb across it.
+6. Clamp the fixture to the bench edge, finger overhanging.
 
 - [ ] **Step 9: Bench — test (spec acceptance 1 and 2)**
 
@@ -565,7 +566,8 @@ Add the five parts and both coupons to `model/parts-list.md` under a `hand` grou
 
 | Item | Qty | Note |
 |---|---|---|
-| ISO 8752 slotted spring pin 4 × 20, stainless (A2 / 1.4310) | 10 | you may already have some; 6 go into the full hand |
+| ISO 8752 slotted spring pin 4 × 10, stainless (A2 / 1.4310) | 10 | in hand; two per knuckle, 8 in the full hand |
+| ISO 8752 slotted spring pin 4 × 20, stainless | 2 | in hand; whiffletree |
 | 30 AWG PTFE-insulated wire, silver-plated, two colours | 5 m each | must be PTFE; PVC is too thick for the pin bore |
 | Stainless leader wire, 1×7, 0.45 to 0.5 mm (about 20 lb) | 5 m | nylon-coated is fine |
 | Crimp sleeves for that leader (single barrel, 0.8 mm ID) | 20 | |

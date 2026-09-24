@@ -3,16 +3,19 @@ finger from base to tip, +y dorsal, z across the width. Knuckle axes run along z
 import bpy, bmesh, math
 from mathutils import Vector, Matrix
 
-W, H = 20.0, 12.0            # finger width across the pin, height
-CHEEK, TONGUE, GAP = 5.0, 9.0, 0.5
+PIN_L, PIN_GAP = 10.0, 3.0   # ISO 8752 4 x 10, one pressed flush from each cheek; the gap between their ends
+W, H = 2 * PIN_L + PIN_GAP, 12.0   # finger width across the pins (23), height
+CHEEK, TONGUE, GAP = 5.0, 12.0, 0.5
 R = H / 2                    # rounded knuckle ends
 FORK_LEN = 8.0               # web to axis
 TONGUE_LEN = 7.0             # axis to the wide body
 CHEEK_BORE, TONGUE_BORE = 3.85, 4.2
 TAB_Y0, TAB_Y1, TAB_BACK = 6.3, 7.8, 3.0          # dorsal extension stop over the cheeks
 HEEL_X0, HEEL_X1, HEEL_Y = -8.0, -3.5, -7.2       # palmar flexion stop under the cheeks (~87 deg)
-TENDON_W, TENDON_DEPTH = 2.0, 2.0
-WIRE_D, CHAMBER, CAVITY_R = 1.8, 4.0, 4.0      # two 30 AWG PTFE wires; wire cavity width along the pin and its radius
+WIRE_D = 1.8                 # two 30 AWG PTFE wires as a pair, on the knuckle axis line
+TENDON_Y, TENDON_D = -4.0, 2.0                  # enclosed tendon channel, 4 mm palmar of the axis line
+TENDON_MOUTH = 4.0           # a tongue's tendon channel starts this far past its axis: with the mouth at
+                             # least 4 mm past the axis the free span stays palmar of the axis up to 90 deg
 STRIP_W, STRIP_T, PAD_L = 8.0, 2.0, 8.0            # TPU return strip
 SNAP_Y0, SNAP_Y1, SNAP_DEPTH = -4.0, -2.5, 1.0      # side grooves that a snap-on grip pad's lips engage
 DOT_R, DOT_H, DOT_Z = 1.2, 1.0, 5.5                 # front snap dots on the pad, dimples in the palmar face
@@ -35,11 +38,11 @@ def cyl_z(name, x, y, r, z0, z1, n=64):
     bmesh.ops.translate(bm, vec=(x, y, (z0 + z1) / 2), verts=bm.verts)
     return _obj(name, bm)
 
-def cyl_between(name, a, b, r, n=32):
-    """Cylinder from point a to point b (wire channels)."""
+def cyl_between(name, a, b, r, n=32, r_end=None):
+    """Cylinder from point a to point b (wire channels); a cone when r_end differs."""
     a, b = Vector(a), Vector(b); d = b - a
     bm = bmesh.new()
-    bmesh.ops.create_cone(bm, cap_ends=True, segments=n, radius1=r, radius2=r, depth=d.length + 0.02)
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=n, radius1=r, radius2=r if r_end is None else r_end, depth=d.length + 0.02)
     o = _obj(name, bm)
     o.matrix_world = Matrix.Translation((a + b) / 2) @ d.to_track_quat('Z', 'Y').to_matrix().to_4x4()
     return o
@@ -78,23 +81,28 @@ def tongue(target, xa, direction=1):
     union(target, box("tab", tx0, tx1, TAB_Y0, TAB_Y1, -W / 2, W / 2))
 
 def bore_tongue(target, xa, direction=1, d=TONGUE_BORE):
-    s = direction
-    cut(target, cyl_z("tongue_bore", xa, 0, d / 2, -W / 2 - 1, W / 2 + 1))
-    # wire cavity: a quarter ring round the pin from the body side to the dorsal side, so the pin
-    # slot opens into free space from 3 deg of hyperextension to 90 deg of flexion; the wire wraps
-    # a quarter turn round the pin in here as the joint curls
-    cav = cyl_z("cavity", xa, 0, CAVITY_R, -CHAMBER / 2, CHAMBER / 2)
-    kx0, kx1 = sorted((xa - s * 1.0, xa + s * (CAVITY_R + 1)))
-    boolean(cav, box("keep", kx0, kx1, -1.5, CAVITY_R + 1, -3, 3), 'INTERSECT')
-    cut(target, cav)
-    # tendon ring: 2 mm wide groove around the palmar half of the rounded end
-    ring = cyl_z("ring", xa, 0, R + 0.5, -TENDON_W / 2, TENDON_W / 2)
-    boolean(ring, cyl_z("ring_in", xa, 0, R - TENDON_DEPTH, -TENDON_W / 2 - 1, TENDON_W / 2 + 1), 'DIFFERENCE')
-    boolean(ring, box("ring_clip", xa - R - 1, xa + R + 1, -R - 1, 0.0, -2, 2), 'INTERSECT')
-    cut(target, ring)
+    """Blind pin bores from each tongue face that stop PIN_GAP short of each other, and the open
+    pocket between the pin ends where the wire and the tendon cross the joint."""
+    s = direction; hz = PIN_GAP / 2
+    for zs in (1, -1):
+        z0, z1 = sorted((zs * hz, zs * (W / 2 + 1)))
+        cut(target, cyl_z("tongue_bore", xa, 0, d / 2, z0, z1))
+    # the rear palmar quarter of the tongue, axis to rounded end: it faces the fork web at every
+    # angle from extension to 90 deg, so the wire on the axis line bends freely in it
+    x0, x1 = sorted((xa - s * (R + 0.5), xa))
+    cut(target, box("wire_pocket", x0, x1, -R - 0.5, 1.0, -hz, hz))
+    # the tendon's part of the pocket runs on to its channel mouth past the axis
+    x0, x1 = sorted((xa - s * (R + 0.5), xa + s * TENDON_MOUTH))
+    cut(target, box("tendon_pocket", x0, x1, -R - 0.5, TENDON_Y + TENDON_D / 2, -hz, hz))
 
-def tendon_groove(target, x0, x1):
-    cut(target, box("groove", x0, x1, -R - 0.1, -R + TENDON_DEPTH, -TENDON_W / 2, TENDON_W / 2))
+def channel(target, y, x0, x1, d):
+    """Straight enclosed channel along the finger at height y, on the z=0 plane."""
+    cut(target, cyl_between("channel", (x0, y, 0), (x1, y, 0), d / 2))
+
+def flare(target, x, y, direction, d, d_out):
+    """Widen a channel mouth on the face at x into a 1.5 mm cone; direction is the way the
+    channel runs away from the face. A line bending at the mouth rides the cone, not an edge."""
+    cut(target, cyl_between("flare", (x - direction * 0.05, y, 0), (x + direction * 1.5, y, 0), d_out / 2, r_end=d / 2))
 
 def strip_pocket(target, x0, x1):
     """Dorsal pocket for the glued end of the TPU skin (its return-spring run)."""
@@ -121,10 +129,10 @@ def snap_grooves(target, x0, x1):
         z0, z1 = sorted((zs * (W / 2 - SNAP_DEPTH), zs * (W / 2 + 1)))
         cut(target, box("snap", x0, x1, SNAP_Y0, SNAP_Y1, z0, z1))
 
-def snap_pad(name, length, thickness=1.8, wing=2.0, slot=2.6):
-    """Snap-on TPU grip pad: a palmar plate with a through-slot for the tendon, two wings up
-    the side faces and inward lips that drop into snap_grooves(). Modelled in place on a
-    phalanx whose palmar face is y=-R, from x=0 to x=length."""
+def snap_pad(name, length, thickness=1.8, wing=2.0):
+    """Snap-on TPU grip pad: a palmar plate, two wings up the side faces and inward lips that
+    drop into snap_grooves(). Modelled in place on a phalanx whose palmar face is y=-R, from
+    x=0 to x=length."""
     y_face = -R
     pad = box(name, 0, length, y_face - thickness, y_face, -W / 2 - wing, W / 2 + wing)
     for zs in (1, -1):
@@ -132,7 +140,6 @@ def snap_pad(name, length, thickness=1.8, wing=2.0, slot=2.6):
         union(pad, box("wing", 0, length, y_face - thickness, SNAP_Y1, z0, z1))
         l0, l1 = sorted((zs * (W / 2 - SNAP_DEPTH + 0.1), zs * (W / 2 + 0.1 + 0.01)))
         union(pad, box("lip", 0, length, SNAP_Y0 + 0.1, SNAP_Y1 - 0.1, l0, l1))
-    cut(pad, box("tendon_slot", -1, length + 1, y_face - thickness - 1, y_face + 1, -slot / 2, slot / 2))
     for x, z in dot_positions(0, length):
         union(pad, sphere("dot", x, y_face - (DOT_R - DOT_H), z, DOT_R))   # hemisphere standing DOT_H proud of the plate
     return pad
@@ -159,6 +166,27 @@ def hole_diameter(o, x, y, z_probe):
         if hit[0] is not None: ds.append((hit[0] - Vector((x, y, z_probe))).length)
     bm.free()
     return round(2 * sum(ds) / len(ds), 3) if ds else None
+
+def _tree(o):
+    import mathutils
+    bm = bmesh.new(); bm.from_mesh(o.data)
+    return mathutils.bvhtree.BVHTree.FromBMesh(bm), bm
+
+def bore_floor_z(o, x, y, z_start):
+    """z of the first face met going down from (x, y, z_start): the floor of a blind z bore."""
+    tree, bm = _tree(o)
+    h = tree.ray_cast(Vector((x, y, z_start)), Vector((0, 0, -1)))[0]; bm.free()
+    return round(h.z, 3) if h is not None else None
+
+def first_hit_x(o, y, x_start, r=0.4):
+    """Push a line along x at (y, z=0) from x_start: the x of the first thing it meets, or None.
+    Four rays r off the axis so the line's own thickness counts and no ray rides an edge."""
+    tree, bm = _tree(o); xs = []
+    for dy, dz in ((r, 0), (-r, 0), (0, r), (0, -r)):
+        h = tree.ray_cast(Vector((x_start, y + dy, dz)), Vector((1, 0, 0)))
+        if h[0] is not None: xs.append(h[0].x)
+    bm.free()
+    return round(min(xs), 3) if xs else None
 
 def export(o, path):
     bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o

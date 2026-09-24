@@ -4,9 +4,10 @@
 **Status:** Draft for founder review
 **Decided inputs (design conversation 2026-09-22):** three fingers, two opposed
 by a thumb; two motors, a gear-driven NEMA11 for the pair and a direct-drive
-28BYJ-48 for the thumb, both on the Octopus Pro; fingers 20 mm wide on
-ISO 8752 4 × 20 mm stainless slotted spring pins with the sensor wires routed
-through the pins; PLA body, TPU skins, stainless where a printed part would
+28BYJ-48 for the thumb, both on the Octopus Pro; fingers 23 mm wide on
+pairs of ISO 8752 4 × 10 mm stainless spring pins with the sensor wires and
+the tendon in straight channels down the finger (amended 2026-09-24, see
+§5.1 and §5.5); PLA body, TPU skins, stainless where a printed part would
 fail; four FSR channels per the tactile spec
 (`2026-09-21-gripper-tactile-sensing-design.md`), three fingertips and a palm
 pad; target objects from a marker pen to a coffee mug, up to 500 g. Replaces
@@ -33,11 +34,13 @@ and the Heltec host later.
 - **Print-in-place ideas only where they pay.** The articulated-dragon trick
   of clearance joints is used for nothing load-bearing. Knuckles that carry
   the pinch get stainless pins in printed bores.
-- **Wires through the pins.** A wire crossing a joint inside the hinge pin
-  wraps a quarter turn round the pin as the joint curls instead of flexing
-  over an edge, so it never fatigues. Slotted spring pins are hollow,
-  self-retaining and open at both ends, which makes them the conduit as well
-  as the hinge.
+- **Wires on the axis, tendon straight (amended 2026-09-24).** Each knuckle
+  is two short pins pressed in from either cheek with a 3 mm gap between
+  their ends, and the sensor pair crosses the joint on the axis line through
+  that gap, bending about the axis in an open pocket instead of flexing over
+  an edge. The tendon runs in an enclosed straight channel 4 mm below the
+  axis line, so with the finger straight both are one straight push from
+  the fixture to the tip and nothing zig-zags.
 
 ## 3. Scope
 
@@ -55,7 +58,7 @@ wrist  ── OPH_To_Gripper (Cults, 55 mm tube) ── palm flange Ø62
         NEMA11 worm-gear unit, motor in the tube ──▶ 20:1 gearbox in the palm ──▶ spool
                                                    └─▶ whiffletree ─▶ two pair tendons
            28BYJ-48 on the palm wall ──▶ thumb hub, hard stop at pinch
-           FSR ×3 tips + palm pad ──▶ wires through pins ──▶ ADS1115 in the palm
+           FSR ×3 tips + palm pad ──▶ wires through the knuckles ──▶ ADS1115 in the palm
                                                    └─▶ one QWIIC cable down the arm
 ```
 
@@ -65,20 +68,27 @@ wrist  ── OPH_To_Gripper (Cults, 55 mm tube) ── palm flange Ø62
 
 | Item | Value |
 |---|---|
-| Phalanges | proximal 40 mm, distal 30 mm, 20 mm wide, 12 mm tall, PLA |
+| Phalanges | proximal 40 mm, distal 30 mm, 23 mm wide (amended 2026-09-24, was 20), 12 mm tall, PLA |
 | Knuckles | two per finger, 90° curl each, printed stop |
-| Fork / tongue | two 5 mm cheeks, 9 mm tongue, 0.5 mm clearance each side |
-| Pin | ISO 8752 4 × 20 mm, stainless 1.4310, slot toward the tongue |
-| Cheek bore | 3.85 mm nominal; coupon at 3.80, 3.85, 3.90 sets the build value |
-| Tongue bore | 4.2 mm |
-| Tendon channel | 2 mm, on the palm side, 6 mm off each knuckle axis |
-| Wire channel | 1.5 mm, beside the tendon channel |
+| Fork / tongue | two 5 mm cheeks, 12 mm tongue, 0.5 mm clearance each side |
+| Pins (amended 2026-09-24) | two ISO 8752 4 × 10 mm stainless per knuckle, one pressed flush from each cheek face; they stop 3 mm apart on the floors of the blind tongue bores |
+| Cheek bore | 3.90 mm through (the 2026-09-23 coupon value) |
+| Tongue bore | 4.37 mm (the coupon value), blind from each tongue face, 4.5 mm deep |
+| Wire channel | Ø1.8 enclosed, on the axis line down the centre of the finger, straight from the tip to the base; it crosses each knuckle through the gap between the pin ends |
+| Tendon channel | Ø2 enclosed, on the centre plane 4 mm below the axis line, straight the length of each phalanx; at each tongue it opens into a 3 mm slot between the pin ends that runs from the rounded end to a flared mouth 4 mm past the axis |
 | Return | TPU strip 8 × 2 mm along the back, printed flat, clipped into a slot on each phalanx; length sets the open pretension |
-| Grip pad (added 2026-09-22) | snap-on TPU pad on the proximal's inside face, 14 mm long, slotted for the tendon, lips into side grooves and two front dots into dimples; the distal's grip surface is the skin's wrap (§5.5) |
+| Grip pad (added 2026-09-22) | snap-on TPU pad on the proximal's inside face, 14 mm long, lips into side grooves and two front dots into dimples; the distal's grip surface is the skin's wrap (§5.5) |
 
-Tendon: 0.5 mm stainless leader wire, crimped with a fishing ferrule into a
-pocket at the fingertip and to the whiffletree at the other end. Full curl of
-both knuckles takes about 19 mm of tendon.
+Tendon (amended 2026-09-24): 0.5 mm stainless leader or 20 lb braided line.
+It enters the fixture or palm at the back and runs in one straight line to
+the distal, where the channel ends in an open pocket in the palm face 8 to
+15.5 mm past the knuckle; a knot or crimp bigger than the channel stops
+against the pocket's rear wall. At each knuckle the tendon crosses the fork
+gap free, then enters the tongue's flared mouth 4 mm past the axis. The
+mouth sits that far past the axis so the free span stays at least 4 mm palmar
+of the axis at every angle, which keeps the tendon curling the joint right up
+to 90°, where it turns the full 90° over the mouth's cone. Full curl of both
+knuckles takes about 16 mm of tendon.
 
 ### 5.2 Thumb
 
@@ -134,24 +144,24 @@ worm and wheel this replaces were a wear risk and a mesh-alignment risk; a
   skin are one TPU part. Its dorsal run is the return spring, it wraps the
   R6 tip, and its palmar pad covers an FSR 400 pocket on the distal's inside
   face, with a 1.5 mm dome moulded into the pad over the sensor, ending in a
-  T bar held by two M2 screws either side of the tendon groove. No PLA cap.
+  T bar held by two M2 screws either side of the tendon's anchor pocket. No
+  PLA cap.
   Same arrangement on the thumb.
 - Palm pad: FSR 402 under 2 mm TPU in the front-face pocket.
-- Wire (amended 2026-09-23): 30 AWG PTFE, two per sensor, as a pair through
-  one Ø1.8 channel and the pins. In the distal one straight channel runs from
-  a solder pocket at the very tip to the knuckle cavity; the sensor's tail
+- Wire (amended 2026-09-24): 30 AWG PTFE, two per sensor, as a pair in one
+  Ø1.8 channel on the axis line, straight from a solder pocket at the very
+  tip of the distal to the back of the fixture or palm. The sensor's tail
   runs to that pocket in a 0.6 mm groove round the tip, and the pair is
   pushed in at the tip, knotted there and soldered to the tail last, all
-  under the skin's tip wrap. At each knuckle the pair leaves the cavity
-  through the pin's slot, runs inside the pin to its open end on the cheek
-  face, turns in a 2 mm pocket there and enters the next part's straight
-  enclosed tunnel. The cavity is a quarter ring round the pin, 4 mm wide,
-  from the body side to the dorsal side, so the slot always opens into free
-  space between 3° of hyperextension and 90° of flexion; the pair wraps a
-  quarter turn round the pin in it, at about a 2.7 mm radius. The slot faces
-  along the finger toward the tongue when the pin is pressed. Everything is
-  threaded before any pin goes in: pair through the distal, loose pin onto
-  the pair through its slot and out its end, press, then down the tunnel.
+  under the skin's tip wrap. At each knuckle the channel passes through the
+  3 mm gap between the two pin ends. On the tongue side it opens into a
+  pocket that takes up the rear palm-side quarter of the tongue between the
+  pin ends; that quarter faces the fork web from full extension to 90° of
+  curl, so the pair has about 8 mm of free length there to bend about the
+  axis at a radius near 3 mm, and nothing pinches it. Channel mouths are
+  flared to a cone. Threading order no longer matters: with the finger
+  straight the channel is one line, so the pair goes in with the pins
+  already pressed.
 - ADS1115 breakout (Adafruit 1085) in the palm slot, address 0x48, four 10 kΩ
   dividers soldered on its pins, one QWIIC cable out the back. This moves the
   ADC from the wrist (tactile spec §5.3) into the palm; the spec's electrical
@@ -176,7 +186,8 @@ fitted in either order.
 
 | Part | Qty | Approx. |
 |---|---|---|
-| ISO 8752 4 × 20 stainless spring pins (4 knuckles + whiffletree + 1 spare) | 6 | $5 |
+| ISO 8752 4 × 10 stainless spring pins (two per knuckle, 8, + 2 spare) | 10 | $5 |
+| ISO 8752 4 × 20 stainless spring pin (whiffletree + 1 spare) | 2 | $2 |
 | 0.5 mm stainless leader wire and crimp ferrules | 1 m, 10 | $8 |
 | NEMA11 worm-gear unit 28H51-WG20 (in hand, two) | 1 | $49 |
 | 28BYJ-48 (in hand), converted to bipolar | 1 | — |
@@ -230,10 +241,15 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
 - **Thumb gearbox.** The 28BYJ-48's plastic train strips near 0.1 N·m. The
   hard stop and the tactile force limit are the protection; a pinch
   without the thumb on its stop is a firmware bug.
-- **Wire wrap at the pins.** A 2.7 mm bend radius is fine for stranded
-  30 AWG, but the pair must also pass the pin's slot: measure the slot gap on
-  a pin against the wire before ordering wire, and drop to 32 AWG if it does
-  not. Verified on the phase 1 finger with a hundred cycles.
+- **Tendon over the mouth cone.** At full curl the tendon turns 90° over
+  the flared mouth of the distal's channel, so that PLA cone takes the
+  tendon's full tension on a small radius. Wear there is what the phase 1
+  hundred cycles look for; a stainless or PTFE liner in the mouth is the
+  fix if it grooves.
+- **Blind bore floors.** Only 0.6 mm of PLA separates each bore floor from
+  the wire channel. A bore printed short leaves the pin proud; one printed
+  deep lets the pin end crush the floor into the channel. Check both pins sit
+  flush and the pair still pushes through before the skin goes on.
 - **Adapter drilling.** Four holes in a Cults part; a reprinted adapter with
   the holes removes the risk of a misdrilled one.
 
@@ -257,7 +273,7 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
 1. Coupon: one bore size holds a 4 × 20 pin under a 5 kg pull without
    splitting; that size goes into the finger files.
 2. One pair finger on a string: curls fully, returns to open on its own,
-   100 cycles with a sensor wire through both pins and continuity intact.
+   100 cycles with a sensor wire through both knuckles and continuity intact.
 3. Pair on the palm shell, hand-turned spool: wraps an 80 mm mug, pinches a
    10 mm pen, one finger blocked by a wedge and the other still closes.
 4. NEMA11 drive on Marlin U: closes in under 2 s, holds a 500 g mug with the
@@ -269,7 +285,7 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
 
 ## 11. Phasing
 
-1. Coupon, then one pair finger with TPU return and a wire through the pins.
+1. Coupon, then one pair finger with TPU return and a wire through the knuckles.
 2. Both pair fingers, palm shell, whiffletree, hand-turned spool.
 3. Worm-gear NEMA11 on the palm web, spool, U axis in `configure.py`, close
    and hold.
