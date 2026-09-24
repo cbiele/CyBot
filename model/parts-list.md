@@ -79,6 +79,9 @@ Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = 
 | base | spider-arm ×3 | 274 x 90 x 35 | ~185 each | A1 on the bed diagonal (239 mm) |
 | base | spider-arm-motor | 274 x 90 x 88 | ~230 | A1 on the bed diagonal (239 mm) |
 | base | spider-pad ×4 (TPU) | 24 x 24 x 13 | ~3 each | A1 |
+| hand | palm-front (tools/blender/hand_palm.py) | 26 x 50 x 68 | ~29 | standing on an end face, bores vertical |
+| hand | palm-bench-foot (tools/blender/hand_palm.py) | 22 x 58 x 68 | ~31 | on its rear face |
+| hand | palm-whiffletree-bar (tools/blender/hand_palm.py) | 4 x 8 x 50 | ~1 | flat |
 
 Total solid volume of all listed parts: 6769 cm3 (before infill; at 40 % infill roughly 4.2 kg of PLA counting walls).
 
