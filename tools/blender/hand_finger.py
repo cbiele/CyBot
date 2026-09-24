@@ -1,7 +1,7 @@
 """Phase 1 finger for the three-finger hand: proximal and distal phalanges, a bench fixture
 that stands in for the palm fork, and the one-piece TPU skin. Frame per hand_lib.
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/hand_finger.py"""
-import bpy, os, sys, json, math
+import bpy, math, os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hand_lib as L
 OUT = os.environ.get("HAND_OUT", os.path.join("/Users/claytonbiele/dev/Claude/Projects/cybot", "model", "hand"))
@@ -25,10 +25,10 @@ L.strip_pocket(prox, PROX_LEN - L.FORK_LEN - 2 - L.PAD_L, PROX_LEN - L.FORK_LEN 
 PAD_X0, PAD_X1 = 12.0, 26.0                        # snap-on grip pad on the inside of the proximal
 L.snap_grooves(prox, PAD_X0, PAD_X1)
 L.snap_dimples(prox, PAD_X0, PAD_X1)
-# wire: external groove on the +z face from the tip pin end back 12 mm, then a channel
-# diving to the base chamber
-L.cut(prox, L.box("wire_groove", PROX_LEN - 12, PROX_LEN + 0.1, -L.WIRE_D / 2, L.WIRE_D / 2, W2 - L.WIRE_D, W2 + 0.1))
-L.cut(prox, L.cyl_between("wire_dive", (PROX_LEN - 12, 0, W2 - L.WIRE_D / 2), (L.TONGUE_LEN - 2, 0, 0), L.WIRE_D / 2))
+# wire: out of the tip pin's open end into a turn pocket on the cheek face, then one straight
+# enclosed tunnel down to the base cavity (straight so the pair can be pushed through)
+L.cut(prox, L.box("turn_pocket", PROX_LEN - 4.5, PROX_LEN + 2.2, -1.6, 1.6, W2 - 2.2, W2 + 0.1))
+L.cut(prox, L.cyl_between("tunnel", (PROX_LEN - 4.2, 0, W2 - 1.4), (3.5, 0, 0.6), L.WIRE_D / 2))
 L.finish(prox)
 
 # ---- distal phalanx: base tongue at x=0, rounded tip at x=DIST_LEN. The TPU skin wraps the
@@ -46,13 +46,21 @@ L.cut(dist, L.box("ferrule", TENDON_ANCHOR_X - 1.5, TENDON_ANCHOR_X + 1.5, R - 2
 SKIN_EAR_X, SKIN_EAR_Z = 10.0, 6.0
 for z in (-SKIN_EAR_Z, SKIN_EAR_Z):
     L.cut(dist, L.cyl_between("ear_pilot", (SKIN_EAR_X, -R - 1, z), (SKIN_EAR_X, -R + 4, z), 0.8))
-# FSR 400 pocket on the palmar face (7.6 mm body), tail slot up into a solder cavity, and the
-# wire channel from that cavity to the tongue chamber, offset in z to miss the tendon hole
+# FSR 400 pocket on the palmar face (7.6 mm body). Its tail runs toward the tip in a 0.6 mm
+# groove round the R6 end to a solder pocket at the very tip, where the wire pair comes out of
+# one straight channel from the knuckle cavity; the pair is pushed in at the tip, knotted there,
+# and soldered to the tail last. All of it sits under the skin's tip wrap.
 SENSOR_X = 21.0
+TIP_C = DIST_LEN - R                                  # centre of the rounded tip
 L.cut(dist, L.cyl_between("fsr_pocket", (SENSOR_X, -R - 1, 0), (SENSOR_X, -R + 0.6, 0), 4.0))
-L.cut(dist, L.box("tail_slot", SENSOR_X - 4.5, SENSOR_X - 3.0, -R + 0.5, -R + 1.6, -2.0, 2.0))
-L.cut(dist, L.box("solder_cavity", SENSOR_X - 4.5, SENSOR_X + 3.5, -R + 1.5, -R + 4.5, -2.5, 2.5))
-L.cut(dist, L.cyl_between("wire_run", (SENSOR_X - 4.0, -R + 3.0, 2.5), (L.TONGUE_LEN - 2.0, 0.0, 1.5), L.WIRE_D / 2))
+band = L.cyl_z("tail_band", TIP_C, 0, R + 0.1, -2.5, 2.5)
+L.boolean(band, L.cyl_z("band_in", TIP_C, 0, R - 0.6, -3, 3), 'DIFFERENCE')
+L.boolean(band, L.box("band_clip", TIP_C, TIP_C + R + 1, -R - 1, -1.0, -3, 3), 'INTERSECT')
+L.cut(dist, band)
+a = math.radians(-30)                                  # solder pocket 30 deg below the tip centreline
+L.cut(dist, L.cyl_between("tip_pocket", (TIP_C + 4.0 * math.cos(a), 4.0 * math.sin(a), 2.5),
+                          (TIP_C + 8.5 * math.cos(a), 8.5 * math.sin(a), 2.5), 2.25))
+L.cut(dist, L.cyl_between("tip_channel", (DIST_LEN + 1.0, -3.0, 3.5), (3.4, 0.0, 1.2), L.WIRE_D / 2))
 L.finish(dist)
 
 # ---- snap-on TPU grip pad for the proximal's inside face, modelled in place then exported

@@ -12,7 +12,7 @@ CHEEK_BORE, TONGUE_BORE = 3.85, 4.2
 TAB_Y0, TAB_Y1, TAB_BACK = 6.3, 7.8, 3.0          # dorsal extension stop over the cheeks
 HEEL_X0, HEEL_X1, HEEL_Y = -8.0, -3.5, -7.2       # palmar flexion stop under the cheeks (~87 deg)
 TENDON_W, TENDON_DEPTH = 2.0, 2.0
-WIRE_D, CHAMBER = 1.5, 4.0
+WIRE_D, CHAMBER, CAVITY_R = 1.8, 4.0, 4.0      # two 30 AWG PTFE wires; wire cavity width along the pin and its radius
 STRIP_W, STRIP_T, PAD_L = 8.0, 2.0, 8.0            # TPU return strip
 SNAP_Y0, SNAP_Y1, SNAP_DEPTH = -4.0, -2.5, 1.0      # side grooves that a snap-on grip pad's lips engage
 DOT_R, DOT_H, DOT_Z = 1.2, 1.0, 5.5                 # front snap dots on the pad, dimples in the palmar face
@@ -80,9 +80,13 @@ def tongue(target, xa, direction=1):
 def bore_tongue(target, xa, direction=1, d=TONGUE_BORE):
     s = direction
     cut(target, cyl_z("tongue_bore", xa, 0, d / 2, -W / 2 - 1, W / 2 + 1))
-    # wire chamber: where the wire leaves the pin slot and twists
-    cx0, cx1 = sorted((xa + s * 1.5, xa + s * (1.5 + CHAMBER)))
-    cut(target, box("chamber", cx0, cx1, -CHAMBER / 2, CHAMBER / 2, -CHAMBER / 2, CHAMBER / 2))
+    # wire cavity: a quarter ring round the pin from the body side to the dorsal side, so the pin
+    # slot opens into free space from 3 deg of hyperextension to 90 deg of flexion; the wire wraps
+    # a quarter turn round the pin in here as the joint curls
+    cav = cyl_z("cavity", xa, 0, CAVITY_R, -CHAMBER / 2, CHAMBER / 2)
+    kx0, kx1 = sorted((xa - s * 1.0, xa + s * (CAVITY_R + 1)))
+    boolean(cav, box("keep", kx0, kx1, -1.5, CAVITY_R + 1, -3, 3), 'INTERSECT')
+    cut(target, cav)
     # tendon ring: 2 mm wide groove around the palmar half of the rounded end
     ring = cyl_z("ring", xa, 0, R + 0.5, -TENDON_W / 2, TENDON_W / 2)
     boolean(ring, cyl_z("ring_in", xa, 0, R - TENDON_DEPTH, -TENDON_W / 2 - 1, TENDON_W / 2 + 1), 'DIFFERENCE')

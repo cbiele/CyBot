@@ -33,10 +33,11 @@ and the Heltec host later.
 - **Print-in-place ideas only where they pay.** The articulated-dragon trick
   of clearance joints is used for nothing load-bearing. Knuckles that carry
   the pinch get stainless pins in printed bores.
-- **Wires through the pins.** A wire crossing a joint on the axis of rotation
-  twists a few degrees instead of bending, so it never fatigues. Slotted
-  spring pins are hollow, self-retaining and open at both ends, which makes
-  them the conduit as well as the hinge.
+- **Wires through the pins.** A wire crossing a joint inside the hinge pin
+  wraps a quarter turn round the pin as the joint curls instead of flexing
+  over an edge, so it never fatigues. Slotted spring pins are hollow,
+  self-retaining and open at both ends, which makes them the conduit as well
+  as the hinge.
 
 ## 3. Scope
 
@@ -136,11 +137,21 @@ worm and wheel this replaces were a wear risk and a mesh-alignment risk; a
   T bar held by two M2 screws either side of the tendon groove. No PLA cap.
   Same arrangement on the thumb.
 - Palm pad: FSR 402 under 2 mm TPU in the front-face pocket.
-- Wire: 30 AWG PTFE, two per sensor, through the pins. At each knuckle the
-  wire enters the pin's open end from a channel in the cheek, runs inside to
-  mid-length, exits through the slot into a 4 mm chamber in the tongue where
-  the twist happens, then up the 1.5 mm channel. Chamfer the slot exit; the
-  wire must never be pinched between slot and bore.
+- Wire (amended 2026-09-23): 30 AWG PTFE, two per sensor, as a pair through
+  one Ø1.8 channel and the pins. In the distal one straight channel runs from
+  a solder pocket at the very tip to the knuckle cavity; the sensor's tail
+  runs to that pocket in a 0.6 mm groove round the tip, and the pair is
+  pushed in at the tip, knotted there and soldered to the tail last, all
+  under the skin's tip wrap. At each knuckle the pair leaves the cavity
+  through the pin's slot, runs inside the pin to its open end on the cheek
+  face, turns in a 2 mm pocket there and enters the next part's straight
+  enclosed tunnel. The cavity is a quarter ring round the pin, 4 mm wide,
+  from the body side to the dorsal side, so the slot always opens into free
+  space between 3° of hyperextension and 90° of flexion; the pair wraps a
+  quarter turn round the pin in it, at about a 2.7 mm radius. The slot faces
+  along the finger toward the tongue when the pin is pressed. Everything is
+  threaded before any pin goes in: pair through the distal, loose pin onto
+  the pair through its slot and out its end, press, then down the tunnel.
 - ADS1115 breakout (Adafruit 1085) in the palm slot, address 0x48, four 10 kΩ
   dividers soldered on its pins, one QWIIC cable out the back. This moves the
   ADC from the wrist (tactile spec §5.3) into the palm; the spec's electrical
@@ -219,8 +230,10 @@ its hard stop before a pinch so the pair loads the stop, not the motor.
 - **Thumb gearbox.** The 28BYJ-48's plastic train strips near 0.1 N·m. The
   hard stop and the tactile force limit are the protection; a pinch
   without the thumb on its stop is a firmware bug.
-- **Wire twist at the pins.** Rated for the 90° twist, but the chamber must
-  give the wire room. Verified on the phase 1 finger with a hundred cycles.
+- **Wire wrap at the pins.** A 2.7 mm bend radius is fine for stranded
+  30 AWG, but the pair must also pass the pin's slot: measure the slot gap on
+  a pin against the wire before ordering wire, and drop to 32 AWG if it does
+  not. Verified on the phase 1 finger with a hundred cycles.
 - **Adapter drilling.** Four holes in a Cults part; a reprinted adapter with
   the holes removes the risk of a misdrilled one.
 
