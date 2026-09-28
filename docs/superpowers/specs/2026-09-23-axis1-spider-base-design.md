@@ -102,7 +102,7 @@ The plain arm plus a bracket. Radii are from the base axis.
 |---|---|
 | Walls | 2 × 4.4 mm standing on the rails (inset 0.3 mm from the rail faces), from 108 to 177 mm radius, vertical |
 | Plate | 5 mm, top face 53 mm above the ring top, underside at 48 |
-| Motor axis | 139 mm radius, the Cults distance, so the ~620-3M belt estimate stands |
+| Motor axis | 139 mm radius, the Cults distance; the band is 175T 3M (measured in the STL 2026-09-28), so the belt is a 621-3M, 10 mm wide, ordered |
 | Pattern | NEMA17, 31 mm square, four 3.4 × 8 mm radial slots for ±4 mm belt tension |
 | Pilot | Ø23 |
 | Motor | 17HS8401B on top, flange on the plate, body 53 to 101 mm, rear stub to 111 mm, leads outboard |

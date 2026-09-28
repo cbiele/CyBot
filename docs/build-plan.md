@@ -92,11 +92,12 @@ From the PDF hardware lists, corrected where the STLs disagree.
 **Phase D, base**
 - 6816zz ×2, 6804zz ×2, 625zz ×8, 606zz ×4
 - M5×20 ×8, M6×50 ×8, M6×40 ×12, M6 nuts ×8
-- 3M 30T pulleys ×2 (12 mm), HTD648-3M belts ×2 — only one pulley (5 mm
-  bore) and one belt are needed now that the encoder is dropped. The
-  stepper holder's motor axis sits 139 mm from the base axis, which computes
-  to a ~620-3M belt for 175T/30T, not the PDF's 648: measure on the built
-  base before buying.
+- 3M 30T pulley (5 mm bore) and belt. Settled 2026-09-28: the rotating
+  base's band measures 175 teeth at 3 mm pitch in the Cults STL, the spider
+  motor arm puts the motor axis at 139 mm, and that computes to 620 mm of
+  belt, so a **621-3M, 10 mm wide** was ordered (the arm's slots cover 618
+  to 627). The PDF's 648 was never bought; the 477-3M in hand is a phase E
+  body belt and cannot reach round the 175T ring at any centre distance.
 - NEMA17: one of the four 17HS8401B already bought; driver channel on the daughterboard
 
 **Phase E, body**
