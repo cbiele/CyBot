@@ -15,7 +15,7 @@ cannot silently build the wrong thing.
 
 | Joint | Marlin axis | G-code letter | Octopus slot | Motor | Driver | Steps/deg |
 |---|---|---|---|---|---|---|
-| 1 base yaw | X | X | MOTOR0 | 17HS8401B | TMC2209 UART | 88.89 (belt ratio TBD) |
+| 1 base yaw | X | X | MOTOR0 | 42SHDC3025-24B | TMC2209 UART | 58.93 (179/27 belt) |
 | 2 shoulder | Y | Y | MOTOR1 | 23HS22-2804S | TMC5160 SPI | 306.67 (1.5 x 23) |
 | 3 elbow | Z | Z | MOTOR2 | 23HS22-2804S | TMC5160 SPI | 266.67 (1.5 x 20) |
 | unused | Z2 | | MOTOR3 | | | |

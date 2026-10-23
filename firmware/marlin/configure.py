@@ -7,8 +7,8 @@ UP = pathlib.Path(__file__).resolve().parent / "upstream" / "Marlin"
 C, A = "Configuration.h", "Configuration_adv.h"
 # Octopus Pro V1.1 (STM32H723) slot map: MOTOR0 X=J1, MOTOR1 Y=J2 (NEMA23), MOTOR2 Z=J3 (NEMA23),
 # MOTOR3 unused (Z2), MOTOR4 I/A=J4, MOTOR5 J/B=J5, MOTOR6 K/C=J6, MOTOR7 free (gripper as U later).
-# Steps per degree = 200 steps x 16 microsteps x total ratio / 360. J1 and J6 belt ratios are
-# placeholders until the pulleys are counted.
+# Steps per degree = 200 steps x 16 microsteps x total ratio / 360. J1 is the printed 27T on the
+# 179T band (bench-checked 2026-10-22 over five turns); the J6 belt ratio is a placeholder.
 EDITS = [
     (C, "  #define MOTHERBOARD BOARD_RAMPS_14_EFB", "  #define MOTHERBOARD BOARD_BTT_OCTOPUS_PRO_V1_1"),
     (C, "#define SERIAL_PORT 0", "#define SERIAL_PORT -1"),                       # USB
@@ -24,7 +24,7 @@ EDITS = [
     (C, "#define TEMP_SENSOR_0 1", "#define TEMP_SENSOR_0 0"),
     (C, "#define TEMP_SENSOR_BED 1", "#define TEMP_SENSOR_BED 0"),
     (C, "#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80, 80, 400, 500 }",
-        "#define DEFAULT_AXIS_STEPS_PER_UNIT   { 88.89, 306.67, 266.67, 97.78, 97.78, 88.89 }  // steps/deg: J1 (1:10 TBD), J2 1.5x23, J3 1.5x20, J4 11, J5 11, J6 (TBD)"),
+        "#define DEFAULT_AXIS_STEPS_PER_UNIT   { 58.93, 306.67, 266.67, 97.78, 97.78, 88.89 }  // steps/deg: J1 179/27, J2 1.5x23, J3 1.5x20, J4 11, J5 11, J6 (TBD)"),
     (C, "#define DEFAULT_MAX_FEEDRATE          { 300, 300, 5, 25 }", "#define DEFAULT_MAX_FEEDRATE          { 30, 20, 20, 45, 45, 60 }  // deg/s"),
     (C, "#define DEFAULT_MAX_ACCELERATION      { 3000, 3000, 100, 10000 }", "#define DEFAULT_MAX_ACCELERATION      { 60, 40, 40, 90, 90, 120 }  // deg/s^2"),
     (C, "#define DEFAULT_ACCELERATION          3000    // X, Y, Z and E acceleration for printing moves",

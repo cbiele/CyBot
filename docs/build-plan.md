@@ -97,7 +97,12 @@ From the PDF hardware lists, corrected where the STLs disagree.
   motor arm puts the motor axis at 139 mm, and that computes to 620 mm of
   belt, so a **621-3M, 10 mm wide** was ordered (the arm's slots cover 618
   to 627). The PDF's 648 was never bought; the 477-3M in hand is a phase E
-  body belt and cannot reach round the 175T ring at any centre distance.
+  body belt and cannot reach round the ring at any centre distance.
+  **Corrected 2026-10-22:** the printed band has 179 teeth, not 175. One
+  commanded base turn at 175/27 landed 4 teeth short and 179/27 held TDC
+  over five turns. The extra 4 teeth are why the belt was tight at 139:
+  the 621 sits at 136.2 mm with the printed 27T (134.5 with a 30T), inside
+  the tensioner arm's 134 to 138 travel.
 - NEMA17: one of the four 17HS8401B already bought; driver channel on the daughterboard
 
 **Phase E, body**
@@ -120,7 +125,7 @@ the bench.
 
 | Joint | Motor pulley | Driven pulley (printed) | Belt | Belt ratio | Reducer | Total |
 |---|---|---|---|---|---|---|
-| 1 | 3M 30T, 5 mm bore | 175T ring on rotatingBase1/2 | HTD 3M ~620 (PDF: 648) | 5.83 | none | 5.83 |
+| 1 | 3M 27T printed (`axis1_pulley.py`), 5 mm D bore | 179T ring on rotatingBase1/2 | 621-3M | 6.63 | none | 6.63 |
 | 2 | 3M 30T, 6.35 mm bore | axis2-GT2-stepper, 120T | 477-3M (462 without tensioner) | 4.0 | 1:23 | 92 |
 | 3 | 3M 30T, 6.35 mm bore | axis3-GT2-stepper, 108T | 477-3M (420 without tensioner) | 3.6 | 1:20 | 72 |
 | 4 | GT2 40T, 5 mm bore | axis4_80TGT2-7mm | 308-2GT-6 | 2.0 | 1:11 | 22 |
@@ -185,11 +190,11 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     StallGuard via Marlin, not the carrier expander; 24 V in behind the
     e-stop copper; Octopus 5 V out to the carrier's J2 by pigtail.
   - Steps per degree per joint = motor steps x microsteps x total ratio /
-    360, with the total ratios from the pulley table in §3 (5.83, 92, 72,
-    22, 22, 4.0). At 200 steps and 16 microsteps: 51.9, 817.8, 640, 195.6,
-    195.6, 35.6. `firmware/marlin/configure.py` still carries the earlier
-    placeholders (1:10, 1.5 x 23, 1.5 x 20, 11, 11, 1:10) until the
-    first motion test confirms the pulley assignments.
+    360, with the total ratios from the pulley table in §3 (6.63, 92, 72,
+    22, 22, 4.0). At 200 steps and 16 microsteps: 58.9, 817.8, 640, 195.6,
+    195.6, 35.6. `firmware/marlin/configure.py` has J1 at 58.93 (bench-checked
+    2026-10-22) and still carries the earlier placeholders for J2 to J6
+    (1.5 x 23, 1.5 x 20, 11, 11, 1:10) until their motion tests.
   - Power, shore (bench, first): a 19.5 V 9.3 A laptop brick on a 5.5x2.5
     barrel-to-screw-terminal adapter (ordered 2026-09-14; meter the polarity,
     centre positive, and watch the barrel for heat above ~5 A). Same operating
