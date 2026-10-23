@@ -45,7 +45,7 @@ Bed: Bambu P2S 256 x 256 x 256 mm. Fit = all three bbox dims <= 256. Diagonal = 
 | 4-axis3 | axis3-holder2 | 118 x 118 x 34 | 62 | fits |
 | 5-axis4 | axis4_80TGT2-7mm | 53 x 53 x 19 | 21 | fits |
 | 5-axis4 | axis4_OPH | 64 x 64 x 12 | 22 | fits |
-| 5-axis4 | axis4_OPH2 | 64 x 64 x 32 | 55 | fits |
+| 5-axis4 | ~~axis4_OPH2~~ print `model/axis4/axis4_OPH2-spigot.stl` instead (tools/blender/oph2_spigot.py): boss turned from 58 to 55.4 so it slides into the tube's 56 socket; six M5 through the tube's radial holes into it | 64 x 64 x 32 | 55 | fits |
 | 5-axis4 | axis4_Tube | 174 x 62 x 62 | 143 | fits |
 | 5-axis4 | axis4_axis5_holder | 206 x 160 x 103 | 688 | fits |
 | 5-axis4 | axis4_disk1 | 68 x 68 x 7 | 13 | fits |
