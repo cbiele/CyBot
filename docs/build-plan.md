@@ -243,6 +243,13 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     (4.37 mm) for free movement, so the params file carries
     `tongue_bore 4.37` (the library defaults stay 3.85/4.2). Sweep
     unchanged after regeneration.
+  - **Axis 2 belt run 2026-09-30.** Axis 2's NEMA23 on MOTOR1 (Y, TMC5160)
+    with the belt to the cycloid input: full turns at 1.2 A (`M906 Y1200`,
+    `M92 Y8.89`, `G91`, `G1 Y360 F600`) showed too much belt slack; after
+    tensioning it ran clean for 2 turns at 10 rpm and 5 turns in reverse at
+    20 rpm. The firmware caps Y at 20 units/s (3.3 rpm in degrees); the
+    fast runs used `M203 Y120` for the session, not saved. Put the cap in
+    the config once the joint's test speed is settled.
   - **Spider arm first print 2026-09-24.** `spider-arm.stl` printed
     overnight on the A1 and came off the plate as two pieces: the tenon
     was a separate shell in the STL. The generator had unioned it to the
