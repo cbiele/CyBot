@@ -19,7 +19,7 @@ cannot silently build the wrong thing.
 | 2 shoulder | Y | Y | MOTOR1 | 23HS22-2804S | TMC5160 SPI | 306.67 (1.5 x 23) |
 | 3 elbow | Z | Z | MOTOR2 | 23HS22-2804S | TMC5160 SPI | 266.67 (1.5 x 20) |
 | unused | Z2 | | MOTOR3 | | | |
-| 4 forearm roll | I | A | MOTOR4 | 17HS8401B | TMC2209 UART | 97.78 (11) |
+| 4 forearm roll | I | A | MOTOR4 | 17HS8401B | TMC2209 UART | 782.22 (88, bench) |
 | 5 wrist pitch | J | B | MOTOR5 | 17HS8401B | TMC2209 UART | 97.78 (11) |
 | 6 wrist roll | K | C | MOTOR6 | 17HS8401B | TMC2209 UART | 88.89 (TBD) |
 | gripper (later) | U | D | MOTOR7 | 42C kit motor | TMC2209 UART | |
