@@ -26,7 +26,8 @@ cannot silently build the wrong thing.
 
 Marlin assigns I, J, K to the E0, E1, E2 sockets in order because EXTRUDERS
 is 0. All axes are in degrees; feedrates in G-code are deg/min. Currents in
-`configure.py` are RMS: 1200 mA on the NEMA17s, 2000 mA on the NEMA23s.
+`configure.py` are RMS: 1200 mA on the NEMA17s, 2500 mA on the J2 NEMA23 (2000 could not turn
+its cycloid with the arm on) and 2000 mA on J3's.
 spreadCycle everywhere (stealthChop off) for torque. Motors never time out,
 so the arm holds position; `M18` releases it.
 

@@ -61,7 +61,7 @@ EDITS = [
     (A, "#define DEFAULT_STEPPER_TIMEOUT_SEC 120", "#define DEFAULT_STEPPER_TIMEOUT_SEC 0"),
     (A, "    #define X_CURRENT       800        // (mA) RMS current. Multiply by 1.414 for peak current.",
         "    #define X_CURRENT      1200        // (mA) RMS; 17HS8401B rated 1.8 A peak"),
-    (A, "    #define Y_CURRENT       800", "    #define Y_CURRENT      2000        // 23HS22-2804S rated 2.8 A peak"),
+    (A, "    #define Y_CURRENT       800", "    #define Y_CURRENT      2500        // 23HS22-2804S rated 2.8 A; 2000 could not turn the J2 cycloid with the arm on"),
     (A, "    #define Z_CURRENT       800", "    #define Z_CURRENT      2000"),
     (A, "    #define Y_RSENSE          0.11", "    #define Y_RSENSE          0.075     // BTT TMC5160: verify against the module"),
     (A, "    #define Z_RSENSE          0.11", "    #define Z_RSENSE          0.075"),
