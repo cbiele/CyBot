@@ -753,7 +753,7 @@ git commit -m "Add the cycloid bench parts and check the assembly for collisions
 
 - [ ] **Step 1: Order the hardware**
 
-2 × 6800-2RS, 2 × 6804 (if short), 2 × 625ZZ (in hand), 12 × brass 6 × 8 × 6, Ø5 × 55 hardened rod, 3 × M3 × 3 × 4.5 inserts (in hand), 4 × M3 × 50 bolts + nuts, M3 × 12 × 3 for the test arm. Spring pins Ø3 × 18 × 21 and Ø4 × 20 × 6 are in hand. Grind a 0.5 mm flat along the rod's full length.
+2 × 6800-2RS, 2 × 6804 (if short), 2 × 625ZZ (in hand), 12 × brass 6 × 8 × 6, Ø5 stainless rod cut to 57 (the input carries only about 0.05 N·m, so it needn't be hardened), 3 × M3 × 3 × 4.5 inserts (in hand), 4 × M3 × 50 bolts + nuts, M3 × 12 × 3 for the test arm. Spring pins Ø3 × 18 × 21 and Ø4 × 20 × 6 are in hand. File a flat to 4.5 across on the first 19 mm from the front end (under the eccentric) and the last 20 mm (under the 40T's set screw); the front end sits flush with the front 625's outer face.
 
 - [ ] **Step 2: Print**
 
