@@ -180,11 +180,88 @@ PARTS["carrier-rear"] = carrier(False)
 PARTS["carrier-front"] = carrier(True)
 CHECKS.append(check_housing_and_carriers)
 
-# --- Task 5 adds the bench parts and the assembly check here ---
+UPRIGHT_T, UPRIGHT_HALF_H, FOOT_T, FOOT_L = 5.0, 40.0, 6.0, 70.0
+MOTOR_X = round(C.belt_centre_distance(20, 40, 232), 2)
+SLOT = C.MOTOR_SLOT                          # motor travel each way along x, for belt tension
+NEMA_HOLE_OFF, NEMA_HOLE_R, NEMA_PILOT_R = 15.5, 1.7, 11.75
+HUB_CLEAR_R = 12.0
+CLAMP_R = 3.25
+ARM_L, ARM_W, ARM_T = 150.0, 20.0, 6.0
+WEIGHT_X = (50.0, 100.0, 140.0)              # 1.7 N·m is about 1.25 kg on the 140 hole
+THETAS = (0.0, 0.9, 2.3, 4.0)
+PRINT_FLIP = {"housing-front", "carrier-rear"}
+
+def slot(name, x, y, r, half, z0, z1):
+    s = L.cyl_z(name, x - half, y, r, z0, z1, n=32)
+    L.union(s, L.cyl_z(name + "_b", x + half, y, r, z0, z1, n=32))
+    L.union(s, L.box(name + "_m", x - half, x + half, y - r, y + r, z0, z1))
+    return s
+
+def upright():
+    u = L.box("bench-upright", -40, MOTOR_X + 30, -UPRIGHT_HALF_H, UPRIGHT_HALF_H, -UPRIGHT_T, 0)
+    L.union(u, L.box("foot", -40, MOTOR_X + 30, -UPRIGHT_HALF_H - FOOT_T, -UPRIGHT_HALF_H + 0.01, -UPRIGHT_T, FOOT_L))
+    L.cut(u, L.cyl_z("hub", 0, 0, HUB_CLEAR_R, -UPRIGHT_T - 1, 1, n=96))
+    for a in BOLT_ANGLES:
+        L.cut(u, L.cyl_z("bolt", *polar(BOLT_R, a), BOLT_HOLE_R, -UPRIGHT_T - 1, 1, n=32))
+    L.cut(u, slot("pilot", MOTOR_X, 0, NEMA_PILOT_R, SLOT, -UPRIGHT_T - 1, 1))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            L.cut(u, slot("nema", MOTOR_X + sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, NEMA_HOLE_R, SLOT, -UPRIGHT_T - 1, 1))
+    for x in (0.0, MOTOR_X):
+        y0 = -UPRIGHT_HALF_H - FOOT_T - 1
+        L.cut(u, L.cyl_between("clamp", (x, y0, FOOT_L - 20), (x, -UPRIGHT_HALF_H + 1, FOOT_L - 20), CLAMP_R, n=32))
+    L.finish(u); return u
+
+def test_arm():
+    z0 = L_HOUSING + HUB_PROUD
+    a = L.box("test-arm", -15, ARM_L, -ARM_W / 2, ARM_W / 2, z0, z0 + ARM_T)
+    for ang in INSERT_ANGLES:
+        L.cut(a, L.cyl_z("screw", *polar(INSERT_PCD_R, ang), 1.7, z0 - 1, z0 + ARM_T + 1, n=32))
+    for x in WEIGHT_X:
+        L.cut(a, L.cyl_z("weight", x, 0, 2.8, z0 - 1, z0 + ARM_T + 1, n=32))
+    L.finish(a); return a
+
+def pose(theta):
+    """Place the moving parts at input angle theta (rad); disks are built at z 0..DISK_T."""
+    out = Matrix.Rotation(-theta / C.N, 4, 'Z')
+    PARTS["disk-a"].matrix_world = Matrix.Translation((C.E * math.cos(theta), C.E * math.sin(theta), Z_DISK0)) @ out
+    PARTS["disk-b"].matrix_world = Matrix.Translation((-C.E * math.cos(theta), -C.E * math.sin(theta), Z_DISK0 + DISK_T + COLLAR_T)) @ out
+    PARTS["eccentric"].matrix_world = Matrix.Rotation(theta, 4, 'Z')
+    for n in ("carrier-rear", "carrier-front", "test-arm"):
+        PARTS[n].matrix_world = out
+
+def overlap(a, b):
+    """Volume (mm³) a and b share, worked out on copies."""
+    ca, cb = copy(a, "ov_a"), copy(b, "ov_b")
+    ca.matrix_world, cb.matrix_world = a.matrix_world.copy(), b.matrix_world.copy()
+    L.boolean(ca, cb, 'INTERSECT')
+    bm = bmesh.new(); bm.from_mesh(ca.data); bm.transform(ca.matrix_world); v = abs(bm.calc_volume()); bm.free()
+    bpy.data.objects.remove(ca); return v
+
+PAIRS = [("disk-a", "housing-rear"), ("disk-a", "housing-front"), ("disk-b", "housing-rear"), ("disk-b", "housing-front"),
+         ("disk-a", "disk-b"), ("disk-a", "carrier-rear"), ("disk-b", "carrier-front"), ("disk-a", "eccentric"), ("disk-b", "eccentric"),
+         ("eccentric", "carrier-rear"), ("eccentric", "carrier-front"), ("carrier-rear", "housing-rear"),
+         ("carrier-front", "housing-front"), ("test-arm", "housing-front"), ("bench-upright", "housing-rear")]
+
+def check_assembly():
+    worst = {}
+    for th in THETAS:
+        pose(th)
+        for a, b in PAIRS:
+            worst[(a, b)] = max(worst.get((a, b), 0.0), overlap(PARTS[a], PARTS[b]))
+    pose(0.0)
+    bad = {f"{a}/{b}": round(v, 3) for (a, b), v in worst.items() if v > 0.05}
+    assert not bad, bad
+    assert MOTOR_X - SLOT - 21.2 > HOUSING_R + 2, "motor body (42.3 square) hits the housing"
+
+PARTS["bench-upright"] = upright()
+PARTS["test-arm"] = test_arm()
+CHECKS.append(check_assembly)
 
 for check in CHECKS:
     check()
 print("POC", json.dumps({n: L.stats(o) for n, o in PARTS.items()}))
 for n, o in PARTS.items():
+    o.matrix_world = Matrix.Rotation(math.pi, 4, 'X') if n in PRINT_FLIP else Matrix()
     L.export(o, os.path.join(OUT, n + ".stl"))
 print("POC DONE")
