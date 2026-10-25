@@ -28,7 +28,7 @@
 
 - **The front housing half goes on over 21 standing pins at once.** It should slide on by hand. Generator assert: the slip bore is at least 0.1 mm over the pin (Task 4).
 - **Disks swapped or flipped.** A disk on the wrong eccentric must be obvious before it jams. pytest: the wrong phase cuts into the pins (Task 1). Generator: one locator dot on disk A's front face, two on disk B's (Task 3).
-- **Belt length off by a few mm.** The ±3 mm motor slot must cover a 226–238 mm belt. pytest (Task 1).
+- **Belt length off by a few mm.** The motor slot (±3.5 mm, `MOTOR_SLOT`) must cover a 226–238 mm belt. pytest (Task 1).
 - **A 6800 won't slide over an eccentric end.** Generator assert: end radius + eccentricity ≤ journal radius − 0.2 (Task 3).
 - **Output pin engagement.** The stack must leave exactly 3 mm of each 20 mm pin in each carrier. Generator assert (Task 4).
 
@@ -638,7 +638,7 @@ Replace the line `# --- Task 5 adds the bench parts and the assembly check here 
 ```python
 UPRIGHT_T, UPRIGHT_HALF_H, FOOT_T, FOOT_L = 5.0, 40.0, 6.0, 70.0
 MOTOR_X = round(C.belt_centre_distance(20, 40, 232), 2)
-SLOT = 3.0                                   # motor travel each way along x, for belt tension
+SLOT = C.MOTOR_SLOT                          # motor travel each way along x, for belt tension
 NEMA_HOLE_OFF, NEMA_HOLE_R, NEMA_PILOT_R = 15.5, 1.7, 11.75
 HUB_CLEAR_R = 12.0
 CLAMP_R = 3.25
