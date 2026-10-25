@@ -95,7 +95,92 @@ PARTS["disk-b"] = disk("disk-b", C.DISK_B_PHASE, 2)
 PARTS["eccentric"] = eccentric()
 CHECKS += [check_disks, check_eccentric]
 
-# --- Task 4 adds the housing and carriers here; Task 5 the bench parts and the assembly check ---
+LIP_R = 15.0                                 # holds each 6804's outer ring at the housing face
+CARRIER_R, CARRIER_BORE_R = 22.0, 22.5
+HOUSING_R, BOLT_R, BOLT_HOLE_R = 34.0, 30.0, 1.7
+BOLT_ANGLES = [45 + 90 * k for k in range(4)]
+SHOULDER_R = 11.5                            # bears on the 6804 inner ring only
+HUB_PROUD = 1.0
+ROD_CLEAR_R = 2.75
+INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, 6.5   # M3 x 3 x 4.5 heat-set inserts for the test arm
+INSERT_ANGLES = [90 + 120 * k for k in range(3)]
+PIN_DEPTH = 3.0                              # output pin holes, blind from each plate's inner face
+RING_PIN_L, OUT_PIN_L = 18.0, 20.0
+
+def polar(r, deg):
+    return r * math.cos(math.radians(deg)), r * math.sin(math.radians(deg))
+
+def mirror_to_front(o):
+    """Reflect a part built on the rear side through the mid-plane."""
+    o.matrix_world = Matrix.Translation((0, 0, 2 * Z_MID)) @ Matrix.Scale(-1, 4, (0, 0, 1))
+    bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    bm = bmesh.new(); bm.from_mesh(o.data); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(o.data); bm.free()
+
+def housing():
+    rear_bores = [(-1, LIP_T, LIP_R), (LIP_T, LIP_T + BRG_W, P["seat_6804"] / 2),
+                  (LIP_T + BRG_W, Z_DISK0, CARRIER_BORE_R), (Z_DISK0, Z_MID, C.DISK_ZONE_BORE_R)]
+    h = L.cyl_z("housing", 0, 0, HOUSING_R, 0, L_HOUSING, n=160)
+    for z0, z1, r in rear_bores + [(L_HOUSING - b, L_HOUSING - a, r) for a, b, r in rear_bores]:
+        L.cut(h, L.cyl_z("bore", 0, 0, r, z0 - 0.01, z1 + 0.01, n=160))
+    for a in BOLT_ANGLES:
+        L.cut(h, L.cyl_z("bolt", *polar(BOLT_R, a), BOLT_HOLE_R, -1, L_HOUSING + 1, n=32))
+    rear, front = copy(h, "housing-rear"), copy(h, "housing-front")
+    bpy.data.objects.remove(h)
+    L.cut(rear, L.box("split", -50, 50, -50, 50, Z_MID, L_HOUSING + 5))
+    L.cut(front, L.box("split", -50, 50, -50, 50, -5, Z_MID))
+    for k in range(C.N + 1):
+        x, y = polar(C.R, 360 * k / (C.N + 1))
+        L.cut(rear, L.cyl_z("pin", x, y, P["ring_pin_press"] / 2, Z_MID - RING_PIN_L / 2, Z_MID + 1, n=24))
+        L.cut(front, L.cyl_z("pin", x, y, P["ring_pin_slip"] / 2, Z_MID - 1, Z_MID + RING_PIN_L / 2, n=24))
+    L.finish(rear); L.finish(front); return rear, front
+
+def carrier(front):
+    """Built as the rear carrier; the output (front) carrier is mirrored and gets insert holes instead of a rod hole."""
+    z_in = Z_DISK0 - GAP
+    z_plate, z_hub_end = z_in - PLATE_T, -HUB_PROUD
+    z_sh = z_plate - SHOULDER_T
+    c = L.cyl_z("carrier-front" if front else "carrier-rear", 0, 0, CARRIER_R, z_plate, z_in, n=160)
+    L.union(c, L.cyl_z("shoulder", 0, 0, SHOULDER_R, z_sh, z_plate + 0.01, n=120))
+    L.union(c, L.cyl_z("hub", 0, 0, P["hub_6804"] / 2, z_hub_end, z_sh + 0.01, n=120))
+    L.cut(c, L.cyl_z("625", 0, 0, P["seat_625"] / 2, z_in - B625_W, z_in + 1, n=96))
+    for k in range(C.N_OUT):
+        L.cut(c, L.cyl_z("pin", *polar(C.OUT_PCD_R, 360 * k / C.N_OUT), P["out_pin_press"] / 2, z_in - PIN_DEPTH, z_in + 1, n=32))
+    if front:
+        for a in INSERT_ANGLES:
+            L.cut(c, L.cyl_z("insert", *polar(INSERT_PCD_R, a), INSERT_R, z_hub_end - 1, z_hub_end + INSERT_DEPTH, n=32))
+    else:
+        L.cut(c, L.cyl_z("rod", 0, 0, ROD_CLEAR_R, z_hub_end - 1, z_in - B625_W + 0.01, n=48))
+    L.finish(c)
+    if front:
+        mirror_to_front(c)
+    return c
+
+def check_housing_and_carriers():
+    z_in = Z_DISK0 - GAP
+    assert CARRIER_BORE_R - CARRIER_R >= 0.5, "carrier rubs the housing"
+    assert C.R - P["ring_pin_press"] / 2 - CARRIER_BORE_R >= 0.8, "ring pin hole breaks into the carrier bore"
+    assert BOLT_R - BOLT_HOLE_R - (C.R + C.RP) >= 1.5, "bolt hole too close to the ring pins"
+    assert HOUSING_R - BOLT_R - BOLT_HOLE_R >= 1.5, "bolt hole too close to the outside"
+    assert Z_DISK0 - (Z_MID - RING_PIN_L / 2) >= 2.0, "ring pins engage less than 2 mm"
+    assert abs(2 * (Z_MID - z_in) + 2 * PIN_DEPTH - OUT_PIN_L) < 1e-6, "output pins don't fill both plates' holes"
+    assert P["ring_pin_slip"] - 2 * C.RP >= 0.1, "front half won't slide over the ring pins"
+    assert P["hub_6804"] / 2 - P["seat_625"] / 2 >= 1.5, "carrier hub too thin round the 625"
+    assert INSERT_PCD_R + INSERT_R <= P["hub_6804"] / 2 - 1.0, "insert breaks out of the hub"
+    assert PIN_DEPTH <= PLATE_T - 1.0, "output pin holes break through the plate"
+    for name in ("housing-rear", "housing-front", "carrier-rear", "carrier-front"):
+        assert L.stats(PARTS[name])["non_manifold"] == 0, name
+    rear = PARTS["housing-rear"]
+    assert abs(bore_diameter(rear, 0, 0, LIP_T + BRG_W / 2) - P["seat_6804"]) < 0.03
+    assert abs(bore_diameter(rear, 0, 0, LIP_T + BRG_W + 2) - 2 * CARRIER_BORE_R) < 0.05
+    assert abs(bore_diameter(PARTS["carrier-rear"], 0, 0, z_in - B625_W / 2) - P["seat_625"]) < 0.03
+
+PARTS["housing-rear"], PARTS["housing-front"] = housing()
+PARTS["carrier-rear"] = carrier(False)
+PARTS["carrier-front"] = carrier(True)
+CHECKS.append(check_housing_and_carriers)
+
+# --- Task 5 adds the bench parts and the assembly check here ---
 
 for check in CHECKS:
     check()

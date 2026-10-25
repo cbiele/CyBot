@@ -29,7 +29,7 @@ smaller head. It does not bolt into the V1 head.
 2. Its friction is low. Friction, more than load, is what stalled the V1 shoulder.
 3. Together with a 2:1 belt it holds and lifts the axis 5 design load: about 1.7 N·m (gripper, axis 6
    and a 200 g payload, about 0.8 kg centred 150 mm out).
-4. It is much smaller and lighter than V1's 1:11: about Ø60 × 35 mm, with about 90 g of hardware
+4. It is much smaller and lighter than V1's 1:11: about Ø68 × 39 mm, with about 90 g of hardware
    against about 300 g.
 
 ## 3. Layout
@@ -56,9 +56,10 @@ disks → 21 ring pins in the housing → 6 output pins → output carrier.
 All printed parts come from one parametric generator, `tools/blender/cycloid_poc.py`, in the same
 style as the other generators (`hand_lib`, self-test asserts, STLs to `model/cycloid-poc/`).
 
-1. **Housing** (one piece): a ring with 21 Ø3 pin holes through its full width on the pin circle,
-   and a 6804 outer-ring seat at each face. Pins are pushed in last, through the faces, once the disks
-   are in. Mounting flange with four M3 holes for the bench base and, later, the head.
+1. **Housing**, two halves split at the disks' mid-plane, Ø68: the carrier plates can't pass a 6804
+   seat, so each half takes its 6804 from the inside, against a lip at the face. The 21 ring pins press
+   into the rear half and slide into the front half. Four M3 bolts through both halves clamp them and
+   mount the housing to the bench upright and, later, the head.
 2. **Disk A and disk B** (two STLs): the second disk sits on the opposite eccentric, so its lobes are
    turned half a lobe (9°) against its bushing holes; both go on with the same face forward. 20-lobe
    cycloid profile with a print clearance offset, a Ø19 press seat for the 6800, and six Ø8 press seats
