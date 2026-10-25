@@ -43,7 +43,7 @@ disks → 21 ring pins in the housing → 6 output pins → output carrier.
 | Disks | Two, 180° apart, no caps | Two cancel the eccentric forces at wrist speeds; bushings and bearings press straight into the disk, so a cap adds nothing |
 | Eccentricity | 1.0 mm nominal | Generator checks it against undercut; see §5 |
 | Ring pins | 21 × Ø3 × 18 spring pins, slit facing away from the disk | On hand. Needle rollers Ø3 are the alternative (§7) |
-| Output pins | 6 × Ø4 × 18 spring pins through 6 × 8 × 6 brass bushings in each disk | Bushing bore 8 = pin 4 + 2 × eccentricity. Brass is cheap and pressed in holds without slipping (V1 experience) |
+| Output pins | 6 × Ø4 × 20 spring pins through 6 × 8 × 6 brass bushings in each disk | Bushing bore 6 = pin 4 + 2 × eccentricity. Brass is cheap and pressed in holds without slipping (V1 experience) |
 | Disk bearings | 6800 (10 × 19 × 5), one per disk | Small enough for a Ø50 disk |
 | Input shaft | One printed eccentric body on a Ø5 steel core rod | V1's four-piece shaft is where tolerance slop builds up first; see §4 |
 | Input bearings | 625ZZ (5 × 16 × 5), one in each carrier, on the steel rod | In hand (phase B order) |
@@ -59,7 +59,8 @@ style as the other generators (`hand_lib`, self-test asserts, STLs to `model/cyc
 1. **Housing** (one piece): a ring with 21 Ø3 pin holes through its full width on the pin circle,
    and a 6804 outer-ring seat at each face. Pins are pushed in last, through the faces, once the disks
    are in. Mounting flange with four M3 holes for the bench base and, later, the head.
-2. **Disk** ×2 (one STL, the second flipped and turned by half a lobe at assembly): 20-lobe
+2. **Disk A and disk B** (two STLs): the second disk sits on the opposite eccentric, so its lobes are
+   turned half a lobe (9°) against its bushing holes; both go on with the same face forward. 20-lobe
    cycloid profile with a print clearance offset, a Ø19 press seat for the 6800, and six Ø8 press seats
    for the brass bushings. Thickness 6, the bushing length.
 3. **Eccentric body**: one print carrying both journals (Ø10, 1.0 mm offset, 180° apart), bored for the
@@ -76,7 +77,7 @@ style as the other generators (`hand_lib`, self-test asserts, STLs to `model/cyc
 7. **Test arm**: bolts to the output face, with holes for a weight at a few known radii.
 
 Hardware for one reducer: 2 × 6804, 2 × 6800, 2 × 625, 12 × brass 6 × 8 × 6, 21 × Ø3 × 18 and
-6 × Ø4 × 18 spring pins, Ø5 rod about 50 mm, GT2 20T + 40T, 6 mm GT2 belt, M3 screws.
+6 × Ø4 × 20 spring pins, Ø5 rod about 60 mm, GT2 20T + 40T, 6 mm GT2 belt, M3 screws.
 
 ## 5. Generator checks (asserts before export)
 
