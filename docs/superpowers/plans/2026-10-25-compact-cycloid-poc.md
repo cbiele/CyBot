@@ -15,7 +15,7 @@
 - Ratio 1:20 cycloid (20 lobes, 21 ring pins) × 2:1 belt = 40:1. Steps per output degree = 200 × 16 × 40 / 360 = 355.56.
 - Two disks, 180° apart, no caps. Disk A sits on the rear eccentric; disk B, on the front, has its lobes turned half a lobe (9°) against its bushing holes.
 - Ring pins: 21 × Ø3 × 18 spring pins on a Ø50 pin circle, slit facing away from the disk.
-- Output pins: 6 × Ø4 × 20 spring pins on a Ø32 circle, running in 6 × 8 × 6 brass bushings (bore 6 = pin 4 + 2 × eccentricity) pressed into each disk.
+- Output pins: 6 × Ø4 × 20 spring pins on a Ø32 circle, running in 6 × 8 × 5 sintered bronze bushings (bore 6 = pin 4 + 2 × eccentricity) pressed into each disk.
 - Eccentricity 1.0 mm. Disk outline held 0.15 mm off the pins for print tolerance.
 - Bearings: 2 × 6804 (main, one per side), 2 × 6800 (disks), 2 × 625 (input, one in each carrier, on the Ø5 steel rod).
 - Input: one printed eccentric body with both journals, D-bored onto a Ø5 × 55 steel rod with a flat ground 0.5 deep along its length. GT2 40T (5 mm bore) on the rod, GT2 20T on the motor, 232 mm 6 mm GT2 belt.
@@ -753,7 +753,7 @@ git commit -m "Add the cycloid bench parts and check the assembly for collisions
 
 - [ ] **Step 1: Order the hardware**
 
-2 × 6800-2RS, 2 × 6804 (if short), 2 × 625ZZ (in hand), 12 × brass 6 × 8 × 6, Ø5 stainless rod cut to 57 (the input carries only about 0.05 N·m, so it needn't be hardened), 3 × M3 × 3 × 4.5 inserts (in hand), 4 × M3 × 50 bolts + nuts, M3 × 12 × 3 for the test arm. Spring pins Ø3 × 18 × 21 and Ø4 × 20 × 6 are in hand. File a flat to 4.5 across on the first 19 mm from the front end (under the eccentric) and the last 20 mm (under the 40T's set screw); the front end sits flush with the front 625's outer face.
+2 × 6800-2RS, 2 × 6804 (if short), 2 × 625ZZ (in hand), 12 × sintered bronze 6 × 8 × 5 (bought), Ø5 stainless rod cut to 57 (the input carries only about 0.05 N·m, so it needn't be hardened), 3 × M3 × 3 × 4.5 inserts (in hand), 4 × M3 × 50 bolts + nuts, M3 × 12 × 3 for the test arm. Spring pins Ø3 × 18 × 21 and Ø4 × 20 × 6 are in hand. File a flat to 4.5 across on the first 19 mm from the front end (under the eccentric) and the last 20 mm (under the 40T's set screw); the front end sits flush with the front 625's outer face.
 
 - [ ] **Step 2: Print**
 
@@ -762,7 +762,7 @@ All nine STLs in PLA, 0.2 mm, 40 % infill, 4 walls (press seats need solid walls
 - [ ] **Step 3: Assemble (the user, with the Knipex)**
 
 1. Before any bearing goes on a carrier: press the six Ø4 × 20 output pins into the rear carrier until each stands 17.0 above the plate's inner face (the holes go through, so the bearings, not the pins, set the spacing), and heat-set the 3 inserts into the front carrier's hub. Then rear housing half: 6804 from the inside against the lip. Rear carrier hub into it from the inside. 625 into the carrier's seat.
-2. Disks: press a 6800 and six bushings into each (dot face forward).
+2. Disks: press a 6800 and six bushings into each (dot face forward), the bushings flush with the dot face; they are 1 mm shorter than the disk. A pressed sintered bushing closes up a little at the bore: push an output pin through each by hand, and run a 6 mm drill bit through any that bind.
 3. Eccentric on the rod (flat to flat). Disk A onto journal A from the rear end, disk B onto journal B from the front.
 4. Lower the rod and disks in: the rod into the rear 625, the bushings over the pins, disk A rearmost.
 5. Ring pins: push 21 Ø3 × 18 into the rear half's holes, slit facing outward, past the disks' lobes. Turn the rod slightly so the lobes let each pin in.

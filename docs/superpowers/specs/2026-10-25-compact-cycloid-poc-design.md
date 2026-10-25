@@ -43,7 +43,7 @@ disks → 21 ring pins in the housing → 6 output pins → output carrier.
 | Disks | Two, 180° apart, no caps | Two cancel the eccentric forces at wrist speeds; bushings and bearings press straight into the disk, so a cap adds nothing |
 | Eccentricity | 0.8 mm | Set by the bushing: bore 6 less the output pin's uncompressed size (about 4.3) less 0.1 running clearance. Generator checks it against undercut; see §5 |
 | Ring pins | 21 × Ø3 × 18 spring pins, slit facing away from the disk | On hand. Needle rollers Ø3 are the alternative (§7) |
-| Output pins | 6 × Ø4 × 20 spring pins through 6 × 8 × 6 brass bushings in each disk | Spring pins are about 4.3 across until compressed, so the bore is pin 4.3 + 2 × eccentricity + 0.1. Seat Ø8.00, nominal, as V1's Ø10.00 seats for 8 × 10 × 6 fitted. Brass is cheap and pressed in holds without slipping (V1 experience) |
+| Output pins | 6 × Ø4 × 20 spring pins through 6 × 8 × 5 sintered bronze bushings in each disk, pressed flush with the dot face | Spring pins are about 4.3 across until compressed, so the bore is pin 4.3 + 2 × eccentricity + 0.1. Seat Ø8.00, nominal, as V1's Ø10.00 seats for 8 × 10 × 6 fitted. Bronze is cheap, self-lubricating, and pressed in holds without slipping (V1 experience with brass) |
 | Disk bearings | 6800 (10 × 19 × 5), one per disk | Small enough for a Ø50 disk |
 | Input shaft | One printed eccentric body on a Ø5 steel core rod | V1's four-piece shaft is where tolerance slop builds up first; see §4 |
 | Input bearings | 625ZZ (5 × 16 × 5), one in each carrier, on the steel rod | In hand (phase B order) |
@@ -77,7 +77,7 @@ style as the other generators (`hand_lib`, self-test asserts, STLs to `model/cyc
    computes it).
 7. **Test arm**: bolts to the output face, with holes for a weight at a few known radii.
 
-Hardware for one reducer: 2 × 6804, 2 × 6800, 2 × 625, 12 × brass 6 × 8 × 6, 21 × Ø3 × 18 and
+Hardware for one reducer: 2 × 6804, 2 × 6800, 2 × 625, 12 × sintered bronze 6 × 8 × 5, 21 × Ø3 × 18 and
 6 × Ø4 × 20 spring pins, Ø5 rod about 60 mm, GT2 20T + 40T, 6 mm GT2 belt, M3 screws.
 
 ## 5. Generator checks (asserts before export)
