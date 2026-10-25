@@ -32,7 +32,17 @@ def test_output_pins_roll_round_the_bushing_bores(theta):
     for disk in ("A", "B"):
         for hole, pin in zip(C.bushing_centres(disk, theta), C.output_pins(theta)):
             assert math.dist(hole, pin) == pytest.approx(C.E, abs=1e-9)
-    assert C.BUSHING_BORE_R == C.OUT_PIN_R + C.E
+
+
+def test_spring_pins_sized_uncompressed():
+    assert 2 * C.OUT_PIN_R >= 4.3
+    assert 2 * C.RP >= 3.2
+
+
+def test_output_pins_run_free_in_the_bushings():
+    assert C.BUSHING_BORE_R == 3.0
+    assert C.BUSHING_BORE_R - C.OUT_PIN_R - C.E == pytest.approx(C.PIN_RUN_CLEAR / 2)
+    assert C.PIN_RUN_CLEAR >= 0.1
 
 
 def test_disk_clears_the_housing_bore():

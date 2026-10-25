@@ -6,12 +6,13 @@ import math
 
 N = 20                                  # lobes; N + 1 ring pins
 R = 25.0                                # ring pin circle radius
-RP = 1.5                                # ring pins: 3 x 18 spring pins
-E = 1.0                                 # eccentricity
+RP = 1.6                                # ring pins: 3 x 18 spring pins, about 3.2 uncompressed where the lobes run
 CLEAR = 0.15                            # outline held off the pins for print tolerance
 OUT_PCD_R = 16.0                        # output pins and the disks' bushing seats
-OUT_PIN_R = 2.0                         # output pins: 4 x 20 spring pins
-BUSHING_BORE_R = OUT_PIN_R + E          # 6 x 8 x 6 brass
+OUT_PIN_R = 2.15                        # output pins: 4 x 20 spring pins, about 4.3 uncompressed (a free fit took 4.37 in the hand)
+BUSHING_BORE_R = 3.0                    # 6 x 8 x 6 brass
+PIN_RUN_CLEAR = 0.1                     # diametral, pin in bushing
+E = BUSHING_BORE_R - OUT_PIN_R - PIN_RUN_CLEAR / 2   # eccentricity, 0.8
 N_OUT = 6
 DISK_B_PHASE = math.pi / N
 DISK_ZONE_BORE_R = 25.75                # housing round the disks: lobe tips sweep out to R - RP - CLEAR + 2E

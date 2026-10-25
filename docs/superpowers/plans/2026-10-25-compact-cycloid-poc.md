@@ -753,7 +753,7 @@ git commit -m "Add the cycloid bench parts and check the assembly for collisions
 
 - [ ] **Step 1: Order the hardware**
 
-2 × 6800-2RS, 2 × 6804 (if short), 2 × 625ZZ (in hand), 12 × brass 6 × 8 × 6, Ø5 × 55 hardened rod, 3 × M3 × 3 × 4.5 inserts (in hand), 4 × M3 × 50 bolts + nuts, M3 × 10 × 3. Spring pins Ø3 × 18 × 21 and Ø4 × 20 × 6 are in hand. Grind a 0.5 mm flat along the rod's full length.
+2 × 6800-2RS, 2 × 6804 (if short), 2 × 625ZZ (in hand), 12 × brass 6 × 8 × 6, Ø5 × 55 hardened rod, 3 × M3 × 3 × 4.5 inserts (in hand), 4 × M3 × 50 bolts + nuts, M3 × 12 × 3 for the test arm. Spring pins Ø3 × 18 × 21 and Ø4 × 20 × 6 are in hand. Grind a 0.5 mm flat along the rod's full length.
 
 - [ ] **Step 2: Print**
 
@@ -761,14 +761,14 @@ All nine STLs in PLA, 0.2 mm, 40 % infill, 4 walls (press seats need solid walls
 
 - [ ] **Step 3: Assemble (the user, with the Knipex)**
 
-1. Rear housing half: 6804 from the inside against the lip. Rear carrier hub into it from the inside. 625 into the carrier's seat.
+1. Before any bearing goes on a carrier: press the six Ø4 × 20 output pins into the rear carrier until each stands 17.0 above the plate's inner face (the holes go through, so the bearings, not the pins, set the spacing), and heat-set the 3 inserts into the front carrier's hub. Then rear housing half: 6804 from the inside against the lip. Rear carrier hub into it from the inside. 625 into the carrier's seat.
 2. Disks: press a 6800 and six bushings into each (dot face forward).
 3. Eccentric on the rod (flat to flat). Disk A onto journal A from the rear end, disk B onto journal B from the front.
-4. Output pins: press six Ø4 × 20 into the rear carrier's holes. Lower the rod and disks in: the rod into the rear 625, the bushings over the pins, disk A rearmost.
+4. Lower the rod and disks in: the rod into the rear 625, the bushings over the pins, disk A rearmost.
 5. Ring pins: push 21 Ø3 × 18 into the rear half's holes, slit facing outward, past the disks' lobes. Turn the rod slightly so the lobes let each pin in.
-6. Front half: 6804 from the inside, front carrier hub through it, 625 in its seat. Slide it over the ring pins and output pins together. Bolt through both halves and the upright with the 4 M3 × 50.
+6. Front carrier onto the output pins until its inner face is 14.0 from the rear carrier's (3 mm of pin in it). Front half: 6804 from the inside, 625 in the front carrier's seat; the rod's front end must not stand past that 625's outer face. Slide the half over the ring pins and onto the front carrier's hub together. Bolt through both halves and the upright with the 4 M3 × 50.
 7. 40T on the rod behind the upright, set screw on the flat. Motor on the upright, 20T aligned with the 40T, belt on, push the motor along the slot to tension it.
-8. Heat-set the 3 inserts into the front hub. Bolt on the test arm.
+8. Bolt on the test arm with the 3 M3 × 12.
 
 - [ ] **Step 4: Hand turn**
 

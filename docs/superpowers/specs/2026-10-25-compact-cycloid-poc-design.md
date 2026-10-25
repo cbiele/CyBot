@@ -41,9 +41,9 @@ disks → 21 ring pins in the housing → 6 output pins → output carrier.
 |---|---|---|
 | Ratio | 1:20 cycloid (20 lobes, 21 ring pins) × 2:1 belt = 40:1 | Coarse enough lobes for a 0.4 nozzle (about 7 mm apart); 40:1 is what a 20 mm pancake would need |
 | Disks | Two, 180° apart, no caps | Two cancel the eccentric forces at wrist speeds; bushings and bearings press straight into the disk, so a cap adds nothing |
-| Eccentricity | 1.0 mm nominal | Generator checks it against undercut; see §5 |
+| Eccentricity | 0.8 mm | Set by the bushing: bore 6 less the output pin's uncompressed size (about 4.3) less 0.1 running clearance. Generator checks it against undercut; see §5 |
 | Ring pins | 21 × Ø3 × 18 spring pins, slit facing away from the disk | On hand. Needle rollers Ø3 are the alternative (§7) |
-| Output pins | 6 × Ø4 × 20 spring pins through 6 × 8 × 6 brass bushings in each disk | Bushing bore 6 = pin 4 + 2 × eccentricity. Brass is cheap and pressed in holds without slipping (V1 experience) |
+| Output pins | 6 × Ø4 × 20 spring pins through 6 × 8 × 6 brass bushings in each disk | Spring pins are about 4.3 across until compressed, so the bore is pin 4.3 + 2 × eccentricity + 0.1. Seat Ø8.00, nominal, as V1's Ø10.00 seats for 8 × 10 × 6 fitted. Brass is cheap and pressed in holds without slipping (V1 experience) |
 | Disk bearings | 6800 (10 × 19 × 5), one per disk | Small enough for a Ø50 disk |
 | Input shaft | One printed eccentric body on a Ø5 steel core rod | V1's four-piece shaft is where tolerance slop builds up first; see §4 |
 | Input bearings | 625ZZ (5 × 16 × 5), one in each carrier, on the steel rod | In hand (phase B order) |
@@ -64,9 +64,9 @@ style as the other generators (`hand_lib`, self-test asserts, STLs to `model/cyc
    turned half a lobe (9°) against its bushing holes; both go on with the same face forward. 20-lobe
    cycloid profile with a print clearance offset, a Ø19 press seat for the 6800, and six Ø8 press seats
    for the brass bushings. Thickness 6, the bushing length.
-3. **Eccentric body**: one print carrying both journals (Ø10, 1.0 mm offset, 180° apart), bored for the
+3. **Eccentric body**: one print carrying both journals (Ø10, 0.8 mm offset, 180° apart), bored for the
    Ø5 rod and pinned to it with a cross pin or a D-flat. A thin spacer ring between the journals keeps the
-   disks apart. Each 6800 slides on from its own end, so the ends must stay within Ø8 (bearing bore 10
+   disks apart. Each 6800 slides on from its own end, so the ends must stay within Ø8.4 (bearing bore 10
    minus twice the eccentricity).
 4. **Output carrier** (front): a hub that rides the front 6804's inner ring, a Ø16 seat for one 625,
    six Ø4 press holes for the output pins, and an output face with an M3 bolt pattern for the test arm.

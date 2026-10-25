@@ -15,7 +15,8 @@ P = json.load(open(os.path.join(OUT, "params.json")))
 
 LIP_T, BRG_W, SHOULDER_T, PLATE_T, GAP, DISK_T, COLLAR_T = 0.8, 7.0, 0.5, 4.0, 0.5, 6.0, 1.0
 B625_W = 5.0
-END_R, COLLAR_R = 3.8, 6.0                   # eccentric ends pass the 6800 bore at 1 mm offset, 0.2 to spare
+END_R, COLLAR_R = 3.8, 5.2                   # ends pass the 6800 bore at the offset with 0.2 to spare; the collar stays inside its inner ring
+ECC_FLOAT = 0.3                              # axial play between the 625 inner rings
 ROD_R, ROD_FLAT = 2.5, 2.0                   # the steel rod; its flat is 0.5 deep. Walls count from the steel, not the bore's clearance
 DOT_R, DOT_DEPTH, DOT_PCD_R = 1.0, 0.4, 12.0 # locator dots: one on disk A, two on disk B
 Z_DISK0 = LIP_T + BRG_W + SHOULDER_T + PLATE_T + GAP
@@ -60,7 +61,7 @@ def eccentric():
     jr = P["journal_6800"] / 2
     za0, za1 = Z_DISK0, Z_DISK0 + DISK_T
     zb0, zb1 = za1 + COLLAR_T, za1 + COLLAR_T + DISK_T
-    b = L.cyl_z("eccentric", 0, 0, END_R, Z_DISK0 - GAP, zb1 + GAP, n=96)
+    b = L.cyl_z("eccentric", 0, 0, END_R, Z_DISK0 - GAP + ECC_FLOAT / 2, zb1 + GAP - ECC_FLOAT / 2, n=96)
     L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
     L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
     L.union(b, L.cyl_z("journal_b", -C.E, 0, jr, zb0, zb1, n=128))
@@ -104,7 +105,7 @@ HUB_PROUD = 1.0
 ROD_CLEAR_R = 2.75
 INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, 6.5   # M3 x 3 x 4.5 heat-set inserts for the test arm
 INSERT_ANGLES = [90 + 120 * k for k in range(3)]
-PIN_DEPTH = 3.0                              # output pin holes, blind from each plate's inner face
+RELIEF_R, RELIEF_T = 5.5, 0.4                # 625 seat floor relieved under the inner ring, so only the outer ring seats
 RING_PIN_L, OUT_PIN_L = 18.0, 20.0
 
 def polar(r, deg):
@@ -144,8 +145,9 @@ def carrier(front):
     L.union(c, L.cyl_z("shoulder", 0, 0, SHOULDER_R, z_sh, z_plate + 0.01, n=120))
     L.union(c, L.cyl_z("hub", 0, 0, P["hub_6804"] / 2, z_hub_end, z_sh + 0.01, n=120))
     L.cut(c, L.cyl_z("625", 0, 0, P["seat_625"] / 2, z_in - B625_W, z_in + 1, n=96))
+    L.cut(c, L.cyl_z("625_relief", 0, 0, RELIEF_R, z_in - B625_W - RELIEF_T, z_in - B625_W + 0.01, n=64))
     for k in range(C.N_OUT):
-        L.cut(c, L.cyl_z("pin", *polar(C.OUT_PCD_R, 360 * k / C.N_OUT), P["out_pin_press"] / 2, z_in - PIN_DEPTH, z_in + 1, n=32))
+        L.cut(c, L.cyl_z("pin", *polar(C.OUT_PCD_R, 360 * k / C.N_OUT), P["out_pin_press"] / 2, z_plate - 1, z_in + 1, n=32))
     if front:
         for a in INSERT_ANGLES:
             L.cut(c, L.cyl_z("insert", *polar(INSERT_PCD_R, a), INSERT_R, z_hub_end - 1, z_hub_end + INSERT_DEPTH, n=32))
@@ -163,11 +165,10 @@ def check_housing_and_carriers():
     assert BOLT_R - BOLT_HOLE_R - (C.R + C.RP) >= 1.5, "bolt hole too close to the ring pins"
     assert HOUSING_R - BOLT_R - BOLT_HOLE_R >= 1.5, "bolt hole too close to the outside"
     assert Z_DISK0 - (Z_MID - RING_PIN_L / 2) >= 2.0, "ring pins engage less than 2 mm"
-    assert abs(2 * (Z_MID - z_in) + 2 * PIN_DEPTH - OUT_PIN_L) < 1e-6, "output pins don't fill both plates' holes"
+    assert 2.5 <= (OUT_PIN_L - 2 * (Z_MID - z_in)) / 2 <= PLATE_T, "output pins engage each plate 2.5 mm to the full plate"
     assert P["ring_pin_slip"] - 2 * C.RP >= 0.1, "front half won't slide over the ring pins"
     assert P["hub_6804"] / 2 - P["seat_625"] / 2 >= 1.5, "carrier hub too thin round the 625"
     assert INSERT_PCD_R + INSERT_R <= P["hub_6804"] / 2 - 1.0, "insert breaks out of the hub"
-    assert PIN_DEPTH <= PLATE_T - 1.0, "output pin holes break through the plate"
     for name in ("housing-rear", "housing-front", "carrier-rear", "carrier-front"):
         assert L.stats(PARTS[name])["non_manifold"] == 0, name
     rear = PARTS["housing-rear"]
@@ -187,6 +188,7 @@ NEMA_HOLE_OFF, NEMA_HOLE_R, NEMA_PILOT_R = 15.5, 1.7, 11.75
 HUB_CLEAR_R = 12.0
 CLAMP_R = 3.25
 ARM_L, ARM_W, ARM_T = 150.0, 20.0, 6.0
+ARM_BOSS_R, ARM_BOSS_T = 9.0, 4.0            # lifts the arm over the bolt heads on the front face
 WEIGHT_X = (50.0, 100.0, 140.0)              # 1.7 N·m is about 1.25 kg on the 140 hole
 THETAS = (0.0, 0.9, 2.3, 4.0)
 PRINT_FLIP = {"housing-front", "carrier-rear"}
@@ -213,12 +215,13 @@ def upright():
     L.finish(u); return u
 
 def test_arm():
-    z0 = L_HOUSING + HUB_PROUD
-    a = L.box("test-arm", -15, ARM_L, -ARM_W / 2, ARM_W / 2, z0, z0 + ARM_T)
+    z0 = L_HOUSING + HUB_PROUD; z1 = z0 + ARM_BOSS_T + ARM_T
+    a = L.box("test-arm", -15, ARM_L, -ARM_W / 2, ARM_W / 2, z0 + ARM_BOSS_T, z1)
+    L.union(a, L.cyl_z("boss", 0, 0, ARM_BOSS_R, z0, z0 + ARM_BOSS_T + 0.01, n=96))
     for ang in INSERT_ANGLES:
-        L.cut(a, L.cyl_z("screw", *polar(INSERT_PCD_R, ang), 1.7, z0 - 1, z0 + ARM_T + 1, n=32))
+        L.cut(a, L.cyl_z("screw", *polar(INSERT_PCD_R, ang), 1.7, z0 - 1, z1 + 1, n=32))
     for x in WEIGHT_X:
-        L.cut(a, L.cyl_z("weight", x, 0, 2.8, z0 - 1, z0 + ARM_T + 1, n=32))
+        L.cut(a, L.cyl_z("weight", x, 0, 2.8, z0 - 1, z1 + 1, n=32))
     L.finish(a); return a
 
 def pose(theta):
@@ -257,6 +260,31 @@ def check_assembly():
 PARTS["bench-upright"] = upright()
 PARTS["test-arm"] = test_arm()
 CHECKS.append(check_assembly)
+
+BOLT_HEAD_H = 3.0                            # M3 socket head on the front face
+SEAL_R = 6.2                                 # 6800 inner ring land; past it a part rubs the seal
+
+def floor_z(o, x, z_start, up=False):
+    tree, bm = L._tree(o)
+    h = tree.ray_cast(Vector((x, 0, z_start)), Vector((0, 0, 1 if up else -1)))[0]; bm.free()
+    return h.z if h is not None else None
+
+def check_running_clearances():
+    z_in = Z_DISK0 - GAP
+    rear, front = PARTS["carrier-rear"], PARTS["carrier-front"]
+    arm_low = min(v.co.z for v in PARTS["test-arm"].data.vertices if math.hypot(v.co.x, v.co.y) >= BOLT_R - 3)
+    fails = {
+        "test arm hits the bolt heads": arm_low - (L_HOUSING + BOLT_HEAD_H) < 1.5,
+        "rear 625 floor touches the inner ring": floor_z(rear, 7, z_in - 0.1) - floor_z(rear, 4, z_in - 0.1) < 0.3,
+        "front 625 floor touches the inner ring": floor_z(front, 4, 2 * Z_MID - z_in + 0.1, up=True) - floor_z(front, 7, 2 * Z_MID - z_in + 0.1, up=True) < 0.3,
+        "eccentric clamps the 625 inner rings": L.stats(PARTS["eccentric"])["dims"][2] > 2 * (Z_MID - z_in) - 0.3,
+        "output pins bottom in the carrier": floor_z(rear, C.OUT_PCD_R, z_in - 0.1) is not None,
+        "collar rubs the 6800 seal": COLLAR_R + C.E > SEAL_R,
+    }
+    bad = [k for k, v in fails.items() if v]
+    assert not bad, bad
+
+CHECKS.append(check_running_clearances)
 
 for check in CHECKS:
     check()
