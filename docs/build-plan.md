@@ -128,7 +128,7 @@ the bench.
 | 1 | 3M 27T printed (`htd3m_pulley.py`), 5 mm D bore | 179T ring on rotatingBase1/2 | 621-3M | 6.63 | none | 6.63 |
 | 2 | 3M 30T, 6.35 mm bore (printed, `htd3m_pulley.py`; the bought one was GT2 and skipped on the 3M belt) | axis2-GT2-stepper, 120T | 477-3M (462 without tensioner) | 4.0 | 1:23 | 92 |
 | 3 | 3M 30T, 6.35 mm bore (printed, the axis 2 part) | axis3-GT2-stepper, 108T | 420-3M-9 (ordered 2026-10-26; centre distance measured 100, which computes 420.9. The 477 was 56 mm long, more than a tensioner can take up) | 3.6 | 1:20 | 72 |
-| 4 | GT2 20T (fitted in place of the 40T) | axis4_80TGT2-7mm | 308-2GT-6 | 4.0? | 1:11? | 88 (bench 2026-10-24) |
+| 4 | GT2 20T (fitted in place of the 40T) | axis4_80TGT2-7mm (80T counted, same as axis5-80T-7mm) | 308-2GT-6 | 4.0 | 1:11 (counted) | 88 measured, 44 expected (§4) |
 | 5 | GT2 40T, 5 mm bore | axis5-80T-7mm | 308-2GT-6 | 2.0 | 1:11 | 22 |
 | 6 | GT2 20T, 5 mm bore | axis5-pulley 72T, then 80T rotor | 308-2GT-6 + 232-2GT-6 | 3.6 x 80/72 = 4.0 | none | 4.0 |
 
@@ -146,6 +146,14 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
   14 for 1:20" makes axis 2 the 1:23 and axis 3 the 1:20 (the profile is cut
   for 24 or 21 pin positions and only every other one, or two of three, is
   populated). The videos' "1:24" is this same joint.
+  **The 1:11s (axes 4, 5, 6), counted 2026-10-26:** 11 lobes on the disk and 6 ring pins in a ring
+  cut for 12 positions, every other one fitted. The ratio comes from the positions: 11 ÷ (12 − 11) =
+  11:1, so axis 5 is 22:1 and axis 6 is 4:1. Open: axis 4 measured 88:1 against the 4 × 11 = 44
+  expected. The belt is not the cause: `axis4_80TGT2-7mm` and `axis5-80T-7mm` both count 80 teeth,
+  OD 50.42 (GT2), so a 20T gives 4:1. That leaves a factor of 2 in the motor or driver. Either MOTOR4
+  runs 32 microsteps, not 16 (check MRES in `M122`), or axis 4's motor is a 0.9° (400 step) motor. It is a
+  surplus-lot motor, so 0.9° is the likely answer.
+  Check every axis before the POC run on MOTOR5.
 - **Cap fit on axis 3**: confirm `axis2-diskCap` fits the axis-3 disks
   (same Ø80 recess and Ø57 pitch circle) with the first axis-3 disk print,
   before printing three more.
