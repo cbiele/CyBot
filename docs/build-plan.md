@@ -371,3 +371,45 @@ Not in this folder but needed to mount the joint: the split mainBody plates
 - Whether the sample-joint parts are the same v5 geometry as the current
   STLs (the quartit folder is dated earlier); measure one disk's pocket
   circle at 57 mm if in doubt.
+
+## 7. V2 motor sizing, theoretical (2026-10-26)
+
+Estimates for a lighter V2 built on the compact cycloid, scaled up joint by joint going down the
+arm. Not measured: the 0.33 factor and the V2 masses are guesses until the POC bench run
+(`docs/superpowers/specs/2026-10-25-compact-cycloid-poc-design.md` §6) gives friction and stall
+numbers.
+
+**Method.** Usable output torque ≈ holding torque × ratio × 0.33: about half the holding torque is
+left at working speed, and a printed belt plus cycloid runs at about 65 %. Joint loads are static,
+arm held out flat. Shoulder to elbow is 249 mm (V1 model, joint centres z 204 and 453); elbow to
+wrist 230 mm is a guess. V2 head about 1.1 kg: axis 5 module 300 g at the wrist axis, axis 6 module
+300 g at 50 mm, gripper 300 g at 110 mm, payload 200 g at 150 mm.
+
+| Motor | Holding | Mass | Usable at 40:1 | Usable at 60:1 (3:1 belt) |
+|---|---|---|---|---|
+| 20–23 mm pancake | ~0.13 N·m | ~130 g | ~1.7 N·m | ~2.6 N·m |
+| 34 mm | ~0.28 | ~220 g | ~3.7 | ~5.5 |
+| 40 mm | ~0.45 | ~280 g | ~5.9 | ~8.9 |
+| 48 mm (17HS8401B, in hand) | ~0.52 | ~360 g | ~6.9 | ~10.3 |
+| 60 mm | ~0.70 | ~500 g | ~9.2 | ~13.9 |
+| NEMA23 56 mm (23HS22, in hand) | 1.26 | ~700 g | ~16.6 | ~25 |
+
+| Joint | Load, arm flat | Suggested motor | Margin |
+|---|---|---|---|
+| 6, wrist roll | almost no gravity load | pancake, 40:1 | plenty |
+| 5, wrist pitch | ~0.8 N·m | pancake, 40:1 | ~2× |
+| 4, forearm roll | small | pancake, 40:1 | plenty |
+| 3, elbow | ~4.1 N·m | 48 mm, 40:1 | ~1.7× |
+| 2, shoulder | ~10.6 N·m | NEMA23, 40:1 (or 60 mm at 60:1, ~1.3×) | ~1.6× |
+
+- Every 100 g off the head takes about 0.3 N·m off the elbow and 0.5 N·m off the shoulder. The V1
+  head alone (about 2.1 kg, about 0.5 m out) puts about 10 N·m on the shoulder, which is the whole
+  V2 shoulder load.
+- Moving the elbow motor down to the shoulder, belted up to the elbow, takes about 0.9 N·m off the
+  shoulder.
+- Pancakes on axes 4–6 hold only if the POC's friction comes in low. If a pancake can't turn the
+  unloaded POC at low current, step up to 34 mm.
+- Speed: a motor at 300 rpm gives about 45°/s at 40:1 and 30°/s at 60:1. Fast moves add inertial
+  load on top of these static figures.
+- Bigger joints need a scaled cycloid: more lobes or bigger pins, and 6806 or 6808 in place of the
+  6804. Each is a new parameter set for the same generator.
