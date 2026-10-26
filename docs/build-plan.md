@@ -413,3 +413,6 @@ wrist 230 mm is a guess. V2 head about 1.1 kg: axis 5 module 300 g at the wrist 
   load on top of these static figures.
 - Bigger joints need a scaled cycloid: more lobes or bigger pins, and 6806 or 6808 in place of the
   6804. Each is a new parameter set for the same generator.
+- **Axis 4 roll, V2:** use 2 × 6810 (50 × 65 × 7, about 50 g each) in place of V1's 2 × 6812zz
+  (60 × 78 × 10, about 105 g each), saving about 110 g. These are the wrist-pulley bearings already in
+  hand (2RS). The 50 mm bore leaves a hollow roll axis for the axis 5, axis 6 and gripper cables.
