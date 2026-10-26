@@ -416,3 +416,6 @@ wrist 230 mm is a guess. V2 head about 1.1 kg: axis 5 module 300 g at the wrist 
 - **Axis 4 roll, V2:** use 2 × 6810 (50 × 65 × 7, about 50 g each) in place of V1's 2 × 6812zz
   (60 × 78 × 10, about 105 g each), saving about 110 g. These are the wrist-pulley bearings already in
   hand (2RS). The 50 mm bore leaves a hollow roll axis for the axis 5, axis 6 and gripper cables.
+- **Wrist modules, V2:** 6 × 6705-2RS in hand (25 × 32 × 4, about 8 g each) can replace the POC's
+  6804 main bearings. They share the 6804's Ø32 OD, so the proven Ø32.00 seat stays. The hub grows to
+  Ø25 and the housing shortens by about 6 mm. Check the ring lands for the lip and shoulder first.
