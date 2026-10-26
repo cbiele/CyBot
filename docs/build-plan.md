@@ -427,3 +427,15 @@ wrist 230 mm is a guess. V2 head about 1.1 kg: axis 5 module 300 g at the wrist 
 - **Wrist modules, V2:** 6 × 6705-2RS in hand (25 × 32 × 4, about 8 g each) can replace the POC's
   6804 main bearings. They share the 6804's Ø32 OD, so the proven Ø32.00 seat stays. The hub grows to
   Ø25 and the housing shortens by about 6 mm. Check the ring lands for the lip and shoulder first.
+- **Axis 6 and the gripper (axis 7), V2:** axis 6 becomes a hollow version of the compact cycloid.
+  - **The cycloid:** a hollow eccentric sleeve, with its own 40T on the rear end, replaces the Ø5
+    input rod. 6802s go in the disks and on the sleeve, and 2 × 6705 are the main bearings. The bore
+    is about Ø8 and the unit about Ø72 × 34.
+  - **The gripper drive:** the gripper motor is fixed to the head behind axis 6 and drives the
+    gripper's lead screw through a rod in the bore. No wires cross the roll, so axis 6 rolls without
+    limit, and the motor's mass moves back towards axis 5's pitch axis.
+  - **Roll coupling:** rolling axis 6 turns the gripper round a standing rod, which opens or closes
+    it. The host compensates: axis 7 motor angle = grip command + axis 6 output angle.
+  - **Details:** the rod needs its own bushings or bearings inside the spinning sleeve, a thrust
+    shoulder at the motor end, and a D-flat or square coupling at the gripper.
+  - **Order:** POC bench run, then a hollow axis 6 POC with the rod, then the head spec.
