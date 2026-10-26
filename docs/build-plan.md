@@ -125,9 +125,9 @@ the bench.
 
 | Joint | Motor pulley | Driven pulley (printed) | Belt | Belt ratio | Reducer | Total |
 |---|---|---|---|---|---|---|
-| 1 | 3M 27T printed (`axis1_pulley.py`), 5 mm D bore | 179T ring on rotatingBase1/2 | 621-3M | 6.63 | none | 6.63 |
-| 2 | 3M 30T, 6.35 mm bore | axis2-GT2-stepper, 120T | 477-3M (462 without tensioner) | 4.0 | 1:23 | 92 |
-| 3 | 3M 30T, 6.35 mm bore | axis3-GT2-stepper, 108T | 477-3M (420 without tensioner) | 3.6 | 1:20 | 72 |
+| 1 | 3M 27T printed (`htd3m_pulley.py`), 5 mm D bore | 179T ring on rotatingBase1/2 | 621-3M | 6.63 | none | 6.63 |
+| 2 | 3M 30T, 6.35 mm bore (printed, `htd3m_pulley.py`; the bought one was GT2 and skipped on the 3M belt) | axis2-GT2-stepper, 120T | 477-3M (462 without tensioner) | 4.0 | 1:23 | 92 |
+| 3 | 3M 30T, 6.35 mm bore (printed, the axis 2 part) | axis3-GT2-stepper, 108T | 420-3M-9 (ordered 2026-10-26; centre distance measured 100, which computes 420.9. The 477 was 56 mm long, more than a tensioner can take up) | 3.6 | 1:20 | 72 |
 | 4 | GT2 20T (fitted in place of the 40T) | axis4_80TGT2-7mm | 308-2GT-6 | 4.0? | 1:11? | 88 (bench 2026-10-24) |
 | 5 | GT2 40T, 5 mm bore | axis5-80T-7mm | 308-2GT-6 | 2.0 | 1:11 | 22 |
 | 6 | GT2 20T, 5 mm bore | axis5-pulley 72T, then 80T rotor | 308-2GT-6 + 232-2GT-6 | 3.6 x 80/72 = 4.0 | none | 4.0 |
