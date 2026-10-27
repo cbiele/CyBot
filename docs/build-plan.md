@@ -466,3 +466,16 @@ wrist 230 mm is a guess. V2 head about 1.1 kg: axis 5 module 300 g at the wrist 
   - **Costs:** cutting, drilling and tapping, and the cross-members must hold the shoulder shaft
     bearings in line across the gap; loose rails rack. 2020 is too slight alone for the shoulder
     shaft and the NEMA23, so it needs larger printed bearing blocks.
+- **A third disk (2026-10-27):** it leaves the ratio alone. The POC stays 1:20 (40:1 with the 2:1
+  belt) because the ratio is set only by 20 lobes in 21 pins.
+  - **What it gives:** load shared over more lobe and pin contacts, less torque ripple and, with a
+    double-thick middle disk set 180° from the outer two, both the radial force and the rocking
+    couple cancelled. Three equal disks at 120° cancel the force but still rock, as the two at 180°
+    do now.
+  - **Costs:** a longer housing, more mass, a three-lobe eccentric, and one more disk to drop in
+    offset by E.
+  - **Use it** only if a joint runs short of torque at the POC's diameter. Two disks are enough for
+    the POC.
+  - **For more ratio in the same diameter:** a 3:1 belt (60:1) first, then more lobes (25 in 26
+    pins with smaller pins and E). A compound disk (20 in 21 fixed, 19 in 20 as output) gives
+    1 − (21/20)(19/20) = 1/400, far too slow and inefficient for this arm.
