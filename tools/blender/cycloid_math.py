@@ -17,6 +17,7 @@ N_OUT = 6
 DISK_B_PHASE = math.pi / N
 DISK_ZONE_BORE_R = 25.75                # housing round the disks: lobe tips sweep out to R - RP - CLEAR + 2E
 STEPS_PER_DEG = 200 * 16 * 2 * N / 360  # 2:1 belt, then 1:N
+GT2_FLANGE_T, GT2_TEETH_W = 1.0, 7.5     # printed 40T (gt2_pulley.py): free flange, then teeth for a 6 mm belt
 MOTOR_SLOT = 3.5                        # bench motor travel each way: a 232 belt +-6 mm moves the motor 3.01
 
 

@@ -191,7 +191,7 @@ ARM_L, ARM_W, ARM_T = 150.0, 20.0, 6.0
 ARM_BOSS_R, ARM_BOSS_T = 9.0, 4.0            # lifts the arm over the bolt heads on the front face
 WEIGHT_X = (50.0, 100.0, 140.0)              # 1.7 N·m is about 1.25 kg on the 140 hole
 THETAS = (0.0, 0.9, 2.3, 4.0)
-PRINT_FLIP = {"housing-front", "carrier-rear"}
+PRINT_FLIP = {"housing-front", "carrier-rear", "motor-mount"}
 
 def slot(name, x, y, r, half, z0, z1):
     s = L.cyl_z(name, x - half, y, r, z0, z1, n=32)
@@ -213,6 +213,42 @@ def upright():
         y0 = -UPRIGHT_HALF_H - FOOT_T - 1
         L.cut(u, L.cyl_between("clamp", (x, y0, FOOT_L - 20), (x, -UPRIGHT_HALF_H + 1, FOOT_L - 20), CLAMP_R, n=32))
     L.finish(u); return u
+
+MOUNT_T, MOUNT_HALF_W = 6.0, 22.5
+RIB_Y0, RIB_W, RIB_H, RIB_X0 = 19.5, 3.0, 5.0, 28.0   # ribs under the arm, outside the screw heads and the belt; x0 clears the bolt heads
+PULLEY_GAP = 1.0                             # 40T's free flange to the plate
+MOTOR_SHAFT_L = 20.0                         # shortest NEMA 17 shaft we fit (pancake), from the face
+
+def motor_mount():
+    """Head version of the upright: on the housing's rear face, motor face on the housing side so its body runs
+    forward beside the housing, shaft back through the plate to the belt plane behind it."""
+    x1 = MOTOR_X + SLOT + MOUNT_HALF_W
+    m = L.cyl_z("motor-mount", 0, 0, HOUSING_R, -MOUNT_T, 0, n=160)
+    L.union(m, L.box("arm", 0, x1, -MOUNT_HALF_W, MOUNT_HALF_W, -MOUNT_T, 0))
+    for sy in (-1, 1):
+        y0, y1 = sorted((sy * RIB_Y0, sy * (RIB_Y0 + RIB_W)))
+        L.union(m, L.box("rib", RIB_X0, x1, y0, y1, -MOUNT_T - RIB_H, -MOUNT_T + 0.01))
+    L.cut(m, L.cyl_z("hub", 0, 0, HUB_CLEAR_R, -MOUNT_T - 1, 1, n=96))
+    for a in BOLT_ANGLES:
+        L.cut(m, L.cyl_z("bolt", *polar(BOLT_R, a), BOLT_HOLE_R, -MOUNT_T - 1, 1, n=32))
+    L.cut(m, slot("pilot", MOTOR_X, 0, NEMA_PILOT_R, SLOT, -MOUNT_T - 1, 1))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            L.cut(m, slot("nema", MOTOR_X + sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, NEMA_HOLE_R, SLOT, -MOUNT_T - 1, 1))
+    L.finish(m); return m
+
+def belt_plane_from_motor_face():
+    return MOUNT_T + PULLEY_GAP + C.GT2_FLANGE_T + C.GT2_TEETH_W / 2
+
+def check_motor_mount():
+    m = PARTS["motor-mount"]
+    assert L.stats(m)["non_manifold"] == 0
+    assert HUB_CLEAR_R - P["hub_6804"] / 2 >= 1.5, "mount rubs the rear carrier's hub"
+    assert RIB_Y0 - (NEMA_HOLE_OFF + 2.75) >= 1.0, "ribs hit the motor screw heads"
+    assert RIB_Y0 - (40 / math.pi - 0.254 + 1.0) >= 2.0, "ribs reach the 40T flange"
+    assert RIB_X0 - (polar(BOLT_R, 45)[0] + 2.75) >= 2.0, "ribs hit the housing bolt heads"
+    assert belt_plane_from_motor_face() + C.GT2_TEETH_W / 2 <= MOTOR_SHAFT_L - 2.0, "20T can't reach the belt plane"
+    assert abs(L.stats(m)["dims"][2] - (MOUNT_T + RIB_H)) < 0.01
 
 def test_arm():
     z0 = L_HOUSING + HUB_PROUD; z1 = z0 + ARM_BOSS_T + ARM_T
@@ -244,7 +280,8 @@ def overlap(a, b):
 PAIRS = [("disk-a", "housing-rear"), ("disk-a", "housing-front"), ("disk-b", "housing-rear"), ("disk-b", "housing-front"),
          ("disk-a", "disk-b"), ("disk-a", "carrier-rear"), ("disk-b", "carrier-front"), ("disk-a", "eccentric"), ("disk-b", "eccentric"),
          ("eccentric", "carrier-rear"), ("eccentric", "carrier-front"), ("carrier-rear", "housing-rear"),
-         ("carrier-front", "housing-front"), ("test-arm", "housing-front"), ("bench-upright", "housing-rear")]
+         ("carrier-front", "housing-front"), ("test-arm", "housing-front"), ("bench-upright", "housing-rear"),
+         ("motor-mount", "housing-rear"), ("motor-mount", "carrier-rear"), ("motor-mount", "eccentric")]
 
 def check_assembly():
     worst = {}
@@ -258,6 +295,8 @@ def check_assembly():
     assert MOTOR_X - SLOT - 21.2 > HOUSING_R + 2, "motor body (42.3 square) hits the housing"
 
 PARTS["bench-upright"] = upright()
+PARTS["motor-mount"] = motor_mount()
+CHECKS.append(check_motor_mount)
 PARTS["test-arm"] = test_arm()
 CHECKS.append(check_assembly)
 
@@ -288,6 +327,7 @@ CHECKS.append(check_running_clearances)
 
 for check in CHECKS:
     check()
+print("BELT PLANE from motor face", belt_plane_from_motor_face(), "mm; motor at", MOTOR_X)
 print("POC", json.dumps({n: L.stats(o) for n, o in PARTS.items()}))
 for n, o in PARTS.items():
     o.matrix_world = Matrix.Rotation(math.pi, 4, 'X') if n in PRINT_FLIP else Matrix()
