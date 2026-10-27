@@ -454,3 +454,15 @@ wrist 230 mm is a guess. V2 head about 1.1 kg: axis 5 module 300 g at the wrist 
   - **Details:** the rod needs its own bushings or bearings inside the spinning sleeve, a thrust
     shoulder at the motor end, and a D-flat or square coupling at the gripper.
   - **Order:** POC bench run, then a hollow axis 6 POC with the rod, then the head spec.
+- **Body frame materials to explore, V2:** 2020 and 2040 aluminium extrusion, a rail down each side
+  of the body joined by printed cross-members that carry the bearing seats and motor faces.
+  - **Not a weight saving:** the four printed plates are about 740 cm³ solid, roughly 0.5 kg. Two
+    2040 rails at about 420 mm are about 0.8 kg before mounts, and two 2020 about 0.4 kg. Only axis 1
+    turns the body, so its mass puts no gravity load on the shoulder or elbow. Weight comes off the
+    head instead.
+  - **What it buys:** stiffness and no creep under belt tension, no plate split at z ≈ 260, motor
+    mounts that slide in the T-slot to set belt centre distance, and small printed mounts to reprint
+    when the cycloids shrink instead of the 420 mm plates.
+  - **Costs:** cutting, drilling and tapping, and the cross-members must hold the shoulder shaft
+    bearings in line across the gap; loose rails rack. 2020 is too slight alone for the shoulder
+    shaft and the NEMA23, so it needs larger printed bearing blocks.
