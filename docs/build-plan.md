@@ -197,6 +197,21 @@ project; the STLs show one 6804 and a T8 lead screw and nut.
     TMC2209 for the NEMA17s; limit switches on Octopus endstop inputs and
     StallGuard via Marlin, not the carrier expander; 24 V in behind the
     e-stop copper; Octopus 5 V out to the carrier's J2 by pigtail.
+  - **Driver map (2026-10-26):** 2 × TMC5160, 5 × TMC2209.
+
+    | Slot | Driver | Axis | Motor |
+    |---|---|---|---|
+    | MOTOR0 | TMC2209 | X, J1 base | 17HS8401B |
+    | MOTOR1 | TMC5160 | Y, J2 shoulder | 23HS22-2804S |
+    | MOTOR2 | TMC5160 | Z, J3 elbow | 23HS22-2804S |
+    | MOTOR3 | empty | — | — |
+    | MOTOR4 | TMC2209 | I (A), J4 forearm roll | surplus-lot motor, likely 0.9° (§4) |
+    | MOTOR5 | TMC2209 | J (B), J5 wrist pitch | none yet; the cycloid POC bench test goes here |
+    | MOTOR6 | TMC2209 | K (C), J6 wrist roll | none yet |
+    | MOTOR7 | TMC2209 | spare | none; kept for the V2 gripper (axis 7) |
+
+    Once every motor is connected, run one `M122` and check that each TMC2209 reads OK over UART. A
+    socket left without its UART jumper falls back to its MS pins and may not be on 16 microsteps.
   - Steps per degree per joint = motor steps x microsteps x total ratio /
     360, with the total ratios from the pulley table in §3 (6.63, 92, 72,
     88, 22, 4.0). At 200 steps and 16 microsteps: 58.9, 817.8, 640, 782.2,
