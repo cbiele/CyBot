@@ -19,6 +19,10 @@ END_R, COLLAR_R = 3.8, 5.2                   # ends pass the 6800 bore at the of
 ECC_FLOAT = 0.3                              # axial play between the 625 inner rings
 ROD_R, ROD_FLAT = 2.5, 2.0                   # the steel rod; its flat is 0.5 deep. Walls count from the steel, not the bore's clearance
 DOT_R, DOT_DEPTH, DOT_PCD_R = 1.0, 0.4, 12.0 # locator dots: one on disk A, two on disk B
+HOLLOW = "--hollow" in sys.argv              # axis 6: eccentric as a hollow sleeve on 688s, the gripper rod through it
+SLEEVE_R, SLEEVE_BORE_R = 3.975, 2.65        # 688 bore less 0.05; the Ø5 gripper rod plus 0.15 each side
+SLEEVE_FLAT = 3.675                          # double-D for the 40T, 0.3 deep each side
+MOUNT_T, PULLEY_GAP, PULLEY_H = 6.0, 1.0, 16.5   # motor mount plate; 40T free flange to the plate; 40T height (gt2_pulley.py)
 Z_DISK0 = LIP_T + BRG_W + SHOULDER_T + PLATE_T + GAP
 Z_MID = Z_DISK0 + DISK_T + COLLAR_T / 2
 L_HOUSING = 2 * Z_MID
@@ -61,13 +65,27 @@ def eccentric():
     jr = P["journal_6800"] / 2
     za0, za1 = Z_DISK0, Z_DISK0 + DISK_T
     zb0, zb1 = za1 + COLLAR_T, za1 + COLLAR_T + DISK_T
-    b = L.cyl_z("eccentric", 0, 0, END_R, Z_DISK0 - GAP + ECC_FLOAT / 2, zb1 + GAP - ECC_FLOAT / 2, n=96)
+    if HOLLOW:
+        z_tail, z_nose = sleeve_ends()
+        b = L.cyl_z("eccentric", 0, 0, SLEEVE_R, z_tail, z_nose, n=96)
+    else:
+        b = L.cyl_z("eccentric", 0, 0, END_R, Z_DISK0 - GAP + ECC_FLOAT / 2, zb1 + GAP - ECC_FLOAT / 2, n=96)
     L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
     L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
     L.union(b, L.cyl_z("journal_b", -C.E, 0, jr, zb0, zb1, n=128))
-    rod = L.cyl_z("rod", 0, 0, P["rod_bore"] / 2, -1, L_HOUSING + 1, n=64)
-    L.cut(rod, L.box("flat", ROD_FLAT, 5, -5, 5, -2, L_HOUSING + 2))
-    L.cut(b, rod); L.finish(b); return b
+    if HOLLOW:
+        L.cut(b, L.cyl_z("bore", 0, 0, SLEEVE_BORE_R, z_tail - 1, z_nose + 1, n=64))
+        for x0, x1 in ((SLEEVE_FLAT, 5), (-5, -SLEEVE_FLAT)):
+            L.cut(b, L.box("flat", x0, x1, -5, 5, z_tail - 1, -MOUNT_T - PULLEY_GAP + 0.5))
+    else:
+        rod = L.cyl_z("rod", 0, 0, P["rod_bore"] / 2, -1, L_HOUSING + 1, n=64)
+        L.cut(rod, L.box("flat", ROD_FLAT, 5, -5, 5, -2, L_HOUSING + 2))
+        L.cut(b, rod)
+    L.finish(b); return b
+
+def sleeve_ends():
+    """Tail flush with the 40T's hub top behind the mount; nose 0.2 short of the front 688's outer face."""
+    return -(MOUNT_T + PULLEY_GAP + PULLEY_H), 2 * Z_MID - (Z_DISK0 - GAP) + B625_W - 0.2
 
 def check_disks():
     root = C.R - C.RP - C.CLEAR - C.E
@@ -81,9 +99,12 @@ def check_disks():
 
 def check_eccentric():
     jr = P["journal_6800"] / 2
-    assert END_R + C.E <= jr - 0.2, "a 6800 won't slide over the eccentric end"
-    assert END_R - ROD_R >= 1.2, "eccentric end too thin round the rod"
-    assert jr - C.E - ROD_R >= 1.5, "journal too thin round the rod"
+    end_r, core_r = (SLEEVE_R, SLEEVE_BORE_R) if HOLLOW else (END_R, ROD_R)
+    assert end_r + C.E <= jr - 0.2, "a 6800 won't slide over the eccentric end"
+    assert end_r - core_r >= 1.2, "eccentric end too thin round the rod"
+    assert jr - C.E - core_r >= 1.5, "journal too thin round the rod"
+    if HOLLOW:
+        assert SLEEVE_FLAT - SLEEVE_BORE_R >= 1.0, "sleeve too thin under the 40T flats"
     o = PARTS["eccentric"]
     assert L.stats(o)["non_manifold"] == 0
     za, zb = Z_DISK0 + DISK_T / 2, Z_MID + COLLAR_T / 2 + DISK_T / 2
@@ -103,6 +124,7 @@ BOLT_ANGLES = [45 + 90 * k for k in range(4)]
 SHOULDER_R = 11.5                            # bears on the 6804 inner ring only
 HUB_PROUD = 1.0
 ROD_CLEAR_R = 2.75
+SLEEVE_CLEAR, GRIP_ROD_CLEAR_R = 0.5, 2.8    # rear hub round the turning sleeve; front hub round the gripper rod
 INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, 6.5   # M3 x 3 x 4.5 heat-set inserts for the test arm
 INSERT_ANGLES = [90 + 120 * k for k in range(3)]
 RELIEF_R, RELIEF_T = 5.5, 0.4                # 625 seat floor relieved under the inner ring, so only the outer ring seats
@@ -151,8 +173,11 @@ def carrier(front):
     if front:
         for a in INSERT_ANGLES:
             L.cut(c, L.cyl_z("insert", *polar(INSERT_PCD_R, a), INSERT_R, z_hub_end - 1, z_hub_end + INSERT_DEPTH, n=32))
+        if HOLLOW:
+            L.cut(c, L.cyl_z("grip_rod", 0, 0, GRIP_ROD_CLEAR_R, z_hub_end - 1, z_in - B625_W + 0.01, n=48))
     else:
-        L.cut(c, L.cyl_z("rod", 0, 0, ROD_CLEAR_R, z_hub_end - 1, z_in - B625_W + 0.01, n=48))
+        rod_r = SLEEVE_R + SLEEVE_CLEAR if HOLLOW else ROD_CLEAR_R
+        L.cut(c, L.cyl_z("rod", 0, 0, rod_r, z_hub_end - 1, z_in - B625_W + 0.01, n=48))
     L.finish(c)
     if front:
         mirror_to_front(c)
@@ -214,10 +239,34 @@ def upright():
         L.cut(u, L.cyl_between("clamp", (x, y0, FOOT_L - 20), (x, -UPRIGHT_HALF_H + 1, FOOT_L - 20), CLAMP_R, n=32))
     L.finish(u); return u
 
-MOUNT_T, MOUNT_HALF_W = 6.0, 22.5
+MOUNT_HALF_W = 22.5
 RIB_Y0, RIB_W, RIB_H, RIB_X0 = 19.5, 3.0, 5.0, 28.0   # ribs under the arm, outside the screw heads and the belt; x0 clears the bolt heads
-PULLEY_GAP = 1.0                             # 40T's free flange to the plate
 MOTOR_SHAFT_L = 20.0                         # shortest NEMA 17 shaft we fit (pancake), from the face
+POST_R, POST_RAD, POST_ANGLES = 26.0, 4.5, (90, 180, 270)   # MOTOR7 bracket posts, on the side away from the belt
+COUPLER_L, COUPLER_R = 25.0, 9.5             # 5 to 5 mm flexible coupler, about Ø19 x 25; check when it arrives
+BRACKET_T, ROD_L = 5.0, 100.0
+
+def bracket_z():
+    """Coupler 1.5 behind the sleeve tail, bracket 1 behind the coupler; motor face on the bracket's rear."""
+    z_coupler1 = sleeve_ends()[0] - 1.5
+    z_front = z_coupler1 - COUPLER_L - 1.0
+    return z_front - BRACKET_T, z_front, z_coupler1
+
+def grip_rod_z():
+    """Rod butts 1 past the MOTOR7 shaft tip inside the coupler."""
+    z0 = bracket_z()[0] + MOTOR_SHAFT_L + 1.0
+    return z0, z0 + ROD_L
+
+def motor7_bracket():
+    z0, z1, _ = bracket_z()
+    b = L.cyl_z("motor7-bracket", 0, 0, POST_R + POST_RAD, z0, z1, n=160)
+    L.cut(b, L.cyl_z("pilot", 0, 0, NEMA_PILOT_R, z0 - 1, z1 + 1, n=96))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            L.cut(b, L.cyl_z("nema", sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, NEMA_HOLE_R, z0 - 1, z1 + 1, n=32))
+    for a in POST_ANGLES:
+        L.cut(b, L.cyl_z("post", *polar(POST_R, a), BOLT_HOLE_R, z0 - 1, z1 + 1, n=32))
+    L.finish(b); return b
 
 def motor_mount():
     """Head version of the upright: on the housing's rear face, motor face on the housing side so its body runs
@@ -235,6 +284,11 @@ def motor_mount():
     for sx in (-1, 1):
         for sy in (-1, 1):
             L.cut(m, slot("nema", MOTOR_X + sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, NEMA_HOLE_R, SLOT, -MOUNT_T - 1, 1))
+    if HOLLOW:
+        z_front = bracket_z()[1]
+        for a in POST_ANGLES:
+            L.union(m, L.cyl_z("post", *polar(POST_R, a), POST_RAD, z_front, -MOUNT_T + 0.01, n=48))
+            L.cut(m, L.cyl_z("insert", *polar(POST_R, a), INSERT_R, z_front - 1, z_front + 5.0, n=32))
     L.finish(m); return m
 
 def belt_plane_from_motor_face():
@@ -248,7 +302,23 @@ def check_motor_mount():
     assert RIB_Y0 - (40 / math.pi - 0.254 + 1.0) >= 2.0, "ribs reach the 40T flange"
     assert RIB_X0 - (polar(BOLT_R, 45)[0] + 2.75) >= 2.0, "ribs hit the housing bolt heads"
     assert belt_plane_from_motor_face() + C.GT2_TEETH_W / 2 <= MOTOR_SHAFT_L - 2.0, "20T can't reach the belt plane"
-    assert abs(L.stats(m)["dims"][2] - (MOUNT_T + RIB_H)) < 0.01
+    if not HOLLOW:
+        assert abs(L.stats(m)["dims"][2] - (MOUNT_T + RIB_H)) < 0.01
+        return
+    z0, z_front, z_coupler1 = bracket_z()
+    flange_r = 40 / math.pi - 0.254 + 1.0
+    bolt_heads = [polar(BOLT_R, b) for b in BOLT_ANGLES]
+    for a in POST_ANGLES:
+        x, y = polar(POST_R, a)
+        assert min(math.hypot(x - bx, y - by) for bx, by in bolt_heads) >= POST_RAD + 2.75 + 1.0, "post hits a housing bolt head"
+        assert abs(y) - POST_RAD >= flange_r + 2.0 or x < -(flange_r + POST_RAD + 2.0), "post in the belt or the 40T"
+    assert POST_R - POST_RAD - COUPLER_R >= 2.0, "coupler rubs a post"
+    assert z_coupler1 < sleeve_ends()[0] - 1.0, "coupler rubs the sleeve tail"
+    r0, r1 = grip_rod_z()
+    assert r0 > z0 + MOTOR_SHAFT_L and z_coupler1 - r0 >= 8.0, "rod meets the motor shaft or grips less than 8 of the coupler"
+    assert r1 - (L_HOUSING + HUB_PROUD) >= 20.0, "rod stands less than 20 past the output face"
+    assert INSERT_PCD_R - INSERT_R - GRIP_ROD_CLEAR_R >= 1.0, "output insert breaks into the rod hole"
+    assert L.stats(PARTS["motor7-bracket"])["non_manifold"] == 0
 
 def test_arm():
     z0 = L_HOUSING + HUB_PROUD; z1 = z0 + ARM_BOSS_T + ARM_T
@@ -296,6 +366,8 @@ def check_assembly():
 
 PARTS["bench-upright"] = upright()
 PARTS["motor-mount"] = motor_mount()
+if HOLLOW:
+    PARTS["motor7-bracket"] = motor7_bracket()
 CHECKS.append(check_motor_mount)
 PARTS["test-arm"] = test_arm()
 CHECKS.append(check_assembly)
@@ -311,12 +383,13 @@ def floor_z(o, x, z_start, up=False):
 def check_running_clearances():
     z_in = Z_DISK0 - GAP
     rear, front = PARTS["carrier-rear"], PARTS["carrier-front"]
+    x_inner = 5.0 if HOLLOW else 4                 # under the inner ring: 688 from 4 out, 625 from 2.5
     arm_low = min(v.co.z for v in PARTS["test-arm"].data.vertices if math.hypot(v.co.x, v.co.y) >= BOLT_R - 3)
     fails = {
         "test arm hits the bolt heads": arm_low - (L_HOUSING + BOLT_HEAD_H) < 1.5,
-        "rear 625 floor touches the inner ring": floor_z(rear, 7, z_in - 0.1) - floor_z(rear, 4, z_in - 0.1) < 0.3,
-        "front 625 floor touches the inner ring": floor_z(front, 4, 2 * Z_MID - z_in + 0.1, up=True) - floor_z(front, 7, 2 * Z_MID - z_in + 0.1, up=True) < 0.3,
-        "eccentric clamps the 625 inner rings": L.stats(PARTS["eccentric"])["dims"][2] > 2 * (Z_MID - z_in) - 0.3,
+        "rear 625 floor touches the inner ring": floor_z(rear, 7, z_in - 0.1) - floor_z(rear, x_inner, z_in - 0.1) < 0.3,
+        "front 625 floor touches the inner ring": floor_z(front, x_inner, 2 * Z_MID - z_in + 0.1, up=True) - floor_z(front, 7, 2 * Z_MID - z_in + 0.1, up=True) < 0.3,
+        "eccentric clamps the 625 inner rings": not HOLLOW and L.stats(PARTS["eccentric"])["dims"][2] > 2 * (Z_MID - z_in) - 0.3,
         "output pins bottom in the carrier": floor_z(rear, C.OUT_PCD_R, z_in - 0.1) is not None,
         "collar rubs the 6800 seal": COLLAR_R + C.E > SEAL_R,
     }
@@ -329,7 +402,12 @@ for check in CHECKS:
     check()
 print("BELT PLANE from motor face", belt_plane_from_motor_face(), "mm; motor at", MOTOR_X)
 print("POC", json.dumps({n: L.stats(o) for n, o in PARTS.items()}))
+HOLLOW_PARTS = {"eccentric", "carrier-rear", "carrier-front", "motor-mount", "motor7-bracket"}   # the rest are the POC's, unchanged
+if HOLLOW:
+    print("GRIP ROD z", grip_rod_z(), "bracket z", bracket_z())
 for n, o in PARTS.items():
+    if HOLLOW and n not in HOLLOW_PARTS:
+        continue
     o.matrix_world = Matrix.Rotation(math.pi, 4, 'X') if n in PRINT_FLIP else Matrix()
-    L.export(o, os.path.join(OUT, n + ".stl"))
+    L.export(o, os.path.join(OUT, ("cycloid-hollow-" if HOLLOW else "") + n + ".stl"))
 print("POC DONE")
