@@ -217,7 +217,7 @@ ARM_L, ARM_W, ARM_T = 150.0, 20.0, 6.0
 ARM_BOSS_R, ARM_BOSS_T = 9.0, 4.0            # lifts the arm over the bolt heads on the front face
 WEIGHT_X = (50.0, 100.0, 140.0)              # 1.7 N·m is about 1.25 kg on the 140 hole
 THETAS = (0.0, 0.9, 2.3, 4.0)
-PRINT_FLIP = {"housing-front", "carrier-rear", "motor-mount"}
+PRINT_FLIP = {"housing-front", "carrier-rear"}
 
 def slot(name, x, y, r, half, z0, z1):
     s = L.cyl_z(name, x - half, y, r, z0, z1, n=32)
@@ -240,10 +240,14 @@ def upright():
         L.cut(u, L.cyl_between("clamp", (x, y0, FOOT_L - 20), (x, -UPRIGHT_HALF_H + 1, FOOT_L - 20), CLAMP_R, n=32))
     L.finish(u); return u
 
-MOUNT_HALF_W = 22.5
-RIB_Y0, RIB_W, RIB_H, RIB_X0 = 19.5, 3.0, 5.0, 28.0   # ribs under the arm, outside the screw heads and the belt; x0 clears the bolt heads
+NEMA_SQUARE = 42.3
+RAIL_GAP, RAIL_W, RAIL_H = 42.7, 3.0, 5.0   # motor rails on the motor face, 0.2 a side; the motor slides between them for tension
+RAIL_X0 = HOUSING_R + 2.0
+MOUNT_HALF_W = RAIL_GAP / 2 + RAIL_W
+CB_R, CB_DEPTH = 3.0, 3.2                    # M3 socket heads sunk in the housing face, under the housing
 MOTOR_SHAFT_L = 20.0                         # shortest NEMA 17 shaft we fit (pancake), from the face
-POST_R, POST_RAD, POST_ANGLES = 26.0, 4.5, (90, 180, 270)   # MOTOR7 bracket posts, on the side away from the belt
+POST_R, POST_RAD, POST_ANGLES = 26.0, 4.5, (90, 180, 270)   # MOTOR7 bracket's posts, on the side away from the belt
+POST_INSERT_DEPTH = 5.0
 COUPLER_L, COUPLER_R = 25.0, 9.5             # 5 to 5 mm flexible coupler, about Ø19 x 25; check when it arrives
 BRACKET_T, ROD_L = 5.0, 100.0
 
@@ -259,14 +263,17 @@ def grip_rod_z():
     return z0, z0 + ROD_L
 
 def motor7_bracket():
+    """Disc for MOTOR7 with three posts up to the mount's belt face; prints disc down. Screws come through the
+    mount from its housing face into inserts in the post tips, so it goes on before the mount meets the housing."""
     z0, z1, _ = bracket_z()
     b = L.cyl_z("motor7-bracket", 0, 0, POST_R + POST_RAD, z0, z1, n=160)
+    for a in POST_ANGLES:
+        L.union(b, L.cyl_z("post", *polar(POST_R, a), POST_RAD, z1 - 0.01, -MOUNT_T, n=48))
+        L.cut(b, L.cyl_z("insert", *polar(POST_R, a), INSERT_R, -MOUNT_T - POST_INSERT_DEPTH, -MOUNT_T + 1, n=32))
     L.cut(b, L.cyl_z("pilot", 0, 0, NEMA_PILOT_R, z0 - 1, z1 + 1, n=96))
     for sx in (-1, 1):
         for sy in (-1, 1):
             L.cut(b, L.cyl_z("nema", sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, NEMA_HOLE_R, z0 - 1, z1 + 1, n=32))
-    for a in POST_ANGLES:
-        L.cut(b, L.cyl_z("post", *polar(POST_R, a), BOLT_HOLE_R, z0 - 1, z1 + 1, n=32))
     L.finish(b); return b
 
 def motor_mount():
@@ -274,10 +281,10 @@ def motor_mount():
     forward beside the housing, shaft back through the plate to the belt plane behind it."""
     x1 = MOTOR_X + SLOT + MOUNT_HALF_W
     m = L.cyl_z("motor-mount", 0, 0, HOUSING_R, -MOUNT_T, 0, n=160)
-    L.union(m, L.box("arm", 0, x1, -MOUNT_HALF_W, MOUNT_HALF_W, -MOUNT_T, 0))
+    L.union(m, L.box("arm", 10.0, x1, -MOUNT_HALF_W, MOUNT_HALF_W, -MOUNT_T, 0))   # starts inside the disc, clear of the post screws
     for sy in (-1, 1):
-        y0, y1 = sorted((sy * RIB_Y0, sy * (RIB_Y0 + RIB_W)))
-        L.union(m, L.box("rib", RIB_X0, x1, y0, y1, -MOUNT_T - RIB_H, -MOUNT_T + 0.01))
+        y0, y1 = sorted((sy * RAIL_GAP / 2, sy * MOUNT_HALF_W))
+        L.union(m, L.box("rail", RAIL_X0, x1, y0, y1, -0.01, RAIL_H))
     L.cut(m, L.cyl_z("hub", 0, 0, HUB_CLEAR_R, -MOUNT_T - 1, 1, n=96))
     for a in BOLT_ANGLES:
         L.cut(m, L.cyl_z("bolt", *polar(BOLT_R, a), BOLT_HOLE_R, -MOUNT_T - 1, 1, n=32))
@@ -286,10 +293,9 @@ def motor_mount():
         for sy in (-1, 1):
             L.cut(m, slot("nema", MOTOR_X + sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, NEMA_HOLE_R, SLOT, -MOUNT_T - 1, 1))
     if HOLLOW:
-        z_front = bracket_z()[1]
         for a in POST_ANGLES:
-            L.union(m, L.cyl_z("post", *polar(POST_R, a), POST_RAD, z_front, -MOUNT_T + 0.01, n=48))
-            L.cut(m, L.cyl_z("insert", *polar(POST_R, a), INSERT_R, z_front - 1, z_front + 5.0, n=32))
+            L.cut(m, L.cyl_z("post_screw", *polar(POST_R, a), BOLT_HOLE_R, -MOUNT_T - 1, 1, n=32))
+            L.cut(m, L.cyl_z("post_head", *polar(POST_R, a), CB_R, -CB_DEPTH, 1, n=32))
     L.finish(m); return m
 
 def belt_plane_from_motor_face():
@@ -299,13 +305,15 @@ def check_motor_mount():
     m = PARTS["motor-mount"]
     assert L.stats(m)["non_manifold"] == 0
     assert HUB_CLEAR_R - P["hub_6804"] / 2 >= 1.5, "mount rubs the rear carrier's hub"
-    assert RIB_Y0 - (NEMA_HOLE_OFF + 2.75) >= 1.0, "ribs hit the motor screw heads"
-    assert RIB_Y0 - (40 / math.pi - 0.254 + 1.0) >= 2.0, "ribs reach the 40T flange"
-    assert RIB_X0 - (polar(BOLT_R, 45)[0] + 2.75) >= 2.0, "ribs hit the housing bolt heads"
+    assert RAIL_X0 - HOUSING_R >= 1.5, "rails hit the housing"
+    assert 0.2 <= RAIL_GAP - NEMA_SQUARE <= 0.6, "rails don't hold the motor snugly"
+    assert MOTOR_X - SLOT - NEMA_SQUARE / 2 >= RAIL_X0, "motor runs off the rails' housing end"
+    assert MOTOR_X + SLOT + MOUNT_HALF_W >= MOTOR_X + SLOT + NEMA_SQUARE / 2, "motor runs off the rails' far end"
     assert belt_plane_from_motor_face() + C.GT2_TEETH_W / 2 <= MOTOR_SHAFT_L - 2.0, "20T can't reach the belt plane"
     if not HOLLOW:
-        assert abs(L.stats(m)["dims"][2] - (MOUNT_T + RIB_H)) < 0.01
+        assert abs(L.stats(m)["dims"][2] - (MOUNT_T + RAIL_H)) < 0.01
         return
+    assert MOUNT_T - CB_DEPTH >= 2.5, "too little plate under the post screw heads"
     z0, z_front, z_coupler1 = bracket_z()
     flange_r = 40 / math.pi - 0.254 + 1.0
     bolt_heads = [polar(BOLT_R, b) for b in BOLT_ANGLES]
@@ -319,7 +327,9 @@ def check_motor_mount():
     assert r0 > z0 + MOTOR_SHAFT_L and z_coupler1 - r0 >= 8.0, "rod meets the motor shaft or grips less than 8 of the coupler"
     assert r1 - (L_HOUSING + HUB_PROUD) >= 20.0, "rod stands less than 20 past the output face"
     assert INSERT_PCD_R - INSERT_R - GRIP_ROD_CLEAR_R >= 1.0, "output insert breaks into the rod hole"
-    assert L.stats(PARTS["motor7-bracket"])["non_manifold"] == 0
+    b = PARTS["motor7-bracket"]
+    assert L.stats(b)["non_manifold"] == 0
+    assert abs(L.stats(b)["dims"][2] - (-MOUNT_T - z0)) < 0.01, "posts don't reach the mount's belt face"
 
 def test_arm():
     z0 = L_HOUSING + HUB_PROUD; z1 = z0 + ARM_BOSS_T + ARM_T
@@ -353,6 +363,8 @@ PAIRS = [("disk-a", "housing-rear"), ("disk-a", "housing-front"), ("disk-b", "ho
          ("eccentric", "carrier-rear"), ("eccentric", "carrier-front"), ("carrier-rear", "housing-rear"),
          ("carrier-front", "housing-front"), ("test-arm", "housing-front"), ("bench-upright", "housing-rear"),
          ("motor-mount", "housing-rear"), ("motor-mount", "carrier-rear"), ("motor-mount", "eccentric")]
+if HOLLOW:
+    PAIRS += [("motor7-bracket", "motor-mount"), ("motor7-bracket", "eccentric")]
 
 def check_assembly():
     worst = {}
