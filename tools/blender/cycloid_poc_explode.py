@@ -1,4 +1,4 @@
-"""Build model/cycloid-poc/cycloid-poc-exploded.blend: the POC drive assembled and blown out along its axis,
+"""Build model/cycloid-poc/20-1-compact/exploded.blend: the POC drive assembled and blown out along its axis,
 from the printed STLs plus stand-ins for the bought hardware (bearings, pins, bushings, rod, pulleys, belt,
 motor, bolts). Two collections: cycloid-poc-assembled (true positions, shown above) and
 cycloid-poc-exploded (pushed apart in assembly order, rear to front). Also renders a PNG next to it.
@@ -11,7 +11,8 @@ import hand_lib as L
 import cycloid_math as C
 from mathutils import Matrix, Vector
 ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
-OUT = os.path.join(ROOT, "model", "cycloid-poc")
+BASE = os.path.join(ROOT, "model", "cycloid-poc")
+OUT = os.path.join(BASE, "20-1-compact")
 GAP = 26.0
 LIFT = 150.0                                 # the assembled copy sits this far above the exploded row
 
@@ -95,7 +96,7 @@ def bolt(name, length, head_r=2.75, head_h=3.0):
     return b
 
 def stl(name):
-    bpy.ops.wm.stl_import(filepath=os.path.join(OUT, name + ".stl")); o = bpy.context.selected_objects[0]
+    bpy.ops.wm.stl_import(filepath=os.path.join(BASE, "test-parts" if name in ("bench-upright", "test-arm") else "20-1-compact", name + ".stl")); o = bpy.context.selected_objects[0]
     o.name = name
     if name in PRINT_FLIP:
         o.data.transform(Matrix.Rotation(math.pi, 4, 'X'))
@@ -181,6 +182,6 @@ for area in bpy.context.screen.areas:
         sp = area.spaces.active; sp.clip_start = 1.0; sp.clip_end = 100000.0
         sp.shading.type = 'SOLID'; sp.shading.color_type = 'MATERIAL'; sp.shading.show_cavity = True
         sp.region_3d.view_distance = cam.ortho_scale; sp.region_3d.view_location = centre; sp.region_3d.view_rotation = rot
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "cycloid-poc-exploded.blend"))
-scene.render.filepath = os.path.join(OUT, "cycloid-poc-exploded.png"); bpy.ops.render.render(write_still=True)
+bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "exploded.blend"))
+scene.render.filepath = os.path.join(OUT, "exploded.png"); bpy.ops.render.render(write_still=True)
 print("EXPLODED", len(ITEMS), "items, row", round(lo), round(hi))

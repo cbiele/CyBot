@@ -1,7 +1,8 @@
 """Compact cycloid POC (docs/superpowers/specs/2026-10-25-compact-cycloid-poc-design.md): 1:20 on 6804s.
 Assembly frame: axis on z, z=0 the housing's rear face, input angle measured from +x; disk A (rear) on the
 journal towards +x. Parts are built in the assembly frame, checked, posed at four input angles for
-collisions, then exported in print orientation to model/cycloid-poc/.
+collisions, then exported in print orientation to model/cycloid-poc/20-1-compact/ (20-1-hollow/ with --hollow),
+the bench and test arm to test-parts/.
 Run: /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/cycloid_poc.py"""
 import bpy, bmesh, math, os, sys, json
 import mathutils
@@ -10,8 +11,8 @@ import hand_lib as L
 import cycloid_math as C
 from mathutils import Matrix, Vector
 ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
-OUT = os.path.join(ROOT, "model", "cycloid-poc")
-P = json.load(open(os.path.join(OUT, "params.json")))
+BASE = os.path.join(ROOT, "model", "cycloid-poc")
+P = json.load(open(os.path.join(BASE, "params.json")))
 
 LIP_T, BRG_W, SHOULDER_T, PLATE_T, GAP, DISK_T, COLLAR_T = 0.8, 7.0, 0.5, 4.0, 0.5, 6.0, 1.0
 B625_W = 5.0
@@ -402,12 +403,13 @@ for check in CHECKS:
     check()
 print("BELT PLANE from motor face", belt_plane_from_motor_face(), "mm; motor at", MOTOR_X)
 print("POC", json.dumps({n: L.stats(o) for n, o in PARTS.items()}))
-HOLLOW_PARTS = {"eccentric", "carrier-rear", "carrier-front", "motor-mount", "motor7-bracket"}   # the rest are the POC's, unchanged
+TEST_PARTS = {"bench-upright", "test-arm"}
 if HOLLOW:
     print("GRIP ROD z", grip_rod_z(), "bracket z", bracket_z())
 for n, o in PARTS.items():
-    if HOLLOW and n not in HOLLOW_PARTS:
+    if HOLLOW and n in TEST_PARTS:
         continue
+    folder = "test-parts" if n in TEST_PARTS else "20-1-hollow" if HOLLOW else "20-1-compact"
     o.matrix_world = Matrix.Rotation(math.pi, 4, 'X') if n in PRINT_FLIP else Matrix()
-    L.export(o, os.path.join(OUT, ("cycloid-hollow-" if HOLLOW else "") + n + ".stl"))
+    L.export(o, os.path.join(BASE, folder, n + ".stl"))
 print("POC DONE")

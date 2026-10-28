@@ -9,8 +9,9 @@ from mathutils import Vector
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hand_lib as L
 ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
-OUT = os.path.join(ROOT, "model", "cycloid-poc")
-P = json.load(open(os.path.join(OUT, "params.json")))
+BASE = os.path.join(ROOT, "model", "cycloid-poc")
+OUT = os.path.join(BASE, "test-parts")
+P = json.load(open(os.path.join(BASE, "params.json")))
 STEPS = (-0.1, 0.0, 0.1)
 HOLES = ["seat_6804", "seat_6800", "seat_625", "seat_bushing", "ring_pin_press", "ring_pin_slip", "out_pin_press", "rod_bore"]
 PEGS = ["hub_6804", "journal_6800"]

@@ -20,9 +20,9 @@ CONE_T = 1.0                                        # hub-side flange is a 45 de
 HUB_R, HUB_L = 9.0, 7.0
 SCREW_R = 1.65
 INSERT_R, INSERT_DEPTH, INSERT_WALL = 2.0, 3.5, 1.0 # pilot for an M3 x 3 x 4.5 insert, pressed in radially
-PULLEYS = [                                         # name, bore radius, flat offset, flat both sides
-    ("cycloid-poc-pulley-40T", 2.6, 2.1, False),    # rod 5.0, 4.5 across its flat; about 0.1 clearance each
-    ("cycloid-hollow-pulley-40T", 4.05, 3.725, True),   # sleeve 7.95, 7.35 across its flats; 0.05-0.075 each
+PULLEYS = [                                         # cycloid folder, bore radius, flat offset, flat both sides
+    ("20-1-compact", 2.6, 2.1, False),    # rod 5.0, 4.5 across its flat; about 0.1 clearance each
+    ("20-1-hollow", 4.05, 3.725, True),   # sleeve 7.95, 7.35 across its flats; 0.05-0.075 each
 ]
 
 z_teeth0 = C.GT2_FLANGE_T; z_teeth1 = z_teeth0 + C.GT2_TEETH_W
@@ -91,5 +91,5 @@ for name, bore_r, flat_x, double in PULLEYS:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     p = pulley(name, bore_r, flat_x, double)
     print("PULLEY", name, json.dumps(check(p, bore_r, flat_x, double)))
-    L.export(p, os.path.join(ROOT, "model", "cycloid-poc", name + ".stl"))
+    L.export(p, os.path.join(ROOT, "model", "cycloid-poc", name, "pulley-40T.stl"))
 print("PULLEY DONE")
