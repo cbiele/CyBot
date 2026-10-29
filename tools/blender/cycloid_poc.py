@@ -15,9 +15,10 @@ BASE = os.path.join(ROOT, "model", "cycloid-poc")
 P = json.load(open(os.path.join(BASE, "params.json")))
 
 LIP_T, BRG_W, SHOULDER_T, PLATE_T, GAP, DISK_T, COLLAR_T = 0.8, 7.0, 0.5, 4.0, 0.5, 6.0, 1.0
-B625_W = 5.0
+B625_W, B6800_W = 5.0, 5.0
 END_R, COLLAR_R = 3.8, 5.2                   # ends pass the 6800 bore at the offset with 0.2 to spare; the collar stays inside its inner ring
 ECC_FLOAT = 0.3                              # axial play between the 625 inner rings
+ECC_TRIM = 1.0                               # off each end: the press fit on the rod locates it, and full-length ends rubbed the 625 shields
 ROD_R, ROD_FLAT = 2.5, 2.0                   # the steel rod; its flat is 0.5 deep. Walls count from the steel, not the bore's clearance
 DOT_R, DOT_DEPTH, DOT_PCD_R = 1.0, 0.4, 12.0 # locator dots: one on disk A, two on disk B
 HOLLOW = "--hollow" in sys.argv              # axis 6: eccentric as a hollow sleeve on 688s, the gripper rod through it
@@ -66,11 +67,13 @@ def eccentric(name="eccentric", rod_flat=True):
     jr = P["journal_6800"] / 2
     za0, za1 = Z_DISK0, Z_DISK0 + DISK_T
     zb0, zb1 = za1 + COLLAR_T, za1 + COLLAR_T + DISK_T
+    if not HOLLOW:
+        za0, zb1 = eccentric_ends()
     if HOLLOW:
         z_tail, z_nose = sleeve_ends()
         b = L.cyl_z("eccentric", 0, 0, SLEEVE_R, z_tail, z_nose, n=96)
     else:
-        b = L.cyl_z(name, 0, 0, END_R, Z_DISK0 - GAP + ECC_FLOAT / 2, zb1 + GAP - ECC_FLOAT / 2, n=96)
+        b = L.cyl_z(name, 0, 0, END_R, za0, zb1, n=96)
     L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
     L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
     L.union(b, L.cyl_z("journal_b", -C.E, 0, jr, zb0, zb1, n=128))
@@ -84,6 +87,10 @@ def eccentric(name="eccentric", rod_flat=True):
             L.cut(rod, L.box("flat", ROD_FLAT, 5, -5, 5, -2, L_HOUSING + 2))
         L.cut(b, rod)
     L.finish(b); return b
+
+def eccentric_ends():
+    zb1 = Z_DISK0 + 2 * DISK_T + COLLAR_T
+    return Z_DISK0 - GAP + ECC_FLOAT / 2 + ECC_TRIM, zb1 + GAP - ECC_FLOAT / 2 - ECC_TRIM
 
 def sleeve_ends():
     """Tail flush with the 40T's hub top behind the mount; nose 0.2 short of the front 688's outer face."""
@@ -405,7 +412,8 @@ def check_running_clearances():
         "test arm hits the bolt heads": arm_low - (L_HOUSING + BOLT_HEAD_H) < 1.5,
         "rear 625 floor touches the inner ring": floor_z(rear, 7, z_in - 0.1) - floor_z(rear, x_inner, z_in - 0.1) < 0.3,
         "front 625 floor touches the inner ring": floor_z(front, x_inner, 2 * Z_MID - z_in + 0.1, up=True) - floor_z(front, 7, 2 * Z_MID - z_in + 0.1, up=True) < 0.3,
-        "eccentric clamps the 625 inner rings": not HOLLOW and L.stats(PARTS["eccentric"])["dims"][2] > 2 * (Z_MID - z_in) - 0.3,
+        "eccentric ends reach the 625s": not HOLLOW and L.stats(PARTS["eccentric"])["dims"][2] > 2 * (Z_MID - z_in) - 1.0,
+        "journal shorter than a 6800": not HOLLOW and Z_DISK0 + DISK_T - eccentric_ends()[0] < B6800_W,
         "output pins bottom in the carrier": floor_z(rear, C.OUT_PCD_R, z_in - 0.1) is not None,
         "collar rubs the 6800 seal": COLLAR_R + C.E > SEAL_R,
     }
