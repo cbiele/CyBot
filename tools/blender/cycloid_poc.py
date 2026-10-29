@@ -62,7 +62,7 @@ def disk(name, phase, dots):
         L.cut(d, L.cyl_z("dot", DOT_PCD_R * math.cos(a), DOT_PCD_R * math.sin(a), DOT_R, DISK_T - DOT_DEPTH, DISK_T + 1, n=24))
     L.finish(d); return d
 
-def eccentric():
+def eccentric(name="eccentric", rod_flat=True):
     jr = P["journal_6800"] / 2
     za0, za1 = Z_DISK0, Z_DISK0 + DISK_T
     zb0, zb1 = za1 + COLLAR_T, za1 + COLLAR_T + DISK_T
@@ -70,7 +70,7 @@ def eccentric():
         z_tail, z_nose = sleeve_ends()
         b = L.cyl_z("eccentric", 0, 0, SLEEVE_R, z_tail, z_nose, n=96)
     else:
-        b = L.cyl_z("eccentric", 0, 0, END_R, Z_DISK0 - GAP + ECC_FLOAT / 2, zb1 + GAP - ECC_FLOAT / 2, n=96)
+        b = L.cyl_z(name, 0, 0, END_R, Z_DISK0 - GAP + ECC_FLOAT / 2, zb1 + GAP - ECC_FLOAT / 2, n=96)
     L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
     L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
     L.union(b, L.cyl_z("journal_b", -C.E, 0, jr, zb0, zb1, n=128))
@@ -80,7 +80,8 @@ def eccentric():
             L.cut(b, L.box("flat", x0, x1, -5, 5, z_tail - 1, -MOUNT_T - PULLEY_GAP + 0.5))
     else:
         rod = L.cyl_z("rod", 0, 0, P["rod_bore"] / 2, -1, L_HOUSING + 1, n=64)
-        L.cut(rod, L.box("flat", ROD_FLAT, 5, -5, 5, -2, L_HOUSING + 2))
+        if rod_flat:
+            L.cut(rod, L.box("flat", ROD_FLAT, 5, -5, 5, -2, L_HOUSING + 2))
         L.cut(b, rod)
     L.finish(b); return b
 
@@ -116,6 +117,8 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 PARTS["disk-a"] = disk("disk-a", 0.0, 1)
 PARTS["disk-b"] = disk("disk-b", C.DISK_B_PHASE, 2)
 PARTS["eccentric"] = eccentric()
+if not HOLLOW:
+    PARTS["eccentric-round"] = eccentric("eccentric-round", rod_flat=False)   # pressed onto a plain rod with no flat
 CHECKS += [check_disks, check_eccentric]
 
 LIP_R = 15.0                                 # holds each 6804's outer ring at the housing face
