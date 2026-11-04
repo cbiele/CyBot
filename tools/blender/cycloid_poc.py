@@ -66,17 +66,18 @@ def disk(name, phase, dots):
         L.cut(d, L.cyl_z("dot", DOT_PCD_R * math.cos(a), DOT_PCD_R * math.sin(a), DOT_R, DISK_T - DOT_DEPTH, DISK_T + 1, n=24))
     L.finish(d); return d
 
-def eccentric(name="eccentric", rod_flat=True):
+def eccentric(name="eccentric", rod_flat=True, trim=ECC_TRIM):
     jr = P["journal_6800"] / 2
     za0, za1 = Z_DISK0, Z_DISK0 + DISK_T
     zb0, zb1 = za1 + COLLAR_T, za1 + COLLAR_T + DISK_T
     if not HOLLOW:
-        za0, zb1 = eccentric_ends()
+        e0, e1 = eccentric_ends(trim)
+        za0, zb1 = max(za0, e0), min(zb1, e1)   # journals never run past the disk faces
     if HOLLOW:
         z_tail, z_nose = sleeve_ends()
         b = L.cyl_z("eccentric", 0, 0, SLEEVE_R, z_tail, z_nose, n=96)
     else:
-        b = L.cyl_z(name, 0, 0, END_R, za0, zb1, n=96)
+        b = L.cyl_z(name, 0, 0, END_R, e0, e1, n=96)
     L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
     L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
     L.union(b, L.cyl_z("journal_b", -C.E, 0, jr, zb0, zb1, n=128))
@@ -91,9 +92,9 @@ def eccentric(name="eccentric", rod_flat=True):
         L.cut(b, rod)
     L.finish(b); return b
 
-def eccentric_ends():
+def eccentric_ends(trim=ECC_TRIM):
     zb1 = Z_DISK0 + 2 * DISK_T + COLLAR_T
-    return Z_DISK0 - GAP + ECC_FLOAT / 2 + ECC_TRIM, zb1 + GAP - ECC_FLOAT / 2 - ECC_TRIM
+    return Z_DISK0 - GAP + ECC_FLOAT / 2 + trim, zb1 + GAP - ECC_FLOAT / 2 - trim
 
 def sleeve_ends():
     """Tail flush with the 40T's hub top behind the mount; nose 0.2 short of the front 688's outer face."""
@@ -130,6 +131,8 @@ PARTS["disk-b"] = disk("disk-b", C.DISK_B_PHASE, 2)
 PARTS["eccentric"] = eccentric()
 if not HOLLOW:
     PARTS["eccentric-round"] = eccentric("eccentric-round", rod_flat=False)   # pressed onto a plain rod with no flat
+    PARTS["eccentric-long"] = eccentric("eccentric-long", trim=0.0)           # full length, for trimming to fit by hand
+    PARTS["eccentric-round-long"] = eccentric("eccentric-round-long", rod_flat=False, trim=0.0)
 CHECKS += [check_disks, check_eccentric]
 
 LIP_R = 15.0                                 # holds each 6804's outer ring at the housing face
