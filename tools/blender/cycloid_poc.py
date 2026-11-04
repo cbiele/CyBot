@@ -140,6 +140,7 @@ INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, 6.5   # M3 x 3 x 4.5 heat-set i
 INSERT_ANGLES = [90 + 120 * k for k in range(3)]
 RELIEF_R, RELIEF_T = 5.5, 0.4                # 625 seat floor relieved under the inner ring, so only the outer ring seats
 RING_PIN_L, OUT_PIN_L = 18.0, 20.0
+SLIP_EXTRA = 2.0                             # front slip holes run past the pin ends; flush-depth holes kept the halves from closing
 
 def polar(r, deg):
     return r * math.cos(math.radians(deg)), r * math.sin(math.radians(deg))
@@ -166,7 +167,7 @@ def housing():
     for k in range(C.N + 1):
         x, y = polar(C.R, 360 * k / (C.N + 1))
         L.cut(rear, L.cyl_z("pin", x, y, P["ring_pin_press"] / 2, Z_MID - RING_PIN_L / 2, Z_MID + 1, n=24))
-        L.cut(front, L.cyl_z("pin", x, y, P["ring_pin_slip"] / 2, Z_MID - 1, Z_MID + RING_PIN_L / 2, n=24))
+        L.cut(front, L.cyl_z("pin", x, y, P["ring_pin_slip"] / 2, Z_MID - 1, Z_MID + RING_PIN_L / 2 + SLIP_EXTRA, n=24))
     L.finish(rear); L.finish(front); return rear, front
 
 def carrier(front):
