@@ -16,6 +16,7 @@ P = json.load(open(os.path.join(BASE, "params.json")))
 
 LIP_T, BRG_W, SHOULDER_T, PLATE_T, GAP, DISK_T, COLLAR_T = 0.8, 7.0, 0.5, 4.0, 0.5, 6.0, 1.0
 B625_W, B6800_W = 5.0, 5.0
+SEAT_LIP_R = 8.3                             # the 6800 seats against this lip on the outer ring only; its shield ends near 16.3
 END_R, COLLAR_R = 3.8, 5.2                   # ends pass the 6800 bore at the offset with 0.2 to spare; the collar stays inside its inner ring
 ECC_FLOAT = 0.3                              # axial play between the 625 inner rings
 ECC_TRIM = 1.0                               # off each end: the press fit on the rod locates it, and full-length ends rubbed the 625 shields
@@ -54,7 +55,9 @@ def copy(o, name):
 
 def disk(name, phase, dots):
     d = prism(name, C.profile(720, phase), 0, DISK_T)
-    L.cut(d, L.cyl_z("6800", 0, 0, P["seat_6800"] / 2, -1, DISK_T + 1, n=96))
+    z_lip = DISK_T - B6800_W                 # the lip is on the bed face so it prints without support
+    L.cut(d, L.cyl_z("6800", 0, 0, P["seat_6800"] / 2, z_lip, DISK_T + 1, n=96))
+    L.cut(d, L.cyl_z("seat_lip", 0, 0, SEAT_LIP_R, -1, z_lip + 0.01, n=96))
     for k in range(C.N_OUT):
         a = 2 * math.pi * k / C.N_OUT
         L.cut(d, L.cyl_z("bushing", C.OUT_PCD_R * math.cos(a), C.OUT_PCD_R * math.sin(a), P["seat_bushing"] / 2, -1, DISK_T + 1, n=64))
@@ -105,6 +108,7 @@ def check_disks():
         o = PARTS[name]
         assert L.stats(o)["non_manifold"] == 0, name
         assert abs(bore_diameter(o, 0, 0, DISK_T / 2) - P["seat_6800"]) < 0.03, name
+        assert abs(bore_diameter(o, 0, 0, (DISK_T - B6800_W) / 2) - 2 * SEAT_LIP_R) < 0.03, name + " seat lip"
 
 def check_eccentric():
     jr = P["journal_6800"] / 2
