@@ -441,6 +441,8 @@ for n, o in PARTS.items():
     if HOLLOW and n in TEST_PARTS:
         continue
     folder = "test-parts" if n in TEST_PARTS else "20-1-hollow" if HOLLOW else "20-1-compact"
-    o.matrix_world = Matrix.Rotation(math.pi, 4, 'X') if n in PRINT_FLIP else Matrix()
+    o.matrix_world = Matrix()
+    if n in PRINT_FLIP:   # on the mesh: as an object rotation, float32 sin(pi) tilts the mating face enough to split it across a slicing plane
+        o.data.transform(Matrix.Diagonal((1, -1, -1, 1)))
     L.export(o, os.path.join(BASE, folder, n + ".stl"))
 print("POC DONE")
