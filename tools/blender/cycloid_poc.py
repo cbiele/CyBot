@@ -70,12 +70,11 @@ def eccentric(name="eccentric", rod_flat=True, trim=ECC_TRIM):
     jr = P["journal_6800"] / 2
     za0, za1 = Z_DISK0, Z_DISK0 + DISK_T
     zb0, zb1 = za1 + COLLAR_T, za1 + COLLAR_T + DISK_T
-    if not HOLLOW:
-        e0, e1 = eccentric_ends(trim)
-        za0, zb1 = max(za0, e0), min(zb1, e1)   # journals never run past the disk faces
+    e0, e1 = eccentric_ends(trim)
+    za0, zb1 = max(za0, e0), min(zb1, e1)   # journals never run past the disk faces
     if HOLLOW:
         z_tail, z_nose = sleeve_ends()
-        b = L.cyl_z("eccentric", 0, 0, SLEEVE_R, z_tail, z_nose, n=96)
+        b = L.cyl_z(name, 0, 0, SLEEVE_R, z_tail, z_nose, n=96)
     else:
         b = L.cyl_z(name, 0, 0, END_R, e0, e1, n=96)
     L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
@@ -129,9 +128,9 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 PARTS["disk-a"] = disk("disk-a", 0.0, 1)
 PARTS["disk-b"] = disk("disk-b", C.DISK_B_PHASE, 2)
 PARTS["eccentric"] = eccentric()
+PARTS["eccentric-long"] = eccentric("eccentric-long", trim=0.0)               # full length, for trimming to fit by hand
 if not HOLLOW:
     PARTS["eccentric-round"] = eccentric("eccentric-round", rod_flat=False)   # pressed onto a plain rod with no flat
-    PARTS["eccentric-long"] = eccentric("eccentric-long", trim=0.0)           # full length, for trimming to fit by hand
     PARTS["eccentric-round-long"] = eccentric("eccentric-round-long", rod_flat=False, trim=0.0)
 CHECKS += [check_disks, check_eccentric]
 
@@ -421,7 +420,7 @@ def check_running_clearances():
         "rear 625 floor touches the inner ring": floor_z(rear, 7, z_in - 0.1) - floor_z(rear, x_inner, z_in - 0.1) < 0.3,
         "front 625 floor touches the inner ring": floor_z(front, x_inner, 2 * Z_MID - z_in + 0.1, up=True) - floor_z(front, 7, 2 * Z_MID - z_in + 0.1, up=True) < 0.3,
         "eccentric ends reach the 625s": not HOLLOW and L.stats(PARTS["eccentric"])["dims"][2] > 2 * (Z_MID - z_in) - 1.0,
-        "journal shorter than a 6800": not HOLLOW and Z_DISK0 + DISK_T - eccentric_ends()[0] < B6800_W,
+        "journal shorter than a 6800": Z_DISK0 + DISK_T - eccentric_ends()[0] < B6800_W,
         "output pins bottom in the carrier": floor_z(rear, C.OUT_PCD_R, z_in - 0.1) is not None,
         "collar rubs the 6800 seal": COLLAR_R + C.E > SEAL_R,
     }
