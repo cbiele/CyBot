@@ -1,9 +1,9 @@
 """Compact cycloid POC (docs/superpowers/specs/2026-10-25-compact-cycloid-poc-design.md): 1:20 on 6804s.
 Assembly frame: axis on z, z=0 the housing's rear face, input angle measured from +x; disk A (rear) on the
 journal towards +x. Parts are built in the assembly frame, checked, posed at four input angles for
-collisions, then exported in print orientation to model/cycloid-poc/20-1-compact/ (20-1-hollow/ with --hollow),
-the bench and test arm to test-parts/.
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/cycloid_poc.py [-- --hollow]"""
+collisions, then exported in print orientation to model/cycloid-poc/20-1-compact/ (20-1-hollow/ with --hollow,
+20-1-hollow-t8/ with --hollow-t8), the bench and test arm to test-parts/.
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/cycloid_poc.py [-- --hollow | -- --hollow-t8]"""
 import bpy, bmesh, math, os, sys, json
 import mathutils
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,12 +14,18 @@ ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
 BASE = os.path.join(ROOT, "model", "cycloid-poc")
 P = json.load(open(os.path.join(BASE, "params.json")))
 
-HOLLOW = "--hollow" in sys.argv              # axis 6: eccentric as a hollow sleeve, the gripper's shaft through it
-LIP_T, BRG_W, SHOULDER_T, PLATE_T, GAP, DISK_T, COLLAR_T = 0.8, 7.0, 0.5, 4.0, 0.5, 6.0, 1.0
-B625_W, B6800_W = 5.0, 5.0
+HOLLOW_T8 = "--hollow-t8" in sys.argv        # T8 lead screw right through with clearance, held only by the motor's coupler and the hand's bearing
+HOLLOW = "--hollow" in sys.argv or HOLLOW_T8 # axis 6: eccentric as a hollow sleeve, the gripper's shaft through it
+LIP_T, BRG_W, SHOULDER_T, PLATE_T, GAP, DISK_T, COLLAR_T = 0.8, (4.0 if HOLLOW_T8 else 7.0), 0.5, 4.0, 0.5, 6.0, 1.0
+B625_W, B6800_W = 5.0, (4.0 if HOLLOW_T8 else 5.0)
 # Ring lands for the hollow's 6801 and 6700 are estimates scaled from the 6800's; measure the real bearings when they arrive.
 # Seat lips stay on the outer ring, past the shield; reliefs clear the inner ring so only the outer ring seats; the collar stays inside the disk bearing's inner ring.
-if HOLLOW:
+if HOLLOW_T8:                                # 6702 disks, 6701 ends, 6705 main bearings; 6702 inner ring measured at Ø16.0
+    DISK_SEAT, JOURNAL_D, SEAT_LIP_R, SEAL_R = 21.0, 15.1, 9.75, 8.0   # journal 0.1 over: the 6702s were loose on a printed Ø15.0
+    END_BRG_SEAT, END_BRG_W, RELIEF_R = 18.0, 4.0, 7.2
+    COLLAR_R, HUB_D = 7.35, 25.0
+    STEP_R = SEAL_R - 0.15                   # one step per journal, concentric with it: a centred collar met each inner ring on one side only and the bearings rocked
+elif HOLLOW:
     DISK_SEAT, JOURNAL_D, SEAT_LIP_R, SEAL_R = 21.0, 12.0, 9.3, 7.2
     END_BRG_SEAT, END_BRG_W, RELIEF_R = 15.0, 4.0, 6.2
     COLLAR_R, HUB_D = 6.4, P["hub_6804"]
@@ -32,10 +38,10 @@ ECC_FLOAT = 0.3                              # axial play between the 625 inner 
 ECC_TRIM = 1.0                               # off each end: the press fit on the rod locates it, and full-length ends rubbed the 625 shields
 ROD_R, ROD_FLAT = 2.5, 2.0                   # the steel rod; its flat is 0.5 deep. Walls count from the steel, not the bore's clearance
 DOT_R, DOT_DEPTH, DOT_PCD_R = 1.0, 0.4, 12.0 # locator dots: one on disk A, two on disk B
-# Sleeve 0.05 under the end bearing's bore. The Ø5 rod touches only the bushings; small printed holes come out about 0.3 under.
-SLEEVE_R, SLEEVE_BORE_R = 4.975, 3.0
+# Sleeve 0.05 under the end bearing's bore. The Ø5 rod touches only the bushings; the T8's threads touch nothing, and small printed holes come out about 0.3 under.
+SLEEVE_R, SLEEVE_BORE_R = (5.975, 4.75) if HOLLOW_T8 else (4.975, 3.0)
 BUSH_SEAT_R, BUSH_L = 3.5, 5.0               # 5 x 7 x 5 brass, one pressed into each end against the step to the middle bore
-SLEEVE_FLAT = 4.675                          # double-D for the 40T, 0.3 deep each side
+SLEEVE_FLAT = 5.775 if HOLLOW_T8 else 4.675  # double-D for the 40T: 0.2 deep each side on the T8's thin wall, else 0.3
 MOUNT_T, PULLEY_GAP, PULLEY_H = 6.0, 1.0, 16.5   # motor mount plate; 40T free flange to the plate; 40T height (gt2_pulley.py)
 Z_DISK0 = LIP_T + BRG_W + SHOULDER_T + PLATE_T + GAP
 Z_MID = Z_DISK0 + DISK_T + COLLAR_T / 2
@@ -82,7 +88,11 @@ def add_lobes(b, za0, zb1):
     jr = JOURNAL_D / 2
     za1 = Z_DISK0 + DISK_T; zb0 = za1 + COLLAR_T
     L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
-    L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
+    if HOLLOW_T8:
+        L.union(b, L.cyl_z("step_a", C.E, 0, STEP_R, za1 - 0.01, za1 + COLLAR_T / 2, n=128))
+        L.union(b, L.cyl_z("step_b", -C.E, 0, STEP_R, za1 + COLLAR_T / 2 - 0.01, zb0 + 0.01, n=128))
+    else:
+        L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
     L.union(b, L.cyl_z("journal_b", -C.E, 0, jr, zb0, zb1, n=128))
 
 def eccentric(name="eccentric", rod_flat=True, trim=ECC_TRIM):
@@ -99,8 +109,9 @@ def eccentric(name="eccentric", rod_flat=True, trim=ECC_TRIM):
     add_lobes(b, za0, zb1)
     if HOLLOW:
         L.cut(b, L.cyl_z("bore", 0, 0, SLEEVE_BORE_R, z_tail - 1, z_nose + 1, n=64))
-        L.cut(b, L.cyl_z("bushing_tail", 0, 0, BUSH_SEAT_R, z_tail - 1, z_tail + BUSH_L, n=64))
-        L.cut(b, L.cyl_z("bushing_nose", 0, 0, BUSH_SEAT_R, z_nose - BUSH_L, z_nose + 1, n=64))
+        if not HOLLOW_T8:
+            L.cut(b, L.cyl_z("bushing_tail", 0, 0, BUSH_SEAT_R, z_tail - 1, z_tail + BUSH_L, n=64))
+            L.cut(b, L.cyl_z("bushing_nose", 0, 0, BUSH_SEAT_R, z_nose - BUSH_L, z_nose + 1, n=64))
         for x0, x1 in ((SLEEVE_FLAT, SLEEVE_R + 1), (-SLEEVE_R - 1, -SLEEVE_FLAT)):
             L.cut(b, L.box("flat", x0, x1, -5, 5, z_tail - 1, -MOUNT_T - PULLEY_GAP + 0.5))
     else:
@@ -115,8 +126,9 @@ def eccentric_ends(trim=ECC_TRIM):
     return Z_DISK0 - GAP + ECC_FLOAT / 2 + trim, zb1 + GAP - ECC_FLOAT / 2 - trim
 
 def sleeve_ends():
-    """Tail flush with the 40T's hub top behind the mount; nose 0.2 short of the front 6700's outer face."""
-    nose_short = 0.2
+    """Tail flush with the 40T's hub top behind the mount; nose 0.2 short of the front 6700's outer face,
+    1.2 on the T8, whose nose rode on carrier-front."""
+    nose_short = 1.2 if HOLLOW_T8 else 0.2
     return -(MOUNT_T + PULLEY_GAP + PULLEY_H), 2 * Z_MID - (Z_DISK0 - GAP) + END_BRG_W - nose_short
 
 def check_disks():
@@ -132,16 +144,17 @@ def check_disks():
 
 def check_eccentric():
     jr = JOURNAL_D / 2
-    sleeve_core_r = BUSH_SEAT_R
+    sleeve_core_r = SLEEVE_BORE_R if HOLLOW_T8 else BUSH_SEAT_R
     end_r, end_core_r, journal_core_r = (SLEEVE_R, sleeve_core_r, SLEEVE_BORE_R) if HOLLOW else (END_R, ROD_R, ROD_R)
     assert end_r + C.E <= jr - 0.2, "a disk bearing won't slide over the eccentric end"
     assert end_r - end_core_r >= 1.2, "eccentric end too thin round the rod or bushing"
     assert jr - C.E - journal_core_r >= 1.5, "journal too thin round the bore"
     if HOLLOW:
         assert SLEEVE_FLAT - sleeve_core_r >= 1.0, "sleeve too thin under the 40T flats"
-        z_tail, z_nose = sleeve_ends()
-        assert z_nose - BUSH_L >= Z_DISK0 + 2 * DISK_T + COLLAR_T - ECC_TRIM, "nose bushing runs under the journal"
-        assert abs(bore_diameter(PARTS["eccentric"], 0, 0, z_nose - BUSH_L / 2) - 2 * BUSH_SEAT_R) < 0.03, "nose bushing seat"
+        if not HOLLOW_T8:
+            z_tail, z_nose = sleeve_ends()
+            assert z_nose - BUSH_L >= Z_DISK0 + 2 * DISK_T + COLLAR_T - ECC_TRIM, "nose bushing runs under the journal"
+            assert abs(bore_diameter(PARTS["eccentric"], 0, 0, z_nose - BUSH_L / 2) - 2 * BUSH_SEAT_R) < 0.03, "nose bushing seat"
         assert abs(bore_diameter(PARTS["eccentric"], 0, 0, Z_MID) - 2 * SLEEVE_BORE_R) < 0.03, "middle bore"
     o = PARTS["eccentric"]
     assert L.stats(o)["non_manifold"] == 0
@@ -162,14 +175,14 @@ LIP_R = 15.0                                 # holds each 6804's outer ring at t
 CARRIER_R, CARRIER_BORE_R = 22.0, 22.5
 HOUSING_R, BOLT_R, BOLT_HOLE_R = 34.0, 30.0, 1.7
 BOLT_ANGLES = [45 + 90 * k for k in range(4)]
-SHOULDER_R = 11.5                            # bears on the main bearing's inner ring only
+SHOULDER_R = 13.4 if HOLLOW_T8 else 11.5     # bears on the main bearing's inner ring only
 HUB_PROUD = 1.0
 ROD_CLEAR_R = 2.75
-SLEEVE_CLEAR, GRIP_ROD_CLEAR_R = 0.5, 3.0   # rear hub round the turning sleeve; front hub round the gripper's shaft
-INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, 6.5   # M3 x 3 x 4.5 heat-set inserts on the output
+SLEEVE_CLEAR, GRIP_ROD_CLEAR_R = 0.5, (5.25 if HOLLOW_T8 else 3.0)   # rear hub round the turning sleeve; front hub round the gripper's shaft
+INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, (8.5 if HOLLOW_T8 else 6.5)   # M3 x 3 x 4.5 heat-set inserts on the output
 INSERT_ANGLES = [90 + 120 * k for k in range(3)]
 RELIEF_T = 0.4
-RING_PIN_L, OUT_PIN_L = 20.0, 20.0
+RING_PIN_L, OUT_PIN_L = 20.0, 20.0           # holes for 20 mm ring pins; the T8 runs its 21 M2.5 x 18 spring pins in them (smoother than Ø3), M4 x 20 output pins
 SLIP_EXTRA = 2.0                             # front slip holes run past the pin ends; flush-depth holes kept the halves from closing
 
 def polar(r, deg):
@@ -252,7 +265,7 @@ UPRIGHT_T, UPRIGHT_HALF_H, FOOT_T, FOOT_L = 5.0, 40.0, 6.0, 70.0
 MOTOR_X = round(C.belt_centre_distance(20, 40, 188 if HOLLOW else 232), 2)
 SLOT = C.MOTOR_SLOT                          # motor travel each way along x, for belt tension
 NEMA_HOLE_OFF, NEMA_HOLE_R, NEMA_PILOT_R = 15.5, 1.7, 11.75
-HUB_CLEAR_R = 12.0
+HUB_CLEAR_R = 14.0 if HOLLOW_T8 else 12.0
 CLAMP_R = 3.25
 ARM_L, ARM_W, ARM_T = 150.0, 20.0, 6.0
 ARM_BOSS_R, ARM_BOSS_T = 9.0, 4.0            # lifts the arm over the bolt heads on the front face
@@ -436,8 +449,8 @@ def floor_z(o, x, z_start, up=False):
 def check_running_clearances():
     z_in = Z_DISK0 - GAP
     rear, front = PARTS["carrier-rear"], PARTS["carrier-front"]
-    x_inner = 5.8 if HOLLOW else 4                         # under the inner ring: past the hollow's rear hole, or the 625 from 2.5
-    x_outer = 7                                    # under the outer ring
+    x_inner = 6.8 if HOLLOW_T8 else 5.8 if HOLLOW else 4   # under the inner ring: past the hollow's rear hole, or the 625 from 2.5
+    x_outer = 8 if HOLLOW_T8 else 7                # under the outer ring
     arm_low = min(v.co.z for v in PARTS["test-arm"].data.vertices if math.hypot(v.co.x, v.co.y) >= BOLT_R - 3)
     fails = {
         "test arm hits the bolt heads": arm_low - (L_HOUSING + BOLT_HEAD_H) < 1.5,
@@ -446,7 +459,8 @@ def check_running_clearances():
         "eccentric ends reach the 625s": not HOLLOW and L.stats(PARTS["eccentric"])["dims"][2] > 2 * (Z_MID - z_in) - 1.0,
         "journal shorter than a 6800": Z_DISK0 + DISK_T - eccentric_ends()[0] < B6800_W,
         "output pins bottom in the carrier": floor_z(rear, C.OUT_PCD_R, z_in - 0.1) is not None,
-        "collar rubs the 6800 seal": COLLAR_R + C.E > SEAL_R,
+        "collar rubs the 6800 seal": not HOLLOW_T8 and COLLAR_R + C.E > SEAL_R,
+        "step leaves no ledge for the inner ring": HOLLOW_T8 and STEP_R - JOURNAL_D / 2 < 0.25,
     }
     bad = [k for k, v in fails.items() if v]
     assert not bad, bad
@@ -463,7 +477,7 @@ if HOLLOW:
 for n, o in PARTS.items():
     if HOLLOW and n in TEST_PARTS:
         continue
-    folder = "test-parts" if n in TEST_PARTS else "20-1-hollow" if HOLLOW else "20-1-compact"
+    folder = "test-parts" if n in TEST_PARTS else "20-1-hollow-t8" if HOLLOW_T8 else "20-1-hollow" if HOLLOW else "20-1-compact"
     os.makedirs(os.path.join(BASE, folder), exist_ok=True)
     o.matrix_world = Matrix()
     if n in PRINT_FLIP:   # on the mesh: as an object rotation, float32 sin(pi) tilts the mating face enough to split it across a slicing plane

@@ -1,7 +1,7 @@
 """Printed GT2 40Ts for the compact cycloid's input, driven 2:1 from a bought 20T on a 232-2GT-6 belt.
 POC: the Ø5 core rod with its flat 2.0 off the axis (cycloid_poc.ROD_FLAT); the bore takes the same D.
 Hollow (axis 6): the printed sleeve's Ø9.95 tail with flats 4.675 off the axis both sides
-(cycloid_poc.SLEEVE_R, SLEEVE_FLAT); the bore takes the same double-D.
+(cycloid_poc.SLEEVE_R, SLEEVE_FLAT); the bore takes the same double-D. Hollow T8: the same on a Ø11.95 tail.
 The set screw runs in an M3 x 3 x 4.5 heat-set insert, as proven on the axis 2 30T (htd3m_pulley.py).
 Frame: shaft axis on z, z=0 the free flange's outer face, which is the print bed face and faces the motor
 mount. Run: /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/gt2_pulley.py"""
@@ -23,6 +23,7 @@ INSERT_R, INSERT_DEPTH, INSERT_WALL = 2.0, 3.5, 1.0 # pilot for an M3 x 3 x 4.5 
 PULLEYS = [                                         # cycloid folder, file, bore radius, flat offset, flat both sides, hub radius
     ("20-1-compact", "pulley-40T", 2.6, 2.1, False, 9.0),    # rod 5.0, 4.5 across its flat; about 0.1 clearance each
     ("20-1-hollow", "pulley-40T", 5.05, 4.725, True, 9.5),   # sleeve 9.95, 9.35 across its flats; 0.05-0.075 each; hub grown to keep wall under the insert
+    ("20-1-hollow-t8", "pulley-40T", 6.05, 5.825, True, 10.5),   # sleeve 11.95, 11.55 across its flats; same clearances
 ]
 
 z_teeth0 = C.GT2_FLANGE_T; z_teeth1 = z_teeth0 + C.GT2_TEETH_W
