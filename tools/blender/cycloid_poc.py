@@ -121,6 +121,33 @@ def eccentric(name="eccentric", rod_flat=True, trim=ECC_TRIM):
         L.cut(b, rod)
     L.finish(b); return b
 
+TUBE_OD = 11.0                               # 9 x 11 aluminium tube in place of the printed sleeve, T8 only: lobes pressed on, 6701s on printed sleeves
+TUBE_BORE = 11.0                             # same as the tube: the Ø10.00 brass seats pressed perfectly at nominal
+
+def tube_lobes():
+    e0, e1 = eccentric_ends()
+    b = L.cyl_z("eccentric-tube-lobes", 0, 0, TUBE_OD / 2 + 0.5, e0, e1, n=96)
+    add_lobes(b, e0, e1)
+    L.cut(b, L.cyl_z("tube", 0, 0, TUBE_BORE / 2, e0 - 1, e1 + 1, n=96))
+    L.finish(b); return b
+
+def tube_end_sleeve():
+    """Fills the 6701's Ø12 bore round the tube; print two."""
+    b = L.cyl_z("tube-end-sleeve", 0, 0, SLEEVE_R, 0, END_BRG_W, n=96)
+    L.cut(b, L.cyl_z("tube", 0, 0, TUBE_BORE / 2, -1, END_BRG_W + 1, n=96))
+    L.finish(b); return b
+
+def check_tube_parts():
+    jr = JOURNAL_D / 2
+    lobes, sleeve = PARTS["eccentric-tube-lobes"], PARTS["tube-end-sleeve"]
+    assert L.stats(lobes)["non_manifold"] == 0 and L.stats(sleeve)["non_manifold"] == 0
+    assert jr - C.E - TUBE_BORE / 2 >= 1.2, "journal too thin over the tube"
+    assert abs(bore_diameter(lobes, 0, 0, Z_MID) - TUBE_BORE) < 0.03, "lobe bore"
+    assert abs(bore_diameter(sleeve, 0, 0, END_BRG_W / 2) - TUBE_BORE) < 0.03, "sleeve bore"
+    za, zb = Z_DISK0 + DISK_T / 2, Z_MID + COLLAR_T / 2 + DISK_T / 2
+    assert abs(L.first_hit_x(lobes, 0, -20, r=0.2, z=za) - (C.E - jr)) < 0.05, "journal A not towards +x"
+    assert abs(L.first_hit_x(lobes, 0, -20, r=0.2, z=zb) - (-C.E - jr)) < 0.05, "journal B not towards -x"
+
 def eccentric_ends(trim=ECC_TRIM):
     zb1 = Z_DISK0 + 2 * DISK_T + COLLAR_T
     return Z_DISK0 - GAP + ECC_FLOAT / 2 + trim, zb1 + GAP - ECC_FLOAT / 2 - trim
@@ -171,6 +198,12 @@ if not HOLLOW:
     PARTS["eccentric-round"] = eccentric("eccentric-round", rod_flat=False)   # pressed onto a plain rod with no flat
     PARTS["eccentric-round-long"] = eccentric("eccentric-round-long", rod_flat=False, trim=0.0)
 CHECKS += [check_disks, check_eccentric]
+if HOLLOW_T8:
+    PARTS["eccentric-tube-lobes"] = tube_lobes()
+    PARTS["tube-end-sleeve"] = tube_end_sleeve()
+    CHECKS.append(check_tube_parts)
+    print("TUBE LENGTH", round(sleeve_ends()[1] - sleeve_ends()[0], 2))
+
 LIP_R = 15.0                                 # holds each 6804's outer ring at the housing face
 CARRIER_R, CARRIER_BORE_R = 22.0, 22.5
 HOUSING_R, BOLT_R, BOLT_HOLE_R = 34.0, 30.0, 1.7
@@ -213,12 +246,14 @@ def housing():
         L.cut(front, L.cyl_z("pin", x, y, P["ring_pin_slip"] / 2, Z_MID - 1, Z_MID + RING_PIN_L / 2 + SLIP_EXTRA, n=24))
     L.finish(rear); L.finish(front); return rear, front
 
-def carrier(front):
+TUBE_STOP_R = 5.8                            # rear carrier for the tube: clears the Ø11 tube, stops the end sleeve (Ø11.95) from walking out towards the 40T
+
+def carrier(front, name=None, rod_r=None):
     """Built as the rear carrier; the output (front) carrier is mirrored and gets insert holes instead of a rod hole."""
     z_in = Z_DISK0 - GAP
     z_plate, z_hub_end = z_in - PLATE_T, -HUB_PROUD
     z_sh = z_plate - SHOULDER_T
-    c = L.cyl_z("carrier-front" if front else "carrier-rear", 0, 0, CARRIER_R, z_plate, z_in, n=160)
+    c = L.cyl_z(name or ("carrier-front" if front else "carrier-rear"), 0, 0, CARRIER_R, z_plate, z_in, n=160)
     L.union(c, L.cyl_z("shoulder", 0, 0, SHOULDER_R, z_sh, z_plate + 0.01, n=120))
     L.union(c, L.cyl_z("hub", 0, 0, HUB_D / 2, z_hub_end, z_sh + 0.01, n=120))
     L.cut(c, L.cyl_z("625", 0, 0, END_BRG_SEAT / 2, z_in - END_BRG_W, z_in + 1, n=96))
@@ -231,7 +266,7 @@ def carrier(front):
         if HOLLOW:
             L.cut(c, L.cyl_z("grip_rod", 0, 0, GRIP_ROD_CLEAR_R, z_hub_end - 1, z_in - END_BRG_W + 0.01, n=48))
     else:
-        rod_r = SLEEVE_R + SLEEVE_CLEAR if HOLLOW else ROD_CLEAR_R
+        rod_r = rod_r or (SLEEVE_R + SLEEVE_CLEAR if HOLLOW else ROD_CLEAR_R)
         L.cut(c, L.cyl_z("rod", 0, 0, rod_r, z_hub_end - 1, z_in - END_BRG_W + 0.01, n=48))
     L.finish(c)
     if front:
@@ -261,6 +296,16 @@ PARTS["carrier-rear"] = carrier(False)
 PARTS["carrier-front"] = carrier(True)
 CHECKS.append(check_housing_and_carriers)
 
+def check_tube_carrier():
+    c = PARTS["carrier-rear-tube"]
+    assert L.stats(c)["non_manifold"] == 0
+    assert abs(bore_diameter(c, 0, 0, -HUB_PROUD + 1) - 2 * TUBE_STOP_R) < 0.03, "tube hole"
+    assert TUBE_STOP_R - TUBE_OD / 2 >= 0.25 and SLEEVE_R - TUBE_STOP_R >= 0.15, "tube rubs, or the sleeve has no ledge"
+
+if HOLLOW_T8:
+    PARTS["carrier-rear-tube"] = carrier(False, "carrier-rear-tube", TUBE_STOP_R)
+    CHECKS.append(check_tube_carrier)
+
 UPRIGHT_T, UPRIGHT_HALF_H, FOOT_T, FOOT_L = 5.0, 40.0, 6.0, 70.0
 MOTOR_X = round(C.belt_centre_distance(20, 40, 188 if HOLLOW else 232), 2)
 SLOT = C.MOTOR_SLOT                          # motor travel each way along x, for belt tension
@@ -271,7 +316,7 @@ ARM_L, ARM_W, ARM_T = 150.0, 20.0, 6.0
 ARM_BOSS_R, ARM_BOSS_T = 9.0, 4.0            # lifts the arm over the bolt heads on the front face
 WEIGHT_X = (50.0, 100.0, 140.0)              # 1.7 N·m is about 1.25 kg on the 140 hole
 THETAS = (0.0, 0.9, 2.3, 4.0)
-PRINT_FLIP = {"housing-front", "carrier-rear"}
+PRINT_FLIP = {"housing-front", "carrier-rear", "carrier-rear-tube"}
 
 def slot(name, x, y, r, half, z0, z1):
     s = L.cyl_z(name, x - half, y, r, z0, z1, n=32)
