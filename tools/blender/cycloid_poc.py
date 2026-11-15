@@ -206,6 +206,7 @@ if HOLLOW_T8:
 
 LIP_R = 15.0                                 # holds each 6804's outer ring at the housing face
 CARRIER_R, CARRIER_BORE_R = 22.0, 22.5
+CARRIER_TRIM = 0.5 if HOLLOW_T8 else 0.0     # off each plate's disk face: the T8 hub bound when compacted into the housing
 HOUSING_R, BOLT_R, BOLT_HOLE_R = 34.0, 30.0, 1.7
 BOLT_ANGLES = [45 + 90 * k for k in range(4)]
 SHOULDER_R = 13.4 if HOLLOW_T8 else 11.5     # bears on the main bearing's inner ring only
@@ -250,8 +251,8 @@ TUBE_STOP_R = 5.8                            # rear carrier for the tube: clears
 
 def carrier(front, name=None, rod_r=None):
     """Built as the rear carrier; the output (front) carrier is mirrored and gets insert holes instead of a rod hole."""
-    z_in = Z_DISK0 - GAP
-    z_plate, z_hub_end = z_in - PLATE_T, -HUB_PROUD
+    z_in = Z_DISK0 - GAP - CARRIER_TRIM
+    z_plate, z_hub_end = Z_DISK0 - GAP - PLATE_T, -HUB_PROUD
     z_sh = z_plate - SHOULDER_T
     c = L.cyl_z(name or ("carrier-front" if front else "carrier-rear"), 0, 0, CARRIER_R, z_plate, z_in, n=160)
     L.union(c, L.cyl_z("shoulder", 0, 0, SHOULDER_R, z_sh, z_plate + 0.01, n=120))
@@ -274,7 +275,7 @@ def carrier(front, name=None, rod_r=None):
     return c
 
 def check_housing_and_carriers():
-    z_in = Z_DISK0 - GAP
+    z_in = Z_DISK0 - GAP - CARRIER_TRIM
     assert CARRIER_BORE_R - CARRIER_R >= 0.5, "carrier rubs the housing"
     assert C.R - P["ring_pin_press"] / 2 - CARRIER_BORE_R >= 0.8, "ring pin hole breaks into the carrier bore"
     assert BOLT_R - BOLT_HOLE_R - (C.R + C.RP) >= 1.5, "bolt hole too close to the ring pins"
