@@ -3,7 +3,7 @@ Assembly frame: axis on z, z=0 the housing's rear face, input angle measured fro
 journal towards +x. Parts are built in the assembly frame, checked, posed at four input angles for
 collisions, then exported in print orientation to model/cycloid-poc/20-1-compact/ (20-1-hollow/ with --hollow),
 the bench and test arm to test-parts/.
-Run: /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/cycloid_poc.py"""
+Run: /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/cycloid_poc.py [-- --hollow]"""
 import bpy, bmesh, math, os, sys, json
 import mathutils
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,17 +14,28 @@ ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
 BASE = os.path.join(ROOT, "model", "cycloid-poc")
 P = json.load(open(os.path.join(BASE, "params.json")))
 
+HOLLOW = "--hollow" in sys.argv              # axis 6: eccentric as a hollow sleeve, the gripper's shaft through it
 LIP_T, BRG_W, SHOULDER_T, PLATE_T, GAP, DISK_T, COLLAR_T = 0.8, 7.0, 0.5, 4.0, 0.5, 6.0, 1.0
 B625_W, B6800_W = 5.0, 5.0
-SEAT_LIP_R = 8.3                             # the 6800 seats against this lip on the outer ring only; its shield ends near 16.3
-END_R, COLLAR_R = 3.8, 5.2                   # ends pass the 6800 bore at the offset with 0.2 to spare; the collar stays inside its inner ring
+# Ring lands for the hollow's 6801 and 6700 are estimates scaled from the 6800's; measure the real bearings when they arrive.
+# Seat lips stay on the outer ring, past the shield; reliefs clear the inner ring so only the outer ring seats; the collar stays inside the disk bearing's inner ring.
+if HOLLOW:
+    DISK_SEAT, JOURNAL_D, SEAT_LIP_R, SEAL_R = 21.0, 12.0, 9.3, 7.2
+    END_BRG_SEAT, END_BRG_W, RELIEF_R = 15.0, 4.0, 6.2
+    COLLAR_R, HUB_D = 6.4, P["hub_6804"]
+else:
+    DISK_SEAT, JOURNAL_D, SEAT_LIP_R, SEAL_R = P["seat_6800"], P["journal_6800"], 8.3, 6.2
+    END_BRG_SEAT, END_BRG_W, RELIEF_R = P["seat_625"], B625_W, 5.5
+    COLLAR_R, HUB_D = 5.2, P["hub_6804"]
+END_R = 3.8                                  # ends pass the disk bearing's bore at the offset with 0.2 to spare
 ECC_FLOAT = 0.3                              # axial play between the 625 inner rings
 ECC_TRIM = 1.0                               # off each end: the press fit on the rod locates it, and full-length ends rubbed the 625 shields
 ROD_R, ROD_FLAT = 2.5, 2.0                   # the steel rod; its flat is 0.5 deep. Walls count from the steel, not the bore's clearance
 DOT_R, DOT_DEPTH, DOT_PCD_R = 1.0, 0.4, 12.0 # locator dots: one on disk A, two on disk B
-HOLLOW = "--hollow" in sys.argv              # axis 6: eccentric as a hollow sleeve on 688s, the gripper rod through it
-SLEEVE_R, SLEEVE_BORE_R = 3.975, 2.65        # 688 bore less 0.05; the Ø5 gripper rod plus 0.15 each side
-SLEEVE_FLAT = 3.675                          # double-D for the 40T, 0.3 deep each side
+# Sleeve 0.05 under the end bearing's bore. The Ø5 rod touches only the bushings; small printed holes come out about 0.3 under.
+SLEEVE_R, SLEEVE_BORE_R = 4.975, 3.0
+BUSH_SEAT_R, BUSH_L = 3.5, 5.0               # 5 x 7 x 5 brass, one pressed into each end against the step to the middle bore
+SLEEVE_FLAT = 4.675                          # double-D for the 40T, 0.3 deep each side
 MOUNT_T, PULLEY_GAP, PULLEY_H = 6.0, 1.0, 16.5   # motor mount plate; 40T free flange to the plate; 40T height (gt2_pulley.py)
 Z_DISK0 = LIP_T + BRG_W + SHOULDER_T + PLATE_T + GAP
 Z_MID = Z_DISK0 + DISK_T + COLLAR_T / 2
@@ -56,7 +67,7 @@ def copy(o, name):
 def disk(name, phase, dots):
     d = prism(name, C.profile(720, phase), 0, DISK_T)
     z_lip = DISK_T - B6800_W                 # the lip is on the bed face so it prints without support
-    L.cut(d, L.cyl_z("6800", 0, 0, P["seat_6800"] / 2, z_lip, DISK_T + 1, n=96))
+    L.cut(d, L.cyl_z("6800", 0, 0, DISK_SEAT / 2, z_lip, DISK_T + 1, n=96))
     L.cut(d, L.cyl_z("seat_lip", 0, 0, SEAT_LIP_R, -1, z_lip + 0.01, n=96))
     for k in range(C.N_OUT):
         a = 2 * math.pi * k / C.N_OUT
@@ -66,8 +77,16 @@ def disk(name, phase, dots):
         L.cut(d, L.cyl_z("dot", DOT_PCD_R * math.cos(a), DOT_PCD_R * math.sin(a), DOT_R, DISK_T - DOT_DEPTH, DISK_T + 1, n=24))
     L.finish(d); return d
 
+def add_lobes(b, za0, zb1):
+    """Both journals and what parts them, from journal A's start to journal B's end."""
+    jr = JOURNAL_D / 2
+    za1 = Z_DISK0 + DISK_T; zb0 = za1 + COLLAR_T
+    L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
+    L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
+    L.union(b, L.cyl_z("journal_b", -C.E, 0, jr, zb0, zb1, n=128))
+
 def eccentric(name="eccentric", rod_flat=True, trim=ECC_TRIM):
-    jr = P["journal_6800"] / 2
+    jr = JOURNAL_D / 2
     za0, za1 = Z_DISK0, Z_DISK0 + DISK_T
     zb0, zb1 = za1 + COLLAR_T, za1 + COLLAR_T + DISK_T
     e0, e1 = eccentric_ends(trim)
@@ -77,12 +96,12 @@ def eccentric(name="eccentric", rod_flat=True, trim=ECC_TRIM):
         b = L.cyl_z(name, 0, 0, SLEEVE_R, z_tail, z_nose, n=96)
     else:
         b = L.cyl_z(name, 0, 0, END_R, e0, e1, n=96)
-    L.union(b, L.cyl_z("journal_a", C.E, 0, jr, za0, za1, n=128))
-    L.union(b, L.cyl_z("collar", 0, 0, COLLAR_R, za1 - 0.01, zb0 + 0.01, n=96))
-    L.union(b, L.cyl_z("journal_b", -C.E, 0, jr, zb0, zb1, n=128))
+    add_lobes(b, za0, zb1)
     if HOLLOW:
         L.cut(b, L.cyl_z("bore", 0, 0, SLEEVE_BORE_R, z_tail - 1, z_nose + 1, n=64))
-        for x0, x1 in ((SLEEVE_FLAT, 5), (-5, -SLEEVE_FLAT)):
+        L.cut(b, L.cyl_z("bushing_tail", 0, 0, BUSH_SEAT_R, z_tail - 1, z_tail + BUSH_L, n=64))
+        L.cut(b, L.cyl_z("bushing_nose", 0, 0, BUSH_SEAT_R, z_nose - BUSH_L, z_nose + 1, n=64))
+        for x0, x1 in ((SLEEVE_FLAT, SLEEVE_R + 1), (-SLEEVE_R - 1, -SLEEVE_FLAT)):
             L.cut(b, L.box("flat", x0, x1, -5, 5, z_tail - 1, -MOUNT_T - PULLEY_GAP + 0.5))
     else:
         rod = L.cyl_z("rod", 0, 0, P["rod_bore"] / 2, -1, L_HOUSING + 1, n=64)
@@ -96,28 +115,34 @@ def eccentric_ends(trim=ECC_TRIM):
     return Z_DISK0 - GAP + ECC_FLOAT / 2 + trim, zb1 + GAP - ECC_FLOAT / 2 - trim
 
 def sleeve_ends():
-    """Tail flush with the 40T's hub top behind the mount; nose 0.2 short of the front 688's outer face."""
-    return -(MOUNT_T + PULLEY_GAP + PULLEY_H), 2 * Z_MID - (Z_DISK0 - GAP) + B625_W - 0.2
+    """Tail flush with the 40T's hub top behind the mount; nose 0.2 short of the front 6700's outer face."""
+    nose_short = 0.2
+    return -(MOUNT_T + PULLEY_GAP + PULLEY_H), 2 * Z_MID - (Z_DISK0 - GAP) + END_BRG_W - nose_short
 
 def check_disks():
     root = C.R - C.RP - C.CLEAR - C.E
-    assert C.OUT_PCD_R - P["seat_bushing"] / 2 - P["seat_6800"] / 2 >= 1.5, "bushing seat too close to the 6800"
+    assert C.OUT_PCD_R - P["seat_bushing"] / 2 - DISK_SEAT / 2 >= 1.5, "bushing seat too close to the 6800"
     assert root - C.OUT_PCD_R - P["seat_bushing"] / 2 >= 1.5, "bushing seat too close to the lobe root"
     assert 2 * C.OUT_PCD_R * math.sin(math.pi / C.N_OUT) - P["seat_bushing"] >= 1.5, "bushing seats too close"
     for name in ("disk-a", "disk-b"):
         o = PARTS[name]
         assert L.stats(o)["non_manifold"] == 0, name
-        assert abs(bore_diameter(o, 0, 0, DISK_T / 2) - P["seat_6800"]) < 0.03, name
+        assert abs(bore_diameter(o, 0, 0, DISK_T / 2) - DISK_SEAT) < 0.03, name
         assert abs(bore_diameter(o, 0, 0, (DISK_T - B6800_W) / 2) - 2 * SEAT_LIP_R) < 0.03, name + " seat lip"
 
 def check_eccentric():
-    jr = P["journal_6800"] / 2
-    end_r, core_r = (SLEEVE_R, SLEEVE_BORE_R) if HOLLOW else (END_R, ROD_R)
-    assert end_r + C.E <= jr - 0.2, "a 6800 won't slide over the eccentric end"
-    assert end_r - core_r >= 1.2, "eccentric end too thin round the rod"
-    assert jr - C.E - core_r >= 1.5, "journal too thin round the rod"
+    jr = JOURNAL_D / 2
+    sleeve_core_r = BUSH_SEAT_R
+    end_r, end_core_r, journal_core_r = (SLEEVE_R, sleeve_core_r, SLEEVE_BORE_R) if HOLLOW else (END_R, ROD_R, ROD_R)
+    assert end_r + C.E <= jr - 0.2, "a disk bearing won't slide over the eccentric end"
+    assert end_r - end_core_r >= 1.2, "eccentric end too thin round the rod or bushing"
+    assert jr - C.E - journal_core_r >= 1.5, "journal too thin round the bore"
     if HOLLOW:
-        assert SLEEVE_FLAT - SLEEVE_BORE_R >= 1.0, "sleeve too thin under the 40T flats"
+        assert SLEEVE_FLAT - sleeve_core_r >= 1.0, "sleeve too thin under the 40T flats"
+        z_tail, z_nose = sleeve_ends()
+        assert z_nose - BUSH_L >= Z_DISK0 + 2 * DISK_T + COLLAR_T - ECC_TRIM, "nose bushing runs under the journal"
+        assert abs(bore_diameter(PARTS["eccentric"], 0, 0, z_nose - BUSH_L / 2) - 2 * BUSH_SEAT_R) < 0.03, "nose bushing seat"
+        assert abs(bore_diameter(PARTS["eccentric"], 0, 0, Z_MID) - 2 * SLEEVE_BORE_R) < 0.03, "middle bore"
     o = PARTS["eccentric"]
     assert L.stats(o)["non_manifold"] == 0
     za, zb = Z_DISK0 + DISK_T / 2, Z_MID + COLLAR_T / 2 + DISK_T / 2
@@ -133,19 +158,18 @@ if not HOLLOW:
     PARTS["eccentric-round"] = eccentric("eccentric-round", rod_flat=False)   # pressed onto a plain rod with no flat
     PARTS["eccentric-round-long"] = eccentric("eccentric-round-long", rod_flat=False, trim=0.0)
 CHECKS += [check_disks, check_eccentric]
-
 LIP_R = 15.0                                 # holds each 6804's outer ring at the housing face
 CARRIER_R, CARRIER_BORE_R = 22.0, 22.5
 HOUSING_R, BOLT_R, BOLT_HOLE_R = 34.0, 30.0, 1.7
 BOLT_ANGLES = [45 + 90 * k for k in range(4)]
-SHOULDER_R = 11.5                            # bears on the 6804 inner ring only
+SHOULDER_R = 11.5                            # bears on the main bearing's inner ring only
 HUB_PROUD = 1.0
 ROD_CLEAR_R = 2.75
-SLEEVE_CLEAR, GRIP_ROD_CLEAR_R = 0.5, 2.8    # rear hub round the turning sleeve; front hub round the gripper rod
-INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, 6.5   # M3 x 3 x 4.5 heat-set inserts for the test arm
+SLEEVE_CLEAR, GRIP_ROD_CLEAR_R = 0.5, 3.0   # rear hub round the turning sleeve; front hub round the gripper's shaft
+INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, 6.5   # M3 x 3 x 4.5 heat-set inserts on the output
 INSERT_ANGLES = [90 + 120 * k for k in range(3)]
-RELIEF_R, RELIEF_T = 5.5, 0.4                # 625 seat floor relieved under the inner ring, so only the outer ring seats
-RING_PIN_L, OUT_PIN_L = 18.0, 20.0
+RELIEF_T = 0.4
+RING_PIN_L, OUT_PIN_L = 20.0, 20.0
 SLIP_EXTRA = 2.0                             # front slip holes run past the pin ends; flush-depth holes kept the halves from closing
 
 def polar(r, deg):
@@ -183,19 +207,19 @@ def carrier(front):
     z_sh = z_plate - SHOULDER_T
     c = L.cyl_z("carrier-front" if front else "carrier-rear", 0, 0, CARRIER_R, z_plate, z_in, n=160)
     L.union(c, L.cyl_z("shoulder", 0, 0, SHOULDER_R, z_sh, z_plate + 0.01, n=120))
-    L.union(c, L.cyl_z("hub", 0, 0, P["hub_6804"] / 2, z_hub_end, z_sh + 0.01, n=120))
-    L.cut(c, L.cyl_z("625", 0, 0, P["seat_625"] / 2, z_in - B625_W, z_in + 1, n=96))
-    L.cut(c, L.cyl_z("625_relief", 0, 0, RELIEF_R, z_in - B625_W - RELIEF_T, z_in - B625_W + 0.01, n=64))
+    L.union(c, L.cyl_z("hub", 0, 0, HUB_D / 2, z_hub_end, z_sh + 0.01, n=120))
+    L.cut(c, L.cyl_z("625", 0, 0, END_BRG_SEAT / 2, z_in - END_BRG_W, z_in + 1, n=96))
+    L.cut(c, L.cyl_z("625_relief", 0, 0, RELIEF_R, z_in - END_BRG_W - RELIEF_T, z_in - END_BRG_W + 0.01, n=64))
     for k in range(C.N_OUT):
         L.cut(c, L.cyl_z("pin", *polar(C.OUT_PCD_R, 360 * k / C.N_OUT), P["out_pin_press"] / 2, z_plate - 1, z_in + 1, n=32))
     if front:
         for a in INSERT_ANGLES:
             L.cut(c, L.cyl_z("insert", *polar(INSERT_PCD_R, a), INSERT_R, z_hub_end - 1, z_hub_end + INSERT_DEPTH, n=32))
         if HOLLOW:
-            L.cut(c, L.cyl_z("grip_rod", 0, 0, GRIP_ROD_CLEAR_R, z_hub_end - 1, z_in - B625_W + 0.01, n=48))
+            L.cut(c, L.cyl_z("grip_rod", 0, 0, GRIP_ROD_CLEAR_R, z_hub_end - 1, z_in - END_BRG_W + 0.01, n=48))
     else:
         rod_r = SLEEVE_R + SLEEVE_CLEAR if HOLLOW else ROD_CLEAR_R
-        L.cut(c, L.cyl_z("rod", 0, 0, rod_r, z_hub_end - 1, z_in - B625_W + 0.01, n=48))
+        L.cut(c, L.cyl_z("rod", 0, 0, rod_r, z_hub_end - 1, z_in - END_BRG_W + 0.01, n=48))
     L.finish(c)
     if front:
         mirror_to_front(c)
@@ -210,14 +234,14 @@ def check_housing_and_carriers():
     assert Z_DISK0 - (Z_MID - RING_PIN_L / 2) >= 2.0, "ring pins engage less than 2 mm"
     assert 2.5 <= (OUT_PIN_L - 2 * (Z_MID - z_in)) / 2 <= PLATE_T, "output pins engage each plate 2.5 mm to the full plate"
     assert P["ring_pin_slip"] - 2 * C.RP >= 0.1, "front half won't slide over the ring pins"
-    assert P["hub_6804"] / 2 - P["seat_625"] / 2 >= 1.5, "carrier hub too thin round the 625"
-    assert INSERT_PCD_R + INSERT_R <= P["hub_6804"] / 2 - 1.0, "insert breaks out of the hub"
+    assert HUB_D / 2 - END_BRG_SEAT / 2 >= 1.5, "carrier hub too thin round the 625"
+    assert INSERT_PCD_R + INSERT_R <= HUB_D / 2 - 1.0, "insert breaks out of the hub"
     for name in ("housing-rear", "housing-front", "carrier-rear", "carrier-front"):
         assert L.stats(PARTS[name])["non_manifold"] == 0, name
     rear = PARTS["housing-rear"]
     assert abs(bore_diameter(rear, 0, 0, LIP_T + BRG_W / 2) - P["seat_6804"]) < 0.03
     assert abs(bore_diameter(rear, 0, 0, LIP_T + BRG_W + 2) - 2 * CARRIER_BORE_R) < 0.05
-    assert abs(bore_diameter(PARTS["carrier-rear"], 0, 0, z_in - B625_W / 2) - P["seat_625"]) < 0.03
+    assert abs(bore_diameter(PARTS["carrier-rear"], 0, 0, z_in - END_BRG_W / 2) - END_BRG_SEAT) < 0.03
 
 PARTS["housing-rear"], PARTS["housing-front"] = housing()
 PARTS["carrier-rear"] = carrier(False)
@@ -225,7 +249,7 @@ PARTS["carrier-front"] = carrier(True)
 CHECKS.append(check_housing_and_carriers)
 
 UPRIGHT_T, UPRIGHT_HALF_H, FOOT_T, FOOT_L = 5.0, 40.0, 6.0, 70.0
-MOTOR_X = round(C.belt_centre_distance(20, 40, 232), 2)
+MOTOR_X = round(C.belt_centre_distance(20, 40, 188 if HOLLOW else 232), 2)
 SLOT = C.MOTOR_SLOT                          # motor travel each way along x, for belt tension
 NEMA_HOLE_OFF, NEMA_HOLE_R, NEMA_PILOT_R = 15.5, 1.7, 11.75
 HUB_CLEAR_R = 12.0
@@ -321,7 +345,7 @@ def belt_plane_from_motor_face():
 def check_motor_mount():
     m = PARTS["motor-mount"]
     assert L.stats(m)["non_manifold"] == 0
-    assert HUB_CLEAR_R - P["hub_6804"] / 2 >= 1.5, "mount rubs the rear carrier's hub"
+    assert HUB_CLEAR_R - HUB_D / 2 >= 1.5, "mount rubs the rear carrier's hub"
     assert RAIL_X0 - HOUSING_R >= 1.5, "rails hit the housing"
     assert 0.2 <= RAIL_GAP - NEMA_SQUARE <= 0.6, "rails don't hold the motor snugly"
     assert MOTOR_X - SLOT - NEMA_SQUARE / 2 >= RAIL_X0, "motor runs off the rails' housing end"
@@ -403,7 +427,6 @@ PARTS["test-arm"] = test_arm()
 CHECKS.append(check_assembly)
 
 BOLT_HEAD_H = 3.0                            # M3 socket head on the front face
-SEAL_R = 6.2                                 # 6800 inner ring land; past it a part rubs the seal
 
 def floor_z(o, x, z_start, up=False):
     tree, bm = L._tree(o)
@@ -413,12 +436,13 @@ def floor_z(o, x, z_start, up=False):
 def check_running_clearances():
     z_in = Z_DISK0 - GAP
     rear, front = PARTS["carrier-rear"], PARTS["carrier-front"]
-    x_inner = 5.0 if HOLLOW else 4                 # under the inner ring: 688 from 4 out, 625 from 2.5
+    x_inner = 5.8 if HOLLOW else 4                         # under the inner ring: past the hollow's rear hole, or the 625 from 2.5
+    x_outer = 7                                    # under the outer ring
     arm_low = min(v.co.z for v in PARTS["test-arm"].data.vertices if math.hypot(v.co.x, v.co.y) >= BOLT_R - 3)
     fails = {
         "test arm hits the bolt heads": arm_low - (L_HOUSING + BOLT_HEAD_H) < 1.5,
-        "rear 625 floor touches the inner ring": floor_z(rear, 7, z_in - 0.1) - floor_z(rear, x_inner, z_in - 0.1) < 0.3,
-        "front 625 floor touches the inner ring": floor_z(front, x_inner, 2 * Z_MID - z_in + 0.1, up=True) - floor_z(front, 7, 2 * Z_MID - z_in + 0.1, up=True) < 0.3,
+        "rear 625 floor touches the inner ring": floor_z(rear, x_outer, z_in - 0.1) - floor_z(rear, x_inner, z_in - 0.1) < 0.3,
+        "front 625 floor touches the inner ring": floor_z(front, x_inner, 2 * Z_MID - z_in + 0.1, up=True) - floor_z(front, x_outer, 2 * Z_MID - z_in + 0.1, up=True) < 0.3,
         "eccentric ends reach the 625s": not HOLLOW and L.stats(PARTS["eccentric"])["dims"][2] > 2 * (Z_MID - z_in) - 1.0,
         "journal shorter than a 6800": Z_DISK0 + DISK_T - eccentric_ends()[0] < B6800_W,
         "output pins bottom in the carrier": floor_z(rear, C.OUT_PCD_R, z_in - 0.1) is not None,
@@ -440,6 +464,7 @@ for n, o in PARTS.items():
     if HOLLOW and n in TEST_PARTS:
         continue
     folder = "test-parts" if n in TEST_PARTS else "20-1-hollow" if HOLLOW else "20-1-compact"
+    os.makedirs(os.path.join(BASE, folder), exist_ok=True)
     o.matrix_world = Matrix()
     if n in PRINT_FLIP:   # on the mesh: as an object rotation, float32 sin(pi) tilts the mating face enough to split it across a slicing plane
         o.data.transform(Matrix.Diagonal((1, -1, -1, 1)))

@@ -1,6 +1,6 @@
 """Printed GT2 40Ts for the compact cycloid's input, driven 2:1 from a bought 20T on a 232-2GT-6 belt.
 POC: the Ø5 core rod with its flat 2.0 off the axis (cycloid_poc.ROD_FLAT); the bore takes the same D.
-Hollow (axis 6): the printed sleeve's Ø7.95 tail with flats 3.675 off the axis both sides
+Hollow (axis 6): the printed sleeve's Ø9.95 tail with flats 4.675 off the axis both sides
 (cycloid_poc.SLEEVE_R, SLEEVE_FLAT); the bore takes the same double-D.
 The set screw runs in an M3 x 3 x 4.5 heat-set insert, as proven on the axis 2 30T (htd3m_pulley.py).
 Frame: shaft axis on z, z=0 the free flange's outer face, which is the print bed face and faces the motor
@@ -17,12 +17,12 @@ TEETH = 40
 GROOVE_R, GROOVE_DEPTH = 0.65, 0.80                 # round groove; GT2 teeth are 0.75 high and a printed groove fills in
 FLANGE_LIP = 1.0
 CONE_T = 1.0                                        # hub-side flange is a 45 deg cone so it prints without support
-HUB_R, HUB_L = 9.0, 7.0
+HUB_L = 7.0
 SCREW_R = 1.65
 INSERT_R, INSERT_DEPTH, INSERT_WALL = 2.0, 3.5, 1.0 # pilot for an M3 x 3 x 4.5 insert, pressed in radially
-PULLEYS = [                                         # cycloid folder, bore radius, flat offset, flat both sides
-    ("20-1-compact", 2.6, 2.1, False),    # rod 5.0, 4.5 across its flat; about 0.1 clearance each
-    ("20-1-hollow", 4.05, 3.725, True),   # sleeve 7.95, 7.35 across its flats; 0.05-0.075 each
+PULLEYS = [                                         # cycloid folder, file, bore radius, flat offset, flat both sides, hub radius
+    ("20-1-compact", "pulley-40T", 2.6, 2.1, False, 9.0),    # rod 5.0, 4.5 across its flat; about 0.1 clearance each
+    ("20-1-hollow", "pulley-40T", 5.05, 4.725, True, 9.5),   # sleeve 9.95, 9.35 across its flats; 0.05-0.075 each; hub grown to keep wall under the insert
 ]
 
 z_teeth0 = C.GT2_FLANGE_T; z_teeth1 = z_teeth0 + C.GT2_TEETH_W
@@ -33,7 +33,7 @@ z_screw = (z_hub0 + z_top) / 2
 def od_r():
     return TEETH * 2.0 / math.pi / 2 - 0.254        # GT2 pitch line differential
 
-def pulley(name, bore_r, flat_x, double):
+def pulley(name, bore_r, flat_x, double, hub_r):
     r = od_r()
     p = L.cyl_z(name, 0, 0, r, z_teeth0 - 0.01, z_teeth1 + 0.01, n=240)
     for k in range(TEETH):
@@ -41,14 +41,14 @@ def pulley(name, bore_r, flat_x, double):
         L.cut(p, L.cyl_z("groove", c * math.cos(a), c * math.sin(a), GROOVE_R, z_teeth0 - 1, z_teeth1 + 1, n=24))
     L.union(p, L.cyl_z("flange", 0, 0, r + FLANGE_LIP, 0, z_teeth0, n=240))
     L.union(p, L.cyl_between("cone", (0, 0, z_teeth1), (0, 0, z_hub0), r - GROOVE_DEPTH, n=240, r_end=r + FLANGE_LIP))
-    L.union(p, L.cyl_z("hub", 0, 0, HUB_R, z_hub0 - 0.01, z_top, n=120))
+    L.union(p, L.cyl_z("hub", 0, 0, hub_r, z_hub0 - 0.01, z_top, n=120))
     bore = L.cyl_z("bore", 0, 0, bore_r, -1, z_top + 1, n=64)
     L.cut(bore, L.box("flat", flat_x, bore_r + 1, -bore_r - 1, bore_r + 1, -2, z_top + 2))
     if double:
         L.cut(bore, L.box("flat_b", -bore_r - 1, -flat_x, -bore_r - 1, bore_r + 1, -2, z_top + 2))
     L.cut(p, bore)
-    L.cut(p, L.cyl_between("insert", (HUB_R - INSERT_DEPTH, 0, z_screw), (HUB_R + 1, 0, z_screw), INSERT_R, n=48))
-    L.cut(p, L.cyl_between("screw", (0, 0, z_screw), (HUB_R + 1, 0, z_screw), SCREW_R, n=32))
+    L.cut(p, L.cyl_between("insert", (hub_r - INSERT_DEPTH, 0, z_screw), (hub_r + 1, 0, z_screw), INSERT_R, n=48))
+    L.cut(p, L.cyl_between("screw", (0, 0, z_screw), (hub_r + 1, 0, z_screw), SCREW_R, n=32))
     L.finish(p); return p
 
 def radial(o, z, n=1440):
@@ -67,7 +67,7 @@ def bore_rays(o):
         if h[0] is not None: out.append((round(math.degrees(a)), (h[0] - c).length))
     bm.free(); return out
 
-def check(p, bore_r, flat_x, double):
+def check(p, bore_r, flat_x, double, hub_r):
     st = L.stats(p); r = od_r()
     prof = radial(p, (z_teeth0 + z_teeth1) / 2)
     deep = [d < r - GROOVE_DEPTH / 2 for d in prof]
@@ -84,12 +84,13 @@ def check(p, bore_r, flat_x, double):
     assert abs(report["bore_d"] - 2 * bore_r) < 0.05, report
     assert abs(across - (2 * flat_x if double else bore_r + flat_x)) < 0.05, report
     assert z_screw - INSERT_R - z_hub0 >= INSERT_WALL and z_top - z_screw - INSERT_R >= INSERT_WALL, "insert breaks out of the hub"
-    assert HUB_R - INSERT_DEPTH > flat_x + 1.0, "insert pilot reaches the flat"
+    assert hub_r - INSERT_DEPTH > flat_x + 1.0, "insert pilot reaches the flat"
     return report
 
-for name, bore_r, flat_x, double in PULLEYS:
+for name, file, bore_r, flat_x, double, hub_r in PULLEYS:
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    p = pulley(name, bore_r, flat_x, double)
-    print("PULLEY", name, json.dumps(check(p, bore_r, flat_x, double)))
-    L.export(p, os.path.join(ROOT, "model", "cycloid-poc", name, "pulley-40T.stl"))
+    os.makedirs(os.path.join(ROOT, "model", "cycloid-poc", name), exist_ok=True)
+    p = pulley(name, bore_r, flat_x, double, hub_r)
+    print("PULLEY", name, file, json.dumps(check(p, bore_r, flat_x, double, hub_r)))
+    L.export(p, os.path.join(ROOT, "model", "cycloid-poc", name, file + ".stl"))
 print("PULLEY DONE")
