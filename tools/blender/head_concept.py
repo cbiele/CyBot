@@ -168,7 +168,7 @@ def ring_prism(name, col, mat, m, r1, r2, c, z0, z1, t):
     return place(o, col, mat, m)
 
 
-def belted_drive(prefix, col, m, folder="20-1-hollow", plate=True, big=40, belt=188):
+def belted_drive(prefix, col, m, folder="20-1-hollow", plate=True, big=40, belt=188, outboard=False):
     """Mount plate, big pulley (40T, or axis 5's 60T on the offset wrist), 20T, belt and pancake, with the motor
     beside the housing as on the POC mount."""
     c = round(C.belt_centre_distance(20, big, belt), 2)
@@ -183,7 +183,10 @@ def belted_drive(prefix, col, m, folder="20-1-hollow", plate=True, big=40, belt=
     place(pulley, col, "pulley", m @ Matrix.Translation((0, 0, -MOUNT_T - 1)) @ flip())
     place(L.cyl_z(prefix + " 20T (dummy)", c, 0, R20 + 0.5, BELT_PLANE - 4.5, BELT_PLANE + 4.5, n=40), col, "pulley", m)
     ring_prism(f"{prefix} belt {belt}", col, "belt", m, R20, r_big, c, BELT_PLANE - 3, BELT_PLANE + 3, 1.4)
-    motor(prefix + " pancake", col, m @ Matrix.Translation((c, 0, 0)), 0.0, 1, PANCAKE_L)
+    if outboard:   # on a plate past the belt, mirrored about the belt plane
+        motor(prefix + " pancake", col, m @ Matrix.Translation((c, 0, 0)), 2 * BELT_PLANE, -1, PANCAKE_L)
+    else:
+        motor(prefix + " pancake", col, m @ Matrix.Translation((c, 0, 0)), 0.0, 1, PANCAKE_L)
 
 
 def axis4():
@@ -211,8 +214,9 @@ def axis4_tube():
     flip_back = Matrix.Diagonal((1, -1, -1, 1))
     parts = {"forearm-outer-tube": ("fixed", Matrix.Translation((0, 0, F.OUTER_X[0]))),
              "ax4-output-plate": ("moving", Matrix.Translation((0, 0, F.PLATE_X[0]))),
-             "ax4-tube-hub": ("moving", Matrix.Translation((0, 0, F.HUB_X[0]))),
-             "wrist-flange-hub": ("moving", flip_back @ Matrix.Translation((0, 0, -F.FLANGE_FACE)))}
+             "ax4-tube-hub": ("moving", Matrix.Translation((0, 0, F.HUB_X[0])))}
+    if not OFFSET_WRIST:   # on the offset wrist the head bracket is glued on the tube in the hub's place
+        parts["wrist-flange-hub"] = ("moving", flip_back @ Matrix.Translation((0, 0, -F.FLANGE_FACE)))
     for name, (mat, pose) in parts.items():
         place(stl(os.path.join(MODEL, "forearm-tube", name + ".stl"), "ax4 " + name), col, mat, m @ pose)
     place(ring("ax4 aluminium tube 9 x 11", F.TUBE_R, 4.5, *F.TUBE_X), col, "steel", m)
@@ -232,7 +236,7 @@ def axis5():
     m = ax5_frame()
     cycloid("20-1-compact", "ax5", col, m)
     if OFFSET_WRIST:   # its mounts are inside its brackets; axis 5 is geared 60:1
-        belted_drive("ax5", col, m, plate=False, big=W.AX5_TEETH, belt=W.AX5_BELT)
+        belted_drive("ax5", col, m, plate=False, big=W.AX5_TEETH, belt=W.AX5_BELT, outboard=W.PANCAKE_OUTBOARD)
     else:
         belted_drive("ax5", col, m)
     place(L.cyl_z("ax5 Ø5 rod", 0, 0, 2.5, -23.5, 31.0, n=32), col, "steel", m)
@@ -345,6 +349,8 @@ def wrist_parts():
     to_world = Matrix.Translation((AX4_REAR_X, 0, ROLL_Z))
     wrist = os.path.join(MODEL, "wrist")
     place(stl(os.path.join(wrist, "head-bracket.stl"), "head-bracket"), "Wrist fixed", "fixed", to_world @ unprint(W.AX5_REAR_Y + 6.0))
+    place(stl(os.path.join(wrist, "ax5-motor-plate.stl"), "ax5-motor-plate"), "Wrist fixed", "fixed",
+          ax5_frame() @ Matrix.Translation((0, 0, W.MP_LOCAL_Z["plate"][0])))
     place(ring("6705, outer tube to the head bracket", W.BRG5_R_OUT, W.BRG5_R_IN, *W.BRG5_X), "Wrist fixed", "cycloid",
           frame((AX4_REAR_X, 0, ROLL_Z), (1, 0, 0), (0, 0, 1)))
     place(stl(os.path.join(wrist, "ax6-l-bracket.stl"), "ax6-l-bracket"), "Wrist pitch body", "moving", to_world @ unprint(W.LB_Y[0]))
@@ -468,7 +474,7 @@ def tube_axis4_report():
 
 PITCH_MASSES = {"ax6 cycloid": 150, "ax6 pancake": 120, "ax7 gripper motor": 230, "Gripper drive, past axis 6": 80,
                 "Three-finger hand": 400, "Wrist pitch body": 50}   # grams, estimates
-FIXED_HEAD_MASSES = {"ax5 cycloid": 150, "ax5 pancake": 120, "head-bracket": 45}
+FIXED_HEAD_MASSES = {"ax5 cycloid": 150, "ax5 pancake": 120, "head-bracket": 70, "ax5-motor-plate": 25}   # the bracket now includes the wrist hub
 TOOL_KG = 0.2
 MEASURED_NM_AT_40 = 1.17                       # red compact + pancake at 1000 mA, torque test 2026-11-15; the spec wants 1.5x over the load
 CYCLOID_PARTS = ("housing", "carrier", "disk", "eccentric")
@@ -550,6 +556,9 @@ def pitch_sweep(degs):
 
 
 def offset_wrist_report(report):
+    pan = [v.co for v in bpy.data.objects["ax5 pancake"].data.vertices]
+    assert min(p.y for p in pan) >= 40.0 and all(abs(p.z - ROLL_Z) <= 25.0 for p in pan), "axis 5's pancake isn't beside the forearm, in line with it"
+    assert not [o for o in bpy.data.objects if "wrist-flange-hub" in o.name], "the old wrist hub is still drawn: the head bracket replaces it"
     hits = pitch_sweep(range(-170, 171, 10))
     assert not hits, ("pitch body clashes", hits)
     grip = world_verts(col="Three-finger hand")
