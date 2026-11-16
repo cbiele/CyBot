@@ -169,7 +169,7 @@ def ring_prism(name, col, mat, m, r1, r2, c, z0, z1, t):
 
 
 def belted_drive(prefix, col, m, folder="20-1-hollow", plate=True, big=40, belt=188, outboard=False):
-    """Mount plate, big pulley (40T, or axis 5's 60T on the offset wrist), 20T, belt and pancake, with the motor
+    """Mount plate, big pulley (40T, or the 60T of axes 4 and 5 on the offset wrist), 20T, belt and pancake, with the motor
     beside the housing as on the POC mount."""
     c = round(C.belt_centre_distance(20, big, belt), 2)
     r_big = big / math.pi
@@ -209,7 +209,10 @@ def axis4_tube():
     col = AX4_COL
     m = frame((AX4_REAR_X, 0, ROLL_Z), (1, 0, 0), (0, 0, 1))
     cycloid("20-1-compact", "ax4", col, m)
-    belted_drive("ax4", col, m, "20-1-compact")
+    if OFFSET_WRIST:   # geared 60:1 like axis 5 for the head's roll load pitched sideways
+        belted_drive("ax4", col, m, "20-1-compact", big=F.AX4_TEETH, belt=F.AX4_BELT)
+    else:
+        belted_drive("ax4", col, m, "20-1-compact")
     place(L.cyl_z("ax4 Ø5 rod", 0, 0, 2.5, -23.5, 31.0, n=32), col, "steel", m)
     flip_back = Matrix.Diagonal((1, -1, -1, 1))
     parts = {"forearm-outer-tube": ("fixed", Matrix.Translation((0, 0, F.OUTER_X[0]))),
@@ -574,13 +577,15 @@ def offset_wrist_report(report):
     ax5_limit = capacity / 1.5
     worst = max(range(-170, 171, 5), key=lambda d: roll_torque_pitched(d, tip))
     report.update({"axis4_roll_torque_worst_nm": round(roll_torque_pitched(worst, tip), 2), "axis4_roll_worst_at_pitch_deg": worst,
-                   "axis4_roll_capacity_nm": MEASURED_NM_AT_40})
+                   "axis4_ratio": 20 * F.AX4_TEETH / 20, "axis4_roll_capacity_nm": round(MEASURED_NM_AT_40 * F.AX4_TEETH / 40, 2)})
+    report["axis4_roll_margin"] = round(report["axis4_roll_capacity_nm"] / report["axis4_roll_torque_worst_nm"], 2)
     report.update({"axis5_ratio": ratio, "axis5_capacity_nm": round(capacity, 2), "axis5_margin": round(capacity / t5, 2)})
     report.update({"pitch_x": PITCH_X, "ax6_offset_y": AX6_Y, "pitch_sweep_clash_deg": hits,
                    "axis5_torque_nm": round(t5, 2), "axis4_roll_torque_nm": round(roll, 2),
                    "head_mass_g": sum(PITCH_MASSES.values()) + sum(FIXED_HEAD_MASSES.values())})
     assert report["axis4_roll_torque_worst_nm"] >= report["axis4_roll_torque_nm"], "worst-case roll misses pitch 0"
     assert t5 <= ax5_limit, f"axis 5 needs {t5:.2f} N·m with a 200 g tool, over {ax5_limit:.2f}: bring it to the user (spec)"
+    assert report["axis4_roll_torque_worst_nm"] <= report["axis4_roll_capacity_nm"], "axis 4 can't hold the head pitched sideways"
 
 
 def check(z_motor):
