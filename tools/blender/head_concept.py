@@ -13,14 +13,16 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hand_lib as L
 import cycloid_math as C
 import forearm_dims as F
+import wrist_dims as W
 
 ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
 MODEL = os.path.join(ROOT, "model")
 COMPACT_DRIVE = "--compact-drive" in sys.argv
-T8_THROUGH = "--t8-through" in sys.argv
-TUBE_FOREARM = "--tube-forearm" in sys.argv   # axis 4 compact at the elbow end turns the 190 aluminium tube out to a wrist flange
-OUT = os.path.join(MODEL, "head-concept", *(["tube-forearm"] if TUBE_FOREARM else ["compact-drive"] if COMPACT_DRIVE else ["t8-through"] if T8_THROUGH else []))
-BLEND = os.path.join(MODEL, "head-concept-tube.blend" if TUBE_FOREARM else "head-concept-compact.blend" if COMPACT_DRIVE else "head-concept-t8.blend" if T8_THROUGH else "head-concept.blend")
+OFFSET_WRIST = "--offset-wrist" in sys.argv   # UR-style wrist on the tube forearm's flange (model/wrist/), axis 6 the hollow T8
+T8_THROUGH = "--t8-through" in sys.argv or OFFSET_WRIST
+TUBE_FOREARM = "--tube-forearm" in sys.argv or OFFSET_WRIST   # axis 4 compact at the elbow end turns the 190 aluminium tube out to a wrist flange
+OUT = os.path.join(MODEL, "head-concept", *(["offset-wrist"] if OFFSET_WRIST else ["tube-forearm"] if TUBE_FOREARM else ["compact-drive"] if COMPACT_DRIVE else ["t8-through"] if T8_THROUGH else []))
+BLEND = os.path.join(MODEL, "head-concept-wrist.blend" if OFFSET_WRIST else "head-concept-tube.blend" if TUBE_FOREARM else "head-concept-compact.blend" if COMPACT_DRIVE else "head-concept-t8.blend" if T8_THROUGH else "head-concept.blend")
 PLACE = json.load(open(os.path.join(MODEL, "placements.json")))
 
 ROLL_Z, PITCH_X = 555.0, 250.0                 # both V1's, so the reach stays comparable
@@ -46,6 +48,11 @@ if TUBE_FOREARM:                               # the fork, pitch body and axis 6
     FORK_ROOT_X = AX4_REAR_X + F.FLANGE_FACE
     PITCH_X = FORK_ROOT_X + 104.0
     AX6_REAR_X = PITCH_X + 20.0
+AX6_Y = 0.0
+if OFFSET_WRIST:                               # wrist_dims is in the forearm frame, which starts at the axis 4 housing's rear face
+    PITCH_X = AX4_REAR_X + W.PITCH_X
+    AX6_REAR_X = AX4_REAR_X + W.AX6_REAR_X
+    AX6_Y = W.AX6_Y
 AX4_COL = "Axis 4 compact, 188 belt, drives the tube" if TUBE_FOREARM else "Axis 4 inline, 20:1"
 SHELL_R, TUBE_R = 36.0, 25.0                   # 6810: 50 bore, 65 OD
 ADAPTER_BOSS_R, ADAPTER_ROD_R = (12.5, 5.25) if T8_THROUGH else (9.0, 3.0)
@@ -161,17 +168,22 @@ def ring_prism(name, col, mat, m, r1, r2, c, z0, z1, t):
     return place(o, col, mat, m)
 
 
-def belted_drive(prefix, col, m, folder="20-1-hollow"):
-    """Mount plate, 40T, 20T, belt and pancake on the 188, with the motor beside the housing as on the POC mount."""
-    x1 = BELT_C + 3.5 + SQUARE / 2 + 3
-    plate = L.cyl_z(prefix + " mount (placeholder for the 188)", 0, 0, HOUSING_R, -MOUNT_T, 0, n=96)
-    L.union(plate, L.box("arm", 10, x1, -SQUARE / 2 - 3, SQUARE / 2 + 3, -MOUNT_T, 0))
-    place(plate, col, "fixed", m)
-    pulley = stl(os.path.join(MODEL, "cycloid-poc", folder, "pulley-40T.stl"), prefix + " 40T")
+def belted_drive(prefix, col, m, folder="20-1-hollow", plate=True, big=40, belt=188):
+    """Mount plate, big pulley (40T, or axis 5's 60T on the offset wrist), 20T, belt and pancake, with the motor
+    beside the housing as on the POC mount."""
+    c = round(C.belt_centre_distance(20, big, belt), 2)
+    r_big = big / math.pi
+    if plate:
+        x1 = c + 3.5 + SQUARE / 2 + 3
+        p = L.cyl_z(prefix + " mount (placeholder for the 188)", 0, 0, HOUSING_R, -MOUNT_T, 0, n=96)
+        L.union(p, L.box("arm", 10, x1, -SQUARE / 2 - 3, SQUARE / 2 + 3, -MOUNT_T, 0))
+        place(p, col, "fixed", m)
+    path = os.path.join(MODEL, "wrist", "pulley-60T.stl") if big == 60 else os.path.join(MODEL, "cycloid-poc", folder, "pulley-40T.stl")
+    pulley = stl(path, f"{prefix} {big}T")
     place(pulley, col, "pulley", m @ Matrix.Translation((0, 0, -MOUNT_T - 1)) @ flip())
-    place(L.cyl_z(prefix + " 20T (dummy)", BELT_C, 0, R20 + 0.5, BELT_PLANE - 4.5, BELT_PLANE + 4.5, n=40), col, "pulley", m)
-    ring_prism(prefix + " belt 188", col, "belt", m, R20, R40, BELT_C, BELT_PLANE - 3, BELT_PLANE + 3, 1.4)
-    motor(prefix + " pancake", col, m @ Matrix.Translation((BELT_C, 0, 0)), 0.0, 1, PANCAKE_L)
+    place(L.cyl_z(prefix + " 20T (dummy)", c, 0, R20 + 0.5, BELT_PLANE - 4.5, BELT_PLANE + 4.5, n=40), col, "pulley", m)
+    ring_prism(f"{prefix} belt {belt}", col, "belt", m, R20, r_big, c, BELT_PLANE - 3, BELT_PLANE + 3, 1.4)
+    motor(prefix + " pancake", col, m @ Matrix.Translation((c, 0, 0)), 0.0, 1, PANCAKE_L)
 
 
 def axis4():
@@ -208,19 +220,29 @@ def axis4_tube():
         place(ring("ax4 6701", F.BRG_SEAT_R, 6.0, *x), col, "cycloid", m)
 
 
+def ax5_frame():
+    if OFFSET_WRIST:   # across the forearm end, output to the hand side (-y), pancake back and down
+        a = math.radians(W.AX5_MOTOR_ANGLE)
+        return frame((PITCH_X, W.AX5_REAR_Y, ROLL_Z), (0, -1, 0), (math.cos(a), 0, math.sin(a)))
+    return frame((PITCH_X, AX5_REAR_Y, ROLL_Z), (0, 1, 0), (-1, 0, 0))
+
+
 def axis5():
     col = "Axis 5 belted, 40:1"
-    m = frame((PITCH_X, AX5_REAR_Y, ROLL_Z), (0, 1, 0), (-1, 0, 0))
+    m = ax5_frame()
     cycloid("20-1-compact", "ax5", col, m)
-    belted_drive("ax5", col, m)
+    if OFFSET_WRIST:   # its mounts are inside its brackets; axis 5 is geared 60:1
+        belted_drive("ax5", col, m, plate=False, big=W.AX5_TEETH, belt=W.AX5_BELT)
+    else:
+        belted_drive("ax5", col, m)
     place(L.cyl_z("ax5 Ø5 rod", 0, 0, 2.5, -23.5, 31.0, n=32), col, "steel", m)
 
 
 def axis6():
     col = "Axis 6 hollow, gripper motor behind"
-    m = frame((AX6_REAR_X, 0, ROLL_Z), (1, 0, 0), (0, 0, 1))
+    m = ax6_frame()
     cycloid(AX6_FOLDER, "ax6", col, m, AX6_Z_DISK0)
-    belted_drive("ax6", col, m, AX6_FOLDER)
+    belted_drive("ax6", col, m, AX6_FOLDER, plate=not OFFSET_WRIST)
     bracket = stl(os.path.join(MODEL, "cycloid-poc", AX6_FOLDER, "motor7-bracket.stl"), "ax6 gripper motor bracket")
     z_ext = sorted(v.co.z for v in bracket.data.vertices)
     place(bracket, col, "fixed", m @ Matrix.Translation((0, 0, -56.0 - z_ext[0])))
@@ -229,7 +251,7 @@ def axis6():
 
 
 def ax6_frame():
-    return frame((AX6_REAR_X, 0, ROLL_Z), (1, 0, 0), (0, 0, 1))
+    return frame((AX6_REAR_X, AX6_Y, ROLL_Z), (1, 0, 0), (0, 0, 1))
 
 
 def adapter(m6):
@@ -296,7 +318,7 @@ def screw_drive():
 def hand(z_fingers, z_shell, lift):
     """Palm front and straight pair fingers, palm's +y up; the rear shell joins them to the drive. No thumb yet."""
     col = "Three-finger hand"
-    m = frame((AX6_REAR_X + z_fingers, 0, ROLL_Z + lift), (0, -1, 0), (1, 0, 0))
+    m = frame((AX6_REAR_X + z_fingers, AX6_Y, ROLL_Z + lift), (0, -1, 0), (1, 0, 0))
     hand_dir = os.path.join(MODEL, "hand")
     place(stl(os.path.join(hand_dir, "palm-front.stl"), "palm-front"), col, "v1", m)
     for sz in (-1, 1):
@@ -305,8 +327,8 @@ def hand(z_fingers, z_shell, lift):
         place(stl(os.path.join(hand_dir, "finger-distal.stl"), "finger-distal"), col, "v1", at @ Matrix.Translation((PROX_LEN, 0, 0)))
     x0, x1 = AX6_REAR_X + z_shell, AX6_REAR_X + z_fingers - PALM_BACK
     zc = ROLL_Z + lift
-    shell = L.box("palm rear shell (placeholder, not designed)", x0, x1, -34, 34, zc - 25, zc + 25)
-    L.cut(shell, L.box("hollow", x0 - 1, x1 - 3, -31, 31, zc - 22, zc + 22))
+    shell = L.box("palm rear shell (placeholder, not designed)", x0, x1, AX6_Y - 34, AX6_Y + 34, zc - 25, zc + 25)
+    L.cut(shell, L.box("hollow", x0 - 1, x1 - 3, AX6_Y - 31, AX6_Y + 31, zc - 22, zc + 22))
     place(shell, "Structure placeholders", "moving")
 
 
@@ -314,8 +336,26 @@ def to_world(o, m):
     return place(o, "Structure placeholders", "moving", m)
 
 
+def unprint(y_bed):
+    """Inverse of wrist.py's print poses (x kept, y onto -z with the given face on the bed)."""
+    return Matrix(((1, 0, 0, 0), (0, 0, -1, y_bed), (0, 1, 0, 0), (0, 0, 0, 1)))
+
+
+def wrist_parts():
+    to_world = Matrix.Translation((AX4_REAR_X, 0, ROLL_Z))
+    wrist = os.path.join(MODEL, "wrist")
+    place(stl(os.path.join(wrist, "head-bracket.stl"), "head-bracket"), "Wrist fixed", "fixed", to_world @ unprint(W.AX5_REAR_Y + 6.0))
+    place(ring("6705, outer tube to the head bracket", W.BRG5_R_OUT, W.BRG5_R_IN, *W.BRG5_X), "Wrist fixed", "cycloid",
+          frame((AX4_REAR_X, 0, ROLL_Z), (1, 0, 0), (0, 0, 1)))
+    place(stl(os.path.join(wrist, "ax6-l-bracket.stl"), "ax6-l-bracket"), "Wrist pitch body", "moving", to_world @ unprint(W.LB_Y[0]))
+    place(stl(os.path.join(MODEL, "forearm-tube", "ax4-output-plate.stl"), "ax5 output plate"), "Wrist pitch body", "moving",
+          ax5_frame() @ Matrix.Translation((0, 0, F.PLATE_X[0])))
+
+
 def structure():
     roll = frame((0, 0, ROLL_Z), (1, 0, 0), (0, 0, 1))
+    if OFFSET_WRIST:
+        wrist_parts(); return
     if TUBE_FOREARM:
         fork_and_cheeks(); return
     shell = L.cyl_z("fixed shell, holds the 6810s", 0, 0, SHELL_R, TUBE_X0, TUBE_X1 - 3, n=128)
@@ -415,7 +455,8 @@ def tube_axis4_report():
     v1_arm = [o.name for o in COLS["V1 arm kept"].objects]
     hits = {o.name: n for o in COLS[AX4_COL].objects for n in [sum(clashes(o, v1_arm).values())] if n}
     assert not hits, ("axis 4 hits the V1 arm", hits)
-    assert abs(FORK_ROOT_X - (AX4_REAR_X + F.FLANGE_FACE)) < 1e-6 and abs(PITCH_X - FORK_ROOT_X - 104.0) < 1e-6
+    if not OFFSET_WRIST:
+        assert abs(FORK_ROOT_X - (AX4_REAR_X + F.FLANGE_FACE)) < 1e-6 and abs(PITCH_X - FORK_ROOT_X - 104.0) < 1e-6
     return {
         "axis4_x_range": [round(min(p.x for p in ax4), 1), round(max(p.x for p in ax4), 1)],
         "axis4_min_to_elbow_axis_mm": round(elbow, 1),
@@ -423,6 +464,114 @@ def tube_axis4_report():
         "pitch_x": PITCH_X,
         "reach_vs_v1_mm": round(PITCH_X - 250.0, 1),
     }
+
+
+PITCH_MASSES = {"ax6 cycloid": 150, "ax6 pancake": 120, "ax7 gripper motor": 230, "Gripper drive, past axis 6": 80,
+                "Three-finger hand": 400, "Wrist pitch body": 50}   # grams, estimates
+FIXED_HEAD_MASSES = {"ax5 cycloid": 150, "ax5 pancake": 120, "head-bracket": 45}
+TOOL_KG = 0.2
+MEASURED_NM_AT_40 = 1.17                       # red compact + pancake at 1000 mA, torque test 2026-11-15; the spec wants 1.5x over the load
+CYCLOID_PARTS = ("housing", "carrier", "disk", "eccentric")
+PITCH_PLACEHOLDERS = ("adapter", "screw bulkhead", "palm rear shell")
+
+
+def mass_group(key):
+    if key in COLS:
+        objs = list(COLS[key].objects)
+        if key == "Three-finger hand":
+            objs += [o for o in COLS["Structure placeholders"].objects if o.name.startswith("palm rear shell")]
+        return objs
+    if key.endswith(" cycloid"):
+        prefix = key.split(" ")[0]
+        return [o for o in bpy.data.objects if o.name.startswith(prefix + " ") and any(p in o.name for p in CYCLOID_PARTS)]
+    return [o for o in bpy.data.objects if o.name == key or o.name.startswith(key + " (")]
+
+
+def centre(objs):
+    pts = [v.co for o in objs for v in o.data.vertices]
+    assert pts, "empty mass group"
+    return Vector([(min(p[i] for p in pts) + max(p[i] for p in pts)) / 2 for i in range(3)])
+
+
+def torque_about(point, axes, masses, tool_at):
+    """Worst-case static torque (N·m) about a line through point, with the lever horizontal; axes picks the two
+    coordinates square to the line. Masses in grams, distances in mm."""
+    s = [0.0, 0.0]
+    for key, g in masses.items():
+        c = centre(mass_group(key))
+        for k, i in enumerate(axes):
+            s[k] += g * (c[i] - point[i])
+    for k, i in enumerate(axes):
+        s[k] += TOOL_KG * 1000 * (tool_at[i] - point[i])
+    return 9.81 * math.hypot(*s) * 1e-6
+
+
+def roll_torque_pitched(deg, tip):
+    """Worst over axis 4's roll angle of the static torque on axis 4 with the wrist pitched by deg: the pitch groups'
+    centres and the tool turn with the pitch, the fixed head stays put."""
+    m, s = pitch_matrix(deg), [0.0, 0.0]
+    groups = [(centre(mass_group(k)), g) for k, g in FIXED_HEAD_MASSES.items()]
+    groups += [(m @ centre(mass_group(k)), g) for k, g in PITCH_MASSES.items()] + [(m @ tip, TOOL_KG * 1000)]
+    for c, g in groups:
+        s[0] += g * c.y
+        s[1] += g * (c.z - ROLL_Z)
+    return 9.81 * math.hypot(*s) * 1e-6
+
+
+def pitch_body():
+    objs = []
+    for name in ("Wrist pitch body", "Axis 6 hollow, gripper motor behind", "Gripper drive, past axis 6", "Three-finger hand"):
+        objs += COLS[name].objects
+    return objs + [o for o in COLS["Structure placeholders"].objects if o.name.startswith(PITCH_PLACEHOLDERS)]
+
+
+def wrist_fixed():
+    objs = list(COLS["Wrist fixed"].objects) + list(COLS[AX4_COL].objects)
+    return objs + [o for o in COLS["Axis 5 belted, 40:1"].objects if not any(p in o.name for p in ("carrier", "disk", "eccentric"))]
+
+
+def merged_tree(objs, m=None):
+    verts, polys = [], []
+    for o in objs:
+        base = len(verts)
+        verts += [(m @ v.co) if m else v.co.copy() for v in o.data.vertices]
+        polys += [[base + i for i in p.vertices] for p in o.data.polygons]
+    return mathutils.bvhtree.BVHTree.FromPolygons(verts, polys)
+
+
+def pitch_matrix(deg):
+    c = Vector((PITCH_X, 0, ROLL_Z))
+    return Matrix.Translation(c) @ Matrix.Rotation(math.radians(deg), 4, 'Y') @ Matrix.Translation(-c)
+
+
+def pitch_sweep(degs):
+    fixed, body = merged_tree(wrist_fixed()), pitch_body()
+    return [d for d in degs if fixed.overlap(merged_tree(body, pitch_matrix(d)))]
+
+
+def offset_wrist_report(report):
+    hits = pitch_sweep(range(-170, 171, 10))
+    assert not hits, ("pitch body clashes", hits)
+    grip = world_verts(col="Three-finger hand")
+    tip = Vector((max(p.x for p in grip), AX6_Y, ROLL_Z))
+    pitch = Vector((PITCH_X, 0, ROLL_Z))
+    t5 = torque_about(pitch, (0, 2), PITCH_MASSES, tip)
+    roll = torque_about(Vector((0, 0, ROLL_Z)), (1, 2), {**PITCH_MASSES, **FIXED_HEAD_MASSES}, tip)
+    lever = {k: round(centre(mass_group(k)).x - PITCH_X, 1) for k in PITCH_MASSES}
+    lever["tool at the fingertips"] = round(tip.x - PITCH_X, 1)
+    print("AXIS5 LEVERS mm", json.dumps(lever), "torque N·m", round(t5, 2))
+    ratio = 20 * W.AX5_TEETH / 20
+    capacity = MEASURED_NM_AT_40 * ratio / 40
+    ax5_limit = capacity / 1.5
+    worst = max(range(-170, 171, 5), key=lambda d: roll_torque_pitched(d, tip))
+    report.update({"axis4_roll_torque_worst_nm": round(roll_torque_pitched(worst, tip), 2), "axis4_roll_worst_at_pitch_deg": worst,
+                   "axis4_roll_capacity_nm": MEASURED_NM_AT_40})
+    report.update({"axis5_ratio": ratio, "axis5_capacity_nm": round(capacity, 2), "axis5_margin": round(capacity / t5, 2)})
+    report.update({"pitch_x": PITCH_X, "ax6_offset_y": AX6_Y, "pitch_sweep_clash_deg": hits,
+                   "axis5_torque_nm": round(t5, 2), "axis4_roll_torque_nm": round(roll, 2),
+                   "head_mass_g": sum(PITCH_MASSES.values()) + sum(FIXED_HEAD_MASSES.values())})
+    assert report["axis4_roll_torque_worst_nm"] >= report["axis4_roll_torque_nm"], "worst-case roll misses pitch 0"
+    assert t5 <= ax5_limit, f"axis 5 needs {t5:.2f} N·m with a 200 g tool, over {ax5_limit:.2f}: bring it to the user (spec)"
 
 
 def check(z_motor):
@@ -459,6 +608,10 @@ def check(z_motor):
         report[label + "_past_holder_y_mm"] = round(max(p.y for p in pts) - min(p.y for p in pts), 1)
         report[label + "_past_holder_z_mm"] = round(max(p.z for p in pts) - min(p.z for p in pts), 1)
         report[label + "_x_max"] = round(max(p.x for p in pts), 1)
+    if OFFSET_WRIST:
+        for k in ("pitch_deg_before_front_meets_fork_root", "swing_clear_of_fork_root_mm", "fork_inner_half_width_mm"):
+            report.pop(k)
+        offset_wrist_report(report)
     print("HEAD", json.dumps(report))
 
 
@@ -500,7 +653,8 @@ def main():
     scene.world = bpy.data.worlds.new("w"); scene.world.color = (0.93, 0.93, 0.95)
     os.makedirs(OUT, exist_ok=True)
     kept = {"V1 arm kept"}
-    new = kept | {AX4_COL, "Axis 5 belted, 40:1", "Axis 6 hollow, gripper motor behind", "Gripper drive, past axis 6", "Three-finger hand", "Structure placeholders"}
+    new = kept | {AX4_COL, "Axis 5 belted, 40:1", "Axis 6 hollow, gripper motor behind", "Gripper drive, past axis 6", "Three-finger hand",
+                  "Structure placeholders", "Wrist fixed", "Wrist pitch body"}
     inner = new - {"Structure placeholders"}
     head = (max(PITCH_X, 250.0), 0, 555)
     render("concept-iso", (1, -1.1, 0.7), new, target=(120, 0, 450), scale=900)
@@ -516,6 +670,14 @@ def main():
         holder.hide_render = True
         render("axis4-without-holder", (0, -1, 0.35), new - {"Structure placeholders"}, target=(40, 0, 530), scale=320)
         holder.hide_render = False
+    if OFFSET_WRIST:
+        body = pitch_body()
+        for deg, name in ((90, "head-side-pitch-down"), (-180, "head-side-pitch-up")):   # +90 about +y turns +x to -z
+            for o in body:
+                o.data.transform(pitch_matrix(deg))
+            render(name, (0, -1, 0), new, target=head, scale=560)
+        for o in body:
+            o.data.transform(pitch_matrix(90))
     show(new)
     bpy.ops.wm.save_as_mainfile(filepath=BLEND)
     print("HEAD DONE")
