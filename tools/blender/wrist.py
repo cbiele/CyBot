@@ -21,8 +21,10 @@ RAIL_GAP, RAIL_W, RAIL_H, RAIL_X0, MOUNT_T = 42.7, 3.0, 5.0, 36.0, 6.0
 MOUNT_HALF_W = RAIL_GAP / 2 + RAIL_W
 ARM_CUT_X = 40.0                                 # the 188 arm is cut off here, past the disc's bolts and nut pockets
 BOLT_HEAD_R, BOLT_HEAD_H = 2.75, 3.0
-MOTOR7_POST_R, MOTOR7_POST_RAD = 26.0, 4.5      # cycloid_poc's POST_R, POST_RAD
-RIB_Z0, RIB_Z1 = 8.0, 17.0                     # between the motor7 post (z ±4.5) and axis 6's nut pockets (from z 17.85)
+MOTOR7_DISC_Z, MOTOR7_DISC_R = (-56.0, -51.0), 30.5   # cycloid_poc's motor7-bracket disc, in axis 6's frame
+FAR_POST_HALF_X, FAR_POST_Y = 4.5, (22.0, 30.0)   # axis 6 frame: the far side's tie between the mount and the gripper motor's disc; flat underside bridges in print
+DRIVER_R, DRIVER_MAX_TILT = 1.3, 10.0          # 2.5 hex key shaft; a ball-end works to about 25 deg
+RIB_Z0, RIB_Z1 = 10.0, 17.0                    # outside the driver path to the base disc's screws (|z| 9.5), inside axis 6's nut pockets (from z 17.85)
 NUT_AF, NUT_T = 5.8, 2.6                         # cycloid_poc's nut pockets in the T8 mount
 LB_SCREW_CB = 2.8                                # M3 x 12 then reaches 3.3 into the carrier's inserts
 BELT_PLANE = -11.75                              # axis 5's frame, as head_concept's
@@ -348,17 +350,30 @@ def cyl_y(name, x, z, r, y0, y1, n=128):
     return c
 
 def l_bracket():
-    """Axis 5's output to axis 6: a disc on the output plate's dogs, ribbed into a T8 188 mount that is axis 6's own."""
+    """Axis 5's output to axis 6 and the gripper motor in one piece: a disc on the output plate's dogs, two legs back
+    along axis 6 joining it to axis 6's T8 188 mount and to the gripper motor's disc, and a bar tying the two on the far side."""
     lb = posed_stl(os.path.join(T8, "motor-mount.stl"), "ax6-l-bracket", ax6_mount_matrix(), (-6.0, 5.0))
     L.union(lb, cyl_y("base disc", PITCH_X, 0, LB_R, LB_Y[1], LB_Y[0]))
-    for z0, z1 in ((RIB_Z0, RIB_Z1), (-RIB_Z1, -RIB_Z0)):    # the gap between them clears the motor7 post at z 0
-        L.union(lb, L.box("rib", PITCH_X + 5.0, AX6_REAR_X, -45.0, LB_Y[0], z0, z1))
+    m7 = L.cyl_z("motor7 disc", 0, 0, MOTOR7_DISC_R, *MOTOR7_DISC_Z, n=160)
+    m7.data.transform(ax6_mount_matrix())
+    L.union(lb, m7)
+    for z0, z1 in ((RIB_Z0, RIB_Z1), (-RIB_Z1, -RIB_Z0)):    # the open cage between them is the driver's way to the base disc's screws
+        L.union(lb, L.box("leg", AX6_REAR_X + MOTOR7_DISC_Z[0], AX6_REAR_X, -45.0, LB_Y[0], z0, z1))
+    far = L.box("far post", -FAR_POST_HALF_X, FAR_POST_HALF_X, *FAR_POST_Y, MOTOR7_DISC_Z[1] - 0.01, -MOUNT_T + 0.01)
+    far.data.transform(ax6_mount_matrix())
+    L.union(lb, far)
+    m7_holes = L.cyl_z("pilot", 0, 0, NEMA_PILOT_R, MOTOR7_DISC_Z[0] - 1, MOTOR7_DISC_Z[1] + 1, n=96)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            L.union(m7_holes, L.cyl_z("nema", sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, NEMA_HOLE_R, MOTOR7_DISC_Z[0] - 1, MOTOR7_DISC_Z[1] + 1, n=32))
+    m7_holes.data.transform(ax6_mount_matrix())
+    L.cut(lb, m7_holes)
     w0, w1 = AX5_REAR_Y - LB_Y[0] - 1.0, AX5_REAR_Y - LB_Y[0] + F.DOG_H + 0.5
     for a in F.DOG_ANGLES:
         L.cut(lb, L.cyl_between("dog hole", dog_point(a, w0), dog_point(a, w1), F.DOG_R + 0.25, n=48))
     L.cut(lb, cyl_y("sight hole", PITCH_X, 0, 2.5, LB_Y[1] - 1, LB_Y[0] + 1, n=48))
     w_face = AX5_REAR_Y - LB_Y[1]
-    for a in F.INSERT_ANGLES:   # M3 x 12 through the disc and the output plate into the carrier's inserts; in before the motor7 bracket, whose post hides them
+    for a in F.INSERT_ANGLES:   # M3 x 12 through the disc and the output plate into the carrier's inserts; driven first, through the empty cage
         L.cut(lb, L.cyl_between("screw", ax5_matrix() @ Vector((*polar(F.INSERT_PCD_R, a), w_face - 7.0)),
                                 ax5_matrix() @ Vector((*polar(F.INSERT_PCD_R, a), w_face + 1.0)), 1.7, n=32))
         L.cut(lb, L.cyl_between("head", ax5_matrix() @ Vector((*polar(F.INSERT_PCD_R, a), w_face - LB_SCREW_CB)),
@@ -367,20 +382,65 @@ def l_bracket():
     PRINT_POSE["ax6-l-bracket"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, LB_Y[0]))   # base disc's +y face on the bed
     return lb
 
+def ax6_local(x, y, z):
+    return ax6_mount_matrix() @ Vector((x, y, z))
+
+def islands(o):
+    bm = bmesh.new(); bm.from_mesh(o.data); bm.verts.ensure_lookup_table()
+    seen, n = set(), 0
+    for v in bm.verts:
+        if v.index in seen:
+            continue
+        n += 1; stack = [v]
+        while stack:
+            w = stack.pop()
+            if w.index in seen:
+                continue
+            seen.add(w.index)
+            stack += [e.other_vert(w) for e in w.link_edges]
+    bm.free(); return n
+
+def driver_tilt(t, head):
+    """Smallest tilt in z (deg) at which a 2.5 hex key's shaft, from the head out along -y, clears the part."""
+    for step in range(0, 41):
+        for sign in (1, -1):
+            ang = math.radians(0.5 * step * sign)
+            d = Vector((0, -math.cos(ang), math.sin(ang)))
+            offs = [Vector()] + [Vector((DRIVER_R * math.cos(k * math.pi / 4), 0, DRIVER_R * math.sin(k * math.pi / 4))) for k in range(8)]
+            if all(t.ray_cast(head + o, d)[0] is None for o in offs):
+                return 0.5 * step
+    return 99.0
+
+def gripper_parts_posed():
+    """The gripper motor's screw heads on the disc's front, its body behind, and the coupler, in the wrist frame."""
+    heads = L.cyl_z("motor7 heads", NEMA_HOLE_OFF, NEMA_HOLE_OFF, BOLT_HEAD_R, MOTOR7_DISC_Z[1], MOTOR7_DISC_Z[1] + BOLT_HEAD_H, n=32)
+    for sx, sy in ((-1, 1), (1, -1), (-1, -1)):
+        L.union(heads, L.cyl_z("head", sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, BOLT_HEAD_R, MOTOR7_DISC_Z[1], MOTOR7_DISC_Z[1] + BOLT_HEAD_H, n=32))
+    body = L.box("motor7 body", -21.15, 21.15, -21.15, 21.15, MOTOR7_DISC_Z[0] - 20.0, MOTOR7_DISC_Z[0])
+    coupler = L.cyl_z("coupler", 0, 0, 9.5, -50.0, -25.0, n=48)
+    for o in (heads, body, coupler):
+        o.data.transform(ax6_mount_matrix())
+    return heads, body, coupler
+
 def check_l_bracket():
     lb = PARTS["ax6-l-bracket"]
     assert L.stats(lb)["non_manifold"] == 0
+    assert islands(lb) == 1, ("bracket is not one piece", islands(lb))
     plate = ax5_output_plate_posed()
     t8 = t8_housings_posed()
-    posts = posed_stl(os.path.join(T8, "motor7-bracket.stl"), "motor7", ax6_mount_matrix(), (-56.0, -6.0))
     heads = ax5_front_bolt_heads()
-    bad = {k: round(v, 3) for k, v in {"plate": overlap(lb, plate), "t8": overlap(lb, t8), "posts": overlap(lb, posts),
-                                       "heads": overlap(lb, heads)}.items() if v > 0.05}
+    m7_heads, m7_body, coupler = gripper_parts_posed()
+    bad = {k: round(v, 3) for k, v in {"plate": overlap(lb, plate), "t8": overlap(lb, t8), "heads": overlap(lb, heads),
+                                       "motor7 heads": overlap(lb, m7_heads), "motor7 body": overlap(lb, m7_body),
+                                       "coupler": overlap(lb, coupler)}.items() if v > 0.05}
     assert not bad, bad
-    post_y = AX6_Y + MOTOR7_POST_R              # the post on the base disc's side, on the axis 6 axis' z
-    gap = min(LB_Y[1] - (post_y + MOTOR7_POST_RAD), RIB_Z0 - MOTOR7_POST_RAD)
-    REPORT["post_gap_mm"] = round(gap, 2)
-    assert gap >= 1.0, ("gripper bracket post within 1 mm of the L-bracket", gap)
+    leg_gaps = []
+    for sx in (-1, 1):          # the two heads on the legs' side; their tops face the legs across y
+        top = ax6_local(sx * NEMA_HOLE_OFF, -(NEMA_HOLE_OFF + BOLT_HEAD_R), MOTOR7_DISC_Z[1] + BOLT_HEAD_H / 2)
+        h = tree(lb).ray_cast(top, Vector((0, 1, 0)))[0]
+        leg_gaps.append((h - top).length if h is not None else 99.0)
+    REPORT["motor7_heads_to_legs_mm"] = round(min(leg_gaps), 2)
+    assert REPORT["motor7_heads_to_legs_mm"] >= 0.5, ("gripper motor screw heads within 0.5 of the legs", REPORT["motor7_heads_to_legs_mm"])
     assert max(v.co.y for v in lb.data.vertices) <= LB_Y[0] + 1e-3, "L-bracket reaches into axis 5's slab"
     assert LB_Y[0] - (-22.3) <= -3.0, "base disc within 3 of axis 5's bolt heads"
     for a in F.DOG_ANGLES:
@@ -388,20 +448,36 @@ def check_l_bracket():
         assert d is not None and d >= F.DOG_H + 0.5 - 0.05, ("dog hole too shallow", a, d)
     assert AX6_Y + HOUSING_R <= -25.0, "axis 6 housing reaches axis 5's slab"
     t = tree(lb)
-    for a in F.INSERT_ANGLES:   # L-bracket to axis 5: M3 through the disc and output plate into the carrier's inserts
+    tilts = []
+    for a in F.INSERT_ANGLES:   # L-bracket to axis 5: M3 through the disc and output plate, driven from -y through the cage
         p = ax5_matrix() @ Vector((*polar(F.INSERT_PCD_R, a), AX5_REAR_Y - LB_Y[0] - 1.0))
-        assert t.ray_cast(p, Vector((0, -1, 0)))[0] is None, ("no screw hole through the base disc", a)
-        q = ax5_matrix() @ Vector((*polar(F.INSERT_PCD_R + 2.4, a), AX5_REAR_Y + 200.0))
-        h = t.ray_cast(q, Vector((0, 1, 0)))[0]
-        assert h is not None and abs(h.y - (LB_Y[1] + LB_SCREW_CB)) < 0.05, ("screw head counterbore not reachable from -y", a, h)
+        h = t.ray_cast(p, Vector((0, -1, 0)))[0]
+        assert h is None or h.y < LB_Y[1] - 0.5, ("no screw hole through the base disc", a)
+        for k in range(4):
+            q = ax5_matrix() @ (Vector((*polar(F.INSERT_PCD_R, a), AX5_REAR_Y - LB_Y[1] + 1.0)) + Vector((*polar(2.4, 90 * k), 0)))
+            h = t.ray_cast(q, Vector((0, 1, 0)))[0]
+            assert h is not None and abs(h.y - (LB_Y[1] + LB_SCREW_CB)) < 0.05, ("screw head counterbore not reachable from -y", a, k, h)
+        tilts.append(driver_tilt(t, ax5_matrix() @ Vector((*polar(F.INSERT_PCD_R, a), AX5_REAR_Y - LB_Y[1] - LB_SCREW_CB + 0.05))))
+    REPORT["base_disc_driver_tilt_deg"] = max(tilts)
+    assert max(tilts) <= DRIVER_MAX_TILT, ("base disc screws need too steep a ball-end driver", tilts)
+    post = t.ray_cast(ax6_local(0, 45.0, -30.0), Vector((0, 1, 0)))[0]
+    assert post is not None and abs(post.y - (AX6_Y - FAR_POST_Y[1])) < 0.05, ("no far post", post)
+    disc = t.ray_cast(ax6_local(0, 22.0, -40.0), Vector((-1, 0, 0)))[0]
+    assert disc is not None and abs(disc.x - (AX6_REAR_X + MOTOR7_DISC_Z[1])) < 0.05, ("no gripper motor disc", disc)
+    for sx, sy in ((0, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)):   # pilot and the four NEMA holes open through the disc
+        o = ax6_local(sx * NEMA_HOLE_OFF, sy * NEMA_HOLE_OFF, -40.0)
+        assert t.ray_cast(o, Vector((-1, 0, 0)))[0] is None, ("gripper motor hole blocked", sx, sy)
     for a in BOLT_ANGLES:       # axis 6 housing bolts: hole open and a whole nut pocket on the mount's belt face
         c = ax6_mount_matrix() @ Vector((*polar(BOLT_R, a), 1.0))
-        assert t.ray_cast(c, Vector((-1, 0, 0)))[0] is None, ("axis 6 bolt hole blocked", a)
+        b_out = t.ray_cast(c, Vector((-1, 0, 0)))[0]   # the M3 x 50 ends at its nut; the gripper motor's disc is past that
+        assert b_out is None or b_out.x <= AX6_REAR_X + MOTOR7_DISC_Z[1] + 0.05, ("axis 6 bolt hole blocked", a)
         mid = ax6_mount_matrix() @ Vector((*polar(BOLT_R, a), -MOUNT_T + NUT_T / 2))
         wall = min((t.ray_cast(mid, Vector((0, math.cos(k * math.pi / 12), math.sin(k * math.pi / 12))))[0] - mid).length for k in range(24))
         assert wall >= NUT_AF / 2 - 0.05, ("axis 6 nut pocket narrowed", a, round(wall, 2))
+        n_out = t.ray_cast(mid, Vector((-1, 0, 0)))[0]
+        assert n_out is None or n_out.x <= AX6_REAR_X + MOTOR7_DISC_Z[1] + 0.05, ("nut can't go into its pocket", a)
     assert -45.0 >= AX6_Y + 40 / math.pi + 3.0, "gusset within 3 of axis 6's 40T / belt"
-    for o in (plate, t8, posts, heads):
+    for o in (plate, t8, heads, m7_heads, m7_body, coupler):
         bpy.data.objects.remove(o)
 
 REPORT = {}

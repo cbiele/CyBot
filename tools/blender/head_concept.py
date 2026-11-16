@@ -250,9 +250,10 @@ def axis6():
     m = ax6_frame()
     cycloid(AX6_FOLDER, "ax6", col, m, AX6_Z_DISK0)
     belted_drive("ax6", col, m, AX6_FOLDER, plate=not OFFSET_WRIST)
-    bracket = stl(os.path.join(MODEL, "cycloid-poc", AX6_FOLDER, "motor7-bracket.stl"), "ax6 gripper motor bracket")
-    z_ext = sorted(v.co.z for v in bracket.data.vertices)
-    place(bracket, col, "fixed", m @ Matrix.Translation((0, 0, -56.0 - z_ext[0])))
+    if not OFFSET_WRIST:   # the offset wrist's L-bracket carries the gripper motor's disc
+        bracket = stl(os.path.join(MODEL, "cycloid-poc", AX6_FOLDER, "motor7-bracket.stl"), "ax6 gripper motor bracket")
+        z_ext = sorted(v.co.z for v in bracket.data.vertices)
+        place(bracket, col, "fixed", m @ Matrix.Translation((0, 0, -56.0 - z_ext[0])))
     motor("ax7 gripper motor", col, m @ Matrix.Translation((0, 0, -56.0)), 0.0, -1, GRIP_MOTOR_L)
     place(L.cyl_z("ax7 coupler", 0, 0, COUPLER_R, -50.0, -25.0, n=48), col, "steel", m)
 
@@ -476,7 +477,7 @@ def tube_axis4_report():
 
 
 PITCH_MASSES = {"ax6 cycloid": 150, "ax6 pancake": 120, "ax7 gripper motor": 230, "Gripper drive, past axis 6": 80,
-                "Three-finger hand": 400, "Wrist pitch body": 50}   # grams, estimates
+                "Three-finger hand": 400, "Wrist pitch body": 70}   # grams, estimates
 FIXED_HEAD_MASSES = {"ax5 cycloid": 150, "ax5 pancake": 120, "head-bracket": 70, "ax5-motor-plate": 25}   # the bracket now includes the wrist hub
 TOOL_KG = 0.2
 MEASURED_NM_AT_40 = 1.17                       # red compact + pancake at 1000 mA, torque test 2026-11-15; the spec wants 1.5x over the load
