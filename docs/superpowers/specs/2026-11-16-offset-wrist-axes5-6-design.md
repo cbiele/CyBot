@@ -47,6 +47,7 @@ The arm is for light work: holding a soldering iron, a small camera or a paint b
 - Keep the three-finger hand and design the wrist around it. A detachable adapter on the screw end that swaps the hand for a tool mount comes later.
 - A support bearing on the forearm's outer tube carrying a shell around the head, so the weight doesn't all hang off the wrist hub. In from the start.
 - Axis 6 is the hollow T8, with the gripper motor fixed behind it.
+- **Axis 5 at 60:1 (2026-11-16, after the layout check):** the layout put the hand's centre about 149 mm and the tool about 229 mm past the pitch axis, not the 90 and 150 estimated below, so axis 5 needed 1.07 N·m at 40:1. Axis 5 now runs a 20T/60T GT2 on a 234 belt (60:1, about 1.75 N·m by the measured figure). The fallback, if that fails, is moving axis 6 back about 25 mm so the module counterweights the hand (about 0.76 N·m at 40:1).
 - No wired parts on the hand for now: the T8 drives all the fingers. The hand spec's thumb motor and sensors (28BYJ-48, FSRs, ADS1115) come later, and how their wires cross axis 6 is decided then. Until then axis 6 has no hard stop and no slip ring.
 
 ## My calls (the user has not reviewed these)

@@ -1,4 +1,5 @@
-"""Printed GT2 40Ts for the compact cycloid's input, driven 2:1 from a bought 20T on a 232-2GT-6 belt.
+"""Printed GT2 40Ts for the compact cycloid's input, driven 2:1 from a bought 20T on a 232-2GT-6 belt, and a 60T for
+axis 5 of the offset wrist (3:1 on a 234).
 POC: the Ø5 core rod with its flat 2.0 off the axis (cycloid_poc.ROD_FLAT); the bore takes the same D.
 Hollow (axis 6): the printed sleeve's Ø9.95 tail with flats 4.675 off the axis both sides
 (cycloid_poc.SLEEVE_R, SLEEVE_FLAT); the bore takes the same double-D. Hollow T8: the same on a Ø11.95 tail,
@@ -14,18 +15,18 @@ import mathutils
 from mathutils import Vector
 ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
 
-TEETH = 40
 GROOVE_R, GROOVE_DEPTH = 0.65, 0.80                 # round groove; GT2 teeth are 0.75 high and a printed groove fills in
 FLANGE_LIP = 1.0
 CONE_T = 1.0                                        # hub-side flange is a 45 deg cone so it prints without support
 HUB_L = 7.0
 SCREW_R = 1.65
 INSERT_R, INSERT_DEPTH, INSERT_WALL = 2.0, 3.5, 1.0 # pilot for an M3 x 3 x 4.5 insert, pressed in radially
-PULLEYS = [                                         # cycloid folder, file, bore radius, flat offset, flat both sides, hub radius
-    ("20-1-compact", "pulley-40T", 2.6, 2.1, False, 9.0),    # rod 5.0, 4.5 across its flat; about 0.1 clearance each
-    ("20-1-hollow", "pulley-40T", 5.05, 4.725, True, 9.5),   # sleeve 9.95, 9.35 across its flats; 0.05-0.075 each; hub grown to keep wall under the insert
-    ("20-1-hollow-t8", "pulley-40T", 6.05, 5.825, True, 10.5),   # sleeve 11.95, 11.55 across its flats; same clearances
-    ("20-1-hollow-t8", "pulley-40T-tube", 5.6, 5.62, False, 10.5),  # round: the flat sits just outside the bore and cuts nothing; 0.1 a side on the Ø11 tube
+PULLEYS = [                                         # folder under model/, file, bore radius, flat offset, flat both sides, hub radius, teeth
+    ("cycloid-poc/20-1-compact", "pulley-40T", 2.6, 2.1, False, 9.0, 40),    # rod 5.0, 4.5 across its flat; about 0.1 clearance each
+    ("cycloid-poc/20-1-hollow", "pulley-40T", 5.05, 4.725, True, 9.5, 40),   # sleeve 9.95, 9.35 across its flats; 0.05-0.075 each; hub grown to keep wall under the insert
+    ("cycloid-poc/20-1-hollow-t8", "pulley-40T", 6.05, 5.825, True, 10.5, 40),   # sleeve 11.95, 11.55 across its flats; same clearances
+    ("cycloid-poc/20-1-hollow-t8", "pulley-40T-tube", 5.6, 5.62, False, 10.5, 40),  # round: the flat sits just outside the bore and cuts nothing; 0.1 a side on the Ø11 tube
+    ("wrist", "pulley-60T", 2.6, 2.1, False, 9.0, 60),   # axis 5 at 60:1 on a 234: the compact's rod, as its 40T
 ]
 
 z_teeth0 = C.GT2_FLANGE_T; z_teeth1 = z_teeth0 + C.GT2_TEETH_W
@@ -33,14 +34,14 @@ z_hub0 = z_teeth1 + CONE_T
 z_top = z_hub0 + HUB_L
 z_screw = (z_hub0 + z_top) / 2
 
-def od_r():
-    return TEETH * 2.0 / math.pi / 2 - 0.254        # GT2 pitch line differential
+def od_r(teeth):
+    return teeth * 2.0 / math.pi / 2 - 0.254        # GT2 pitch line differential
 
-def pulley(name, bore_r, flat_x, double, hub_r):
-    r = od_r()
+def pulley(name, bore_r, flat_x, double, hub_r, teeth):
+    r = od_r(teeth)
     p = L.cyl_z(name, 0, 0, r, z_teeth0 - 0.01, z_teeth1 + 0.01, n=240)
-    for k in range(TEETH):
-        a = 2 * math.pi * k / TEETH; c = r - GROOVE_DEPTH + GROOVE_R
+    for k in range(teeth):
+        a = 2 * math.pi * k / teeth; c = r - GROOVE_DEPTH + GROOVE_R
         L.cut(p, L.cyl_z("groove", c * math.cos(a), c * math.sin(a), GROOVE_R, z_teeth0 - 1, z_teeth1 + 1, n=24))
     L.union(p, L.cyl_z("flange", 0, 0, r + FLANGE_LIP, 0, z_teeth0, n=240))
     L.union(p, L.cyl_between("cone", (0, 0, z_teeth1), (0, 0, z_hub0), r - GROOVE_DEPTH, n=240, r_end=r + FLANGE_LIP))
@@ -70,8 +71,8 @@ def bore_rays(o):
         if h[0] is not None: out.append((round(math.degrees(a)), (h[0] - c).length))
     bm.free(); return out
 
-def check(p, bore_r, flat_x, double, hub_r):
-    st = L.stats(p); r = od_r()
+def check(p, bore_r, flat_x, double, hub_r, teeth):
+    st = L.stats(p); r = od_r(teeth)
     prof = radial(p, (z_teeth0 + z_teeth1) / 2)
     deep = [d < r - GROOVE_DEPTH / 2 for d in prof]
     grooves = sum(1 for i in range(len(deep)) if deep[i] and not deep[i - 1])
@@ -82,7 +83,7 @@ def check(p, bore_r, flat_x, double, hub_r):
               "bore_d": round(2 * max(d for a, d in rays), 2), "across_flat": round(across, 2), "height": z_top,
               "teeth_mid_from_flange_face": z_teeth0 + C.GT2_TEETH_W / 2}
     assert st["non_manifold"] == 0, st
-    assert grooves == TEETH, grooves
+    assert grooves == teeth, (grooves, teeth)
     assert abs(report["od"] - 2 * r) < 0.05, report["od"]
     assert abs(report["bore_d"] - 2 * bore_r) < 0.05, report
     assert abs(across - (2 * flat_x if double else bore_r + flat_x)) < 0.05, report
@@ -90,10 +91,10 @@ def check(p, bore_r, flat_x, double, hub_r):
     assert hub_r - INSERT_DEPTH > flat_x + 1.0, "insert pilot reaches the flat"
     return report
 
-for name, file, bore_r, flat_x, double, hub_r in PULLEYS:
+for name, file, bore_r, flat_x, double, hub_r, teeth in PULLEYS:
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    os.makedirs(os.path.join(ROOT, "model", "cycloid-poc", name), exist_ok=True)
-    p = pulley(name, bore_r, flat_x, double, hub_r)
-    print("PULLEY", name, file, json.dumps(check(p, bore_r, flat_x, double, hub_r)))
-    L.export(p, os.path.join(ROOT, "model", "cycloid-poc", name, file + ".stl"))
+    os.makedirs(os.path.join(ROOT, "model", name), exist_ok=True)
+    p = pulley(name, bore_r, flat_x, double, hub_r, teeth)
+    print("PULLEY", name, file, json.dumps(check(p, bore_r, flat_x, double, hub_r, teeth)))
+    L.export(p, os.path.join(ROOT, "model", name, file + ".stl"))
 print("PULLEY DONE")
