@@ -5,7 +5,8 @@ import bpy, bmesh, math, os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hand_lib as L
 from forearm_dims import *
-from mathutils import Matrix
+import cycloid_math as C
+from mathutils import Matrix, Vector
 ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
 OUT = os.path.join(ROOT, "model", "forearm-tube")
 PARTS, CHECKS, PRINT_POSE = {}, [], {}
@@ -148,6 +149,77 @@ def check_wrist_and_play():
     assert LAND_R1 < LIP_R and LAND_R0 >= 6.0, "a land reaches the outer ring or misses the inner ring"
     assert TUBE_X[1] - TUBE_X[0] == TUBE_L
 
+HOLLOW_MOUNT = os.path.join(ROOT, "model", "cycloid-poc", "20-1-hollow", "motor-mount.stl")
+MOTOR4_X = round(C.belt_centre_distance(20, AX4_TEETH, AX4_BELT), 2)
+SLOT, NEMA_HOLE_OFF, NEMA_HOLE_R, NEMA_PILOT_R = C.MOTOR_SLOT, 15.5, 1.7, 11.75   # cycloid_poc's motor mount
+RAIL_GAP, RAIL_W, RAIL_H, MOUNT_T = 42.7, 3.0, 5.0, 6.0
+MOUNT_HALF_W = RAIL_GAP / 2 + RAIL_W
+ARM_CUT_X = 40.0                                 # past the disc's bolts and post holes
+
+def slot(name, x, y, r, half, z0, z1):
+    s = L.cyl_z(name, x - half, y, r, z0, z1, n=32)
+    L.union(s, L.cyl_z(name + "_b", x + half, y, r, z0, z1, n=32))
+    L.union(s, L.box(name + "_m", x - half, x + half, y - r, y + r, z0, z1))
+    return s
+
+def ax4_motor_mount():
+    """The 188 mount (20-1-hollow) with its arm rebuilt and re-slotted for axis 4's 20T/60T on a 234."""
+    bpy.ops.wm.stl_import(filepath=HOLLOW_MOUNT)
+    m = bpy.context.selected_objects[0]; m.name = "ax4-motor-mount-60T"
+    x1 = MOTOR4_X + SLOT + MOUNT_HALF_W
+    L.cut(m, L.box("old arm", ARM_CUT_X, 120.0, -MOUNT_HALF_W - 5, MOUNT_HALF_W + 5, -MOUNT_T - 5, RAIL_H + 5))
+    L.union(m, L.box("arm", ARM_CUT_X - 1, x1, -MOUNT_HALF_W, MOUNT_HALF_W, -MOUNT_T, 0))
+    for sv in (-1, 1):
+        v0, v1 = sorted((sv * RAIL_GAP / 2, sv * MOUNT_HALF_W))
+        L.union(m, L.box("rail", ARM_CUT_X - 1, x1, v0, v1, -0.01, RAIL_H))
+    slots = slot("pilot", MOTOR4_X, 0, NEMA_PILOT_R, SLOT, -MOUNT_T - 1, 1)
+    for su in (-1, 1):
+        for sv in (-1, 1):
+            L.union(slots, slot("nema", MOTOR4_X + su * NEMA_HOLE_OFF, sv * NEMA_HOLE_OFF, NEMA_HOLE_R, SLOT, -MOUNT_T - 1, 1))
+    L.finish(m)
+    L.cut(m, slots)   # one cut, as in wrist.py: cut one by one, the screw slots leave non-manifold edges
+    PRINT_POSE["ax4-motor-mount-60T"] = Matrix()   # stored in the assembly frame, like the 188 mount it replaces
+    return m
+
+def ax4_housing():
+    """The compact's housings in its assembly frame (z from the rear face, the mount on z < 0)."""
+    bpy.ops.wm.stl_import(filepath=os.path.join(COMPACT, "housing-rear.stl"))
+    h = bpy.context.selected_objects[0]
+    bpy.ops.wm.stl_import(filepath=os.path.join(COMPACT, "housing-front.stl"))
+    f = bpy.context.selected_objects[0]
+    f.data.transform(Matrix.Diagonal((1, -1, -1, 1)))
+    L.union(h, f)
+    return h
+
+def mount_ray_open(m, u, v):
+    """True if a ray straight through the mount's arm at (u, v) meets nothing."""
+    return L._tree(m)[0].ray_cast(Vector((u, v, -MOUNT_T - 1.0)), Vector((0, 0, 1)))[0] is None
+
+def check_ax4_mount():
+    m = PARTS["ax4-motor-mount-60T"]
+    assert L.stats(m)["non_manifold"] == 0
+    zs = [v.co.z for v in m.data.vertices]
+    assert abs(min(zs) + MOUNT_T) < 0.01 and abs(max(zs) - RAIL_H) < 0.01, ("mount's z range moved", min(zs), max(zs))
+    for u in (MOTOR4_X - SLOT, MOTOR4_X + SLOT):
+        assert mount_ray_open(m, u, 0), ("pilot slot", u)
+        for su in (-1, 1):
+            for sv in (-1, 1):
+                assert mount_ray_open(m, u + su * NEMA_HOLE_OFF, sv * NEMA_HOLE_OFF), ("motor screw slot", u, su, sv)
+    old = C.belt_centre_distance(20, 40, 188)
+    assert not mount_ray_open(m, old - NEMA_HOLE_OFF, NEMA_HOLE_OFF), "the 188's screw slot is still open"
+    assert MOTOR4_X + SLOT + 42.3 / 2 <= max(v.co.x for v in m.data.vertices) + 1e-3, "motor runs off the rails' far end"
+    housing = ax4_housing()
+    bad = {}
+    for u in (MOTOR4_X - SLOT, MOTOR4_X + SLOT):
+        pan = L.box("pancake", u - 21.15, u + 21.15, -21.15, 21.15, 0.0, 23.0)
+        for name, o in (("housing", housing), ("mount", m)):
+            v = overlap(pan, o)
+            if v > 0.05:
+                bad[(name, u)] = round(v, 3)
+        bpy.data.objects.remove(pan)
+    assert not bad, bad
+    bpy.data.objects.remove(housing)
+
 bpy.ops.wm.read_factory_settings(use_empty=True)
 PARTS["forearm-outer-tube"] = outer_tube()
 PARTS["ax4-output-plate"] = output_plate()
@@ -156,6 +228,8 @@ PARTS["wrist-flange-hub"] = wrist_hub()
 CHECKS.append(check_outer_tube)
 CHECKS.append(check_coupling)
 CHECKS.append(check_wrist_and_play)
+PARTS["ax4-motor-mount-60T"] = ax4_motor_mount()
+CHECKS.append(check_ax4_mount)
 
 for check in CHECKS:
     check()

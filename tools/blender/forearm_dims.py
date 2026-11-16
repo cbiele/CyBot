@@ -5,6 +5,7 @@ HOUSING_L, HUB_FACE, HOUSING_R = 38.6, 39.6, 34.0
 BOLT_R, BOLT_ANGLES = 30.0, [45, 135, 225, 315]
 INSERT_PCD_R, INSERT_ANGLES = 6.5, [90, 210, 330]
 
+AX4_TEETH, AX4_BELT = 60, 234                # 20T/60T, 60:1: the offset wrist pitched sideways needs about 1.28 N·m of roll
 TUBE_L, TUBE_R = 190.0, 5.5                  # 9 x 11 aluminium, the drive shaft only
 SOCKET_DEPTH = 15.0
 BRG_W, BRG_SEAT_R, LIP_R = 4.0, 9.0, 7.2     # 6701 on tube-end-sleeve; lip clears the inner ring as on the T8 carriers
