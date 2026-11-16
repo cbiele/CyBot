@@ -25,6 +25,10 @@ MOTOR7_POST_R, MOTOR7_POST_RAD = 26.0, 4.5      # cycloid_poc's POST_R, POST_RAD
 RIB_Z0, RIB_Z1 = 8.0, 17.0                     # between the motor7 post (z ±4.5) and axis 6's nut pockets (from z 17.85)
 NUT_AF, NUT_T = 5.8, 2.6                         # cycloid_poc's nut pockets in the T8 mount
 LB_SCREW_CB = 2.8                                # M3 x 12 then reaches 3.3 into the carrier's inserts
+BELT_PLANE = -11.75                              # axis 5's frame, as head_concept's
+MOTOR_PLATE_U = (MOTOR5_X - SLOT - 23.15, MOTOR5_X + SLOT + 23.15)
+INSERT_DEPTH, MP_CB_DEPTH, MP_SCREW_L = 5.0, 2.0, 20.0
+SHIM_X, SHIM_HALF_W = F.WRIST_X[0] - F.LAND_T - 0.15, 8.0   # the 0.3 shim's mid-plane, against the 6701's inner ring   # M3 heat-set inserts in the arm's belt face; M3 x 20 from the plate
 
 def polar(r, deg):
     return r * math.cos(math.radians(deg)), r * math.sin(math.radians(deg))
@@ -38,7 +42,7 @@ def basis(u, v, w, origin):
 
 def ax5_matrix():
     """Axis 5's assembly frame (cycloid_poc z) into the wrist frame: z to -y from the rear face, x towards the pancake."""
-    dx, dz = math.cos(math.radians(AX5_MOTOR_ANGLE)), math.sin(math.radians(AX5_MOTOR_ANGLE))
+    dx, dz = round(math.cos(math.radians(AX5_MOTOR_ANGLE)), 12), round(math.sin(math.radians(AX5_MOTOR_ANGLE)), 12)
     return basis((dx, 0, dz), (-dz, 0, dx), (0, -1, 0), (PITCH_X, AX5_REAR_Y, 0))
 
 def forearm_matrix():
@@ -109,9 +113,9 @@ def ax5_housing():
     return h
 
 def ax5_pancake(x=MOTOR5_X):
-    """The pancake as the mount's rails hold it: square to the arm, face on the mount, body on the housing side."""
-    s = 42.3 / 2
-    m = L.box("ax5 pancake", x - s, x + s, -s, s, 0.0, 23.0)
+    """The pancake on the motor plate: face on the plate's outer face, body outboard, away from the housing."""
+    s, z_face = 42.3 / 2, MP_LOCAL_Z["plate"][0]
+    m = L.box("ax5 pancake", x - s, x + s, -s, s, z_face - 23.0, z_face)
     m.data.transform(ax5_matrix())
     return m
 
@@ -121,13 +125,11 @@ def through_mount(b, u, v):
 
 def forearm_parts():
     m = forearm_matrix()
-    hub = posed_stl(os.path.join(FOREARM, "wrist-flange-hub.stl"), "wrist hub",
-                    m @ Matrix.Diagonal((1, -1, -1, 1)) @ Matrix.Translation((0, 0, -F.FLANGE_FACE)), (0.0, F.WRIST_X[1] - F.WRIST_X[0] + F.LAND_T))
     tube = posed_stl(os.path.join(FOREARM, "forearm-outer-tube.stl"), "outer tube",
                      m @ Matrix.Translation((0, 0, F.OUTER_X[0])), (0.0, F.OUTER_X[1] - F.OUTER_X[0]))
     brg = cyl_x("6705", 0, 0, BRG5_R_OUT, *BRG5_X)
     L.cut(brg, cyl_x("bore", 0, 0, BRG5_R_IN, BRG5_X[0] - 1, BRG5_X[1] + 1))
-    return hub, tube, brg
+    return tube, brg
 
 def slot(name, x, y, r, half, z0, z1):
     s = L.cyl_z(name, x - half, y, r, z0, z1, n=32)
@@ -135,81 +137,179 @@ def slot(name, x, y, r, half, z0, z1):
     L.union(s, L.box(name + "_m", x - half, x + half, y - r, y + r, z0, z1))
     return s
 
+def insert_points():
+    return [(u, sv * MP_SCREW_V) for u in (MOTOR_PLATE_U[0] + 5.0, MOTOR_PLATE_U[1] - 5.0) for sv in (-1, 1)]
+
 def lengthen_arm(b):
-    """The T8 mount's arm is set for the 188; rebuild it past the disc and re-slot it for the 20T/60T on the 234.
+    """The T8 mount's arm is set for the 188 and a pancake on it; rebuild it wider and longer for the motor plate.
     Done in the mount's own frame, before it is posed: faces on the posed STL's are only nearly coplanar and leave slivers."""
-    x1 = MOTOR5_X + SLOT + MOUNT_HALF_W
+    x1 = MOTOR_PLATE_U[1]
     L.cut(b, L.box("old arm", ARM_CUT_X, 120.0, -MOUNT_HALF_W - 5, MOUNT_HALF_W + 5, -MOUNT_T - 5, RAIL_H + 5))
-    L.union(b, L.box("arm", ARM_CUT_X - 1, x1, -MOUNT_HALF_W, MOUNT_HALF_W, -MOUNT_T, 0))
+    L.union(b, L.box("arm", ARM_CUT_X - 1, x1, -ARM_HALF_W, ARM_HALF_W, -MOUNT_T, 0))
     for sv in (-1, 1):
         v0, v1 = sorted((sv * RAIL_GAP / 2, sv * MOUNT_HALF_W))
         L.union(b, L.box("rail", ARM_CUT_X - 1, x1, v0, v1, -0.01, RAIL_H))
-    slots = slot("pilot", MOTOR5_X, 0, NEMA_PILOT_R, SLOT, -MOUNT_T - 1, 1)
-    for su in (-1, 1):
-        for sv in (-1, 1):
-            L.union(slots, slot("nema", MOTOR5_X + su * NEMA_HOLE_OFF, sv * NEMA_HOLE_OFF, NEMA_HOLE_R, SLOT, -MOUNT_T - 1, 1))
+    tool = slot("pilot", MOTOR5_X, 0, NEMA_PILOT_R, SLOT, -MOUNT_T - 1, 1)   # the shaft's tip reaches into the arm
+    for u, v in insert_points():
+        L.union(tool, L.cyl_z("insert", u, v, 2.0, -MOUNT_T - 1, -MOUNT_T + INSERT_DEPTH, n=32))
     L.finish(b)
-    L.cut(b, slots)   # one cut: cut one by one, the second screw slot left non-manifold edges
+    L.cut(b, tool)   # one cut: cut one by one, the second screw slot left non-manifold edges
 
 def head_bracket():
-    """Bolts to the wrist flange, rides the 6705 on the outer tube, and is axis 5's mount (20T/60T on a 234)."""
-    y1 = AX5_REAR_Y + 6.0
+    """Glued on the drive tube in the old wrist hub's place, rides the 6705 on the outer tube, and is axis 5's mount."""
+    y1 = AX5_REAR_Y + MOUNT_T
     b = posed_stl(os.path.join(T8, "motor-mount.stl"), "head-bracket", Matrix(), (-6.0, 5.0))
     lengthen_arm(b)
     b.data.transform(ax5_matrix())
-    plate = cyl_x("plate", 0, 0, PLATE_R, *PLATE_X)
-    L.union(plate, L.box("plate to mount", *PLATE_X, 0, y1, -PLATE_HALF_Z, PLATE_HALF_Z))
-    L.union(b, plate)
-    L.union(b, L.box("bridge", PLATE_X[0], BRIDGE_X1, AX5_REAR_Y, y1, -16.0, 16.0))   # ends before the R30 bolt and nut pocket at 205°
-    skirt = cyl_x("skirt", 0, 0, SKIRT_R, BRG5_X[0], PLATE_X[0] + 0.01)
-    L.cut(skirt, cyl_x("bore", 0, 0, SKIRT_BORE_R, BRG5_X[0] - 1, PLATE_X[0]))
-    L.cut(skirt, cyl_x("6705 seat", 0, 0, BRG5_R_OUT, BRG5_X[0] - 1, BRG5_X[1]))
-    L.union(b, skirt)
-    for a in F.FLANGE_ANGLES:
-        y, z = polar(F.FLANGE_INSERT_R, a)
-        L.cut(b, cyl_x("flange screw", y, z, FLANGE_HOLE_R, PLATE_X[0] - 1, PLATE_X[1] + 1, n=32))
-        L.cut(b, cyl_x("counterbore", y, z, FLANGE_CB_R, PLATE_X[1] - FLANGE_CB_DEPTH, PLATE_X[1] + 1, n=48))
+    boss = cyl_x("boss", 0, 0, SKIRT_R, *BOSS_X)
+    L.union(boss, L.box("fill", BOSS_X[0], BOSS_X[1],
+                        0.0, AX5_REAR_Y + 3.0, -FILL_HALF_Z, FILL_HALF_Z))
+    L.union(b, boss)
+    L.cut(b, cyl_x("6705 seat", 0, 0, BRG5_R_OUT, BRG5_X[0] - 1, BRG5_X[1]))
+    L.cut(b, cyl_x("shoulder", 0, 0, SHOULDER_R, BRG5_X[1] - 0.01, F.WRIST_X[0]))
+    land = cyl_x("land", 0, 0, F.LAND_R1, F.WRIST_X[0] - F.LAND_T, F.WRIST_X[0] + 0.01)
+    L.cut(land, cyl_x("land bore", 0, 0, F.LAND_R0, F.WRIST_X[0] - 1, F.WRIST_X[0] + 1))
+    L.union(b, land)
+    L.cut(b, L.box("shim window", BRG5_X[1] + 0.5, F.WRIST_X[0] + 0.5, -SHIM_HALF_W, SHIM_HALF_W,
+                   -SKIRT_R - 1.0, -(F.LAND_R1 + 0.5)))   # the glue-up shim comes out here; past the 6705's shoulder, below the land
+    L.cut(b, cyl_x("socket", 0, 0, F.TUBE_R, F.WRIST_X[0] - 1, F.WRIST_X[0] + F.SOCKET_DEPTH + F.TUBE_SPARE))
     L.cut(b, L.cyl_between("hub", (PITCH_X, AX5_REAR_Y - 1, 0), (PITCH_X, y1 + 1, 0), 14.0, n=96))   # no final weld: at 0.01 it merges two vertices of the posed mesh into a non-manifold edge
     PRINT_POSE["head-bracket"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, y1))   # belt face on the bed
     return b
+
+def motor_plate():
+    """A U channel over the belt: walls on the arm's inserts, the pancake on its outer face; it slides on its screws for tension."""
+    (pz0, pz1), (wz0, wz1) = MP_LOCAL_Z["plate"], MP_LOCAL_Z["walls"]
+    u0, u1 = MOTOR_PLATE_U
+    p = L.box("ax5-motor-plate", u0, u1, -MP_WALL_V[1], MP_WALL_V[1], pz0, pz1)
+    for sv in (-1, 1):
+        v0, v1 = sorted((sv * MP_WALL_V[0], sv * MP_WALL_V[1]))
+        L.union(p, L.box("wall", u0, u1, v0, v1, pz1 - 0.01, wz1))
+    L.finish(p)
+    tool = L.cyl_z("pilot", MOTOR5_X, 0, NEMA_PILOT_R, pz0 - 1, pz1 + 1, n=64)
+    for su in (-1, 1):
+        for sv in (-1, 1):
+            L.union(tool, L.cyl_z("nema", MOTOR5_X + su * NEMA_HOLE_OFF, sv * NEMA_HOLE_OFF, NEMA_HOLE_R, pz0 - 1, pz1 + 1, n=32))
+    for u, v in insert_points():   # slotted: the whole plate slides to tension the belt, its screw heads outside
+        L.union(tool, slot("screw", u, v, 1.7, SLOT, pz0 - 1, wz1 + 1))
+        L.union(tool, slot("counterbore", u, v, 3.0, SLOT, pz0 - 1, pz0 + MP_CB_DEPTH))
+    L.cut(p, tool)
+    p.data.transform(ax5_matrix())
+    PRINT_POSE["ax5-motor-plate"] = Matrix.Translation((0, 0, -pz0)) @ ax5_matrix().inverted()   # outer face on the bed
+    return p
+
+def screw_heads():
+    """M3 socket heads, Ø5.5 x 3, seated in the motor plate's counterbores."""
+    z = MP_LOCAL_Z["plate"][0] + MP_CB_DEPTH
+    heads = None
+    for u, v in insert_points():
+        h = L.cyl_z("head", u, v, BOLT_HEAD_R, z - BOLT_HEAD_H, z, n=32)
+        if heads is None:
+            heads = h
+        else:
+            L.union(heads, h)
+    heads.data.transform(ax5_matrix())
+    return heads
 
 def check_head_bracket():
     b = PARTS["head-bracket"]
     assert L.stats(b)["non_manifold"] == 0
     seat_x = sum(BRG5_X) / 2
     assert abs(radial_bore(b, seat_x) - 2 * BRG5_R_OUT) < 0.05, ("6705 seat", radial_bore(b, seat_x))
-    assert abs(radial_bore(b, F.WRIST_X[0] + 5) - 2 * SKIRT_BORE_R) < 0.05, "skirt bore over the wrist hub"
-    assert SKIRT_BORE_R - F.WRIST_R >= 0.5 and SKIRT_BORE_R < BRG5_R_OUT, "hub rubs the skirt, or the shoulder misses the outer ring"
-    for a in F.FLANGE_ANGLES:
-        y, z = polar(F.FLANGE_INSERT_R + 2.4, a)   # inside the counterbore, outside the clearance hole
-        assert abs(x_floor(b, y, z, PLATE_X[1] + 10) - (PLATE_X[1] - FLANGE_CB_DEPTH)) < 0.05, ("flange screw counterbore", a)
-    assert PITCH_X - HOUSING_R - PLATE_X[1] >= 1.5, "plate hits the axis 5 housing"
+    assert abs(radial_bore(b, BRG5_X[1] + 0.25) - 2 * SHOULDER_R) < 0.05, ("6705 shoulder", radial_bore(b, BRG5_X[1] + 0.25))
+    assert SHOULDER_R >= BRG5_R_IN + 1.0 and SHOULDER_R < BRG5_R_OUT - 1.0, "shoulder rubs the inner ring or misses the outer"
+    assert abs(radial_bore(b, F.WRIST_X[0] + F.SOCKET_DEPTH / 2) - 2 * F.TUBE_R) < 0.03, ("Ø11 socket", radial_bore(b, F.WRIST_X[0] + F.SOCKET_DEPTH / 2))
+    assert abs(radial_bore(b, F.TUBE_X[1] + 0.75) - 2 * F.TUBE_R) < 0.03, "tube bottoms in the socket: the shim must set the play"
+    land_r = (F.LAND_R0 + F.LAND_R1) / 2
+    h = tree(b).ray_cast(Vector((F.WRIST_X[0] - 1.0, land_r, 0)), Vector((1, 0, 0)))[0]
+    assert h is not None and abs(h.x - (F.WRIST_X[0] - F.LAND_T)) < 0.05, ("land on the 6701's inner ring", h)
+    for y in (-SHIM_HALF_W + 0.5, 0.0, SHIM_HALF_W - 0.5):   # a horseshoe shim between the land and the 6701 slides out along -z
+        hit = tree(b).ray_cast(Vector((SHIM_X, y, -(F.LAND_R1 + 0.5))), Vector((0, 0, -1)))[0]
+        assert hit is None, ("0.3 shim trapped in the shoulder pocket", y, hit)
+    rmin = min(math.hypot(v.co.y, v.co.z) for v in b.data.vertices if v.co.x < F.OUTER_X[1])
+    REPORT["roll_clearance_r"] = round(rmin, 2)
+    assert rmin >= F.OUTER_R + 1.0, ("head rubs the fixed outer tube as it rolls", rmin)
+    assert PITCH_X - HOUSING_R - BOSS_X[1] >= 1.0 - 1e-6, "boss within 1 of the axis 5 housing"
     ax5 = ax5_housing()
-    hub, tube, brg = forearm_parts()
+    tube, brg = forearm_parts()
     near, far = ax5_pancake(MOTOR5_X - SLOT), ax5_pancake(MOTOR5_X + SLOT)
-    bad = {k: round(v, 3) for k, v in {"ax5": overlap(b, ax5), "hub": overlap(b, hub), "tube": overlap(b, tube),
+    bad = {k: round(v, 3) for k, v in {"ax5": overlap(b, ax5), "tube": overlap(b, tube),
                                        "pancake near": overlap(b, near), "pancake far": overlap(b, far),
-                                       "pancake/tube": overlap(near, tube)}.items() if v > 0.05}
+                                       "pancake/tube": overlap(near, tube), "pancake far/tube": overlap(far, tube),
+                                       "pancake/6705": overlap(near, brg), "pancake/ax5": overlap(near, ax5),
+                                       "pancake far/ax5": overlap(far, ax5)}.items() if v > 0.05}
     assert not bad, bad
-    assert MOTOR5_X - SLOT - 42.3 / 2 >= HOUSING_R + 2.0, "pancake hits the axis 5 housing"
     for u in (MOTOR5_X - SLOT, MOTOR5_X + SLOT):
-        assert through_mount(b, u, 0) is None, ("no pilot slot for the 60T centre distance", u)
-        for su in (-1, 1):
-            for sv in (-1, 1):
-                assert through_mount(b, u + su * NEMA_HOLE_OFF, sv * NEMA_HOLE_OFF) is None, ("no motor screw slot", u, su, sv)
-    assert through_mount(b, BELT_C - NEMA_HOLE_OFF, NEMA_HOLE_OFF) is not None, "the 188's motor screw slot is still open"
+        assert through_mount(b, u, 0) is None, ("no pilot slot for the pancake's shaft", u)
+    t = tree(b)
+    for u, v in insert_points():
+        top = ax5_matrix() @ Vector((u, v, -MOUNT_T - 1.0))
+        hit = t.ray_cast(top, Vector((0, -1, 0)))[0]
+        assert hit is not None and abs(hit.y - (AX5_REAR_Y + MOUNT_T - INSERT_DEPTH)) < 0.05, ("motor plate insert hole", u, v, hit)
     for o in (near, far):
         bpy.data.objects.remove(o)
     assert BRG5_R_IN == F.OUTER_R and F.OUTER_X[0] < BRG5_X[0] and BRG5_X[1] <= F.OUTER_X[1], "6705 not on the outer tube's end"
-    t = tree(b)
     for a in BOLT_ANGLES:
         p = ax5_matrix() @ Vector((*polar(BOLT_R, a), 1.0))
         hit = t.ray_cast(p, Vector((0, 1, 0)))[0]
         assert hit is None, ("axis 5 housing bolt hole blocked", a, hit)
-    assert overlap(b, brg) > 0.0 or touching(brg, b), "skirt not on the 6705"
+    assert overlap(b, brg) > 0.0 or touching(brg, b), "6705 seat not on the 6705"
     ys = [v.co.y for v in b.data.vertices]
-    assert max(ys) <= AX5_REAR_Y + 6.0 + 1e-3 and min(ys) >= -PLATE_R - 1e-3, ("bracket leaves its y slab", min(ys), max(ys))
-    for o in (ax5, hub, tube, brg):
+    assert max(ys) <= AX5_REAR_Y + MOUNT_T + 1e-3 and min(ys) >= -SKIRT_R - 1e-3, ("bracket leaves its y slab", min(ys), max(ys))
+    for o in (ax5, tube, brg):
+        bpy.data.objects.remove(o)
+
+def belt_envelope(u_motor):
+    """Hull of the 20T and the 60T, 1.5 over their pitch radii, across the belt's width plus 0.5 each side."""
+    bm = bmesh.new()
+    for u, r in ((u_motor, 20 / math.pi + 1.5), (0.0, 60 / math.pi + 1.5)):
+        for k in range(48):
+            a = 2 * math.pi * k / 48
+            for z in (BELT_PLANE - 3.5, BELT_PLANE + 3.5):
+                bm.verts.new((u + r * math.cos(a), r * math.sin(a), z))
+    bmesh.ops.convex_hull(bm, input=bm.verts)
+    me = bpy.data.meshes.new("belt"); bm.to_mesh(me); bm.free()
+    o = bpy.data.objects.new("belt envelope", me); bpy.context.scene.collection.objects.link(o)
+    o.data.transform(ax5_matrix())
+    return o
+
+def check_motor_plate():
+    p, b = PARTS["ax5-motor-plate"], PARTS["head-bracket"]
+    assert L.stats(p)["non_manifold"] == 0
+    t = tree(p)
+    for su, sv in ((0, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)):
+        q = ax5_matrix() @ Vector((MOTOR5_X + su * NEMA_HOLE_OFF, sv * NEMA_HOLE_OFF, MP_LOCAL_Z["plate"][1] + 0.5))
+        assert t.ray_cast(q, Vector((0, 1, 0)))[0] is None, ("motor hole closed", su, sv)
+    for u, v in insert_points():
+        q = ax5_matrix() @ Vector((u, v - math.copysign(2.4, v), MP_LOCAL_Z["plate"][0] - 1.0))   # inside the counterbore, beside the slot
+        hit = t.ray_cast(q, Vector((0, -1, 0)))[0]
+        floor_y = AX5_REAR_Y - MP_LOCAL_Z["plate"][0] - MP_CB_DEPTH
+        assert hit is not None and abs(hit.y - floor_y) < 0.05, ("counterbore", u, v, hit)
+        q = ax5_matrix() @ Vector((u, v, MP_LOCAL_Z["plate"][0] - MP_CB_DEPTH - 0.5))
+        assert t.ray_cast(q, Vector((0, -1, 0)))[0] is None, ("screw hole through the plate", u, v)
+        for du in (-SLOT, SLOT):   # the plate slides on its four screws to tension the belt; the heads stay outside
+            q = ax5_matrix() @ Vector((u + du, v, MP_LOCAL_Z["plate"][0] - MP_CB_DEPTH - 0.5))
+            assert t.ray_cast(q, Vector((0, -1, 0)))[0] is None, ("plate screw hole not slotted for tensioning", u, du)
+    tip = MP_LOCAL_Z["plate"][0] + MP_CB_DEPTH + MP_SCREW_L
+    assert tip <= -MOUNT_T + INSERT_DEPTH + 1e-6 and tip - (-MOUNT_T) >= 4.0, ("M3 x 20 misses the insert", tip)
+    near, far = ax5_pancake(MOTOR5_X - SLOT), ax5_pancake(MOTOR5_X + SLOT)
+    heads = screw_heads()
+    lb = PARTS["ax6-l-bracket"]
+    checks = {"heads/near": overlap(heads, near), "heads/far": overlap(heads, far), "pancake/l-bracket": overlap(near, lb)}
+    for name, du in (("near", -SLOT), ("far", SLOT)):   # plate and pancake slide together
+        ps = copy(p, "plate " + name); ps.data.transform(Matrix.Translation(ax5_matrix().to_3x3() @ Vector((du, 0, 0))))
+        pan = near if du < 0 else far
+        env = belt_envelope(MOTOR5_X + du)
+        checks["plate " + name + "/pancake"], checks["plate " + name + "/bracket"] = overlap(ps, pan), overlap(ps, b)
+        checks["belt " + name + "/plate"], checks["belt " + name + "/bracket"] = overlap(env, ps), overlap(env, b)
+        assert touching(pan, ps), ("pancake face not on the motor plate", name)
+        bpy.data.objects.remove(env); bpy.data.objects.remove(ps)
+    bad = {k: round(v, 3) for k, v in checks.items() if v > 0.05}
+    assert not bad, bad
+    py = [v.co.y for o in (near, far) for v in o.data.vertices]
+    REPORT["pancake_y"] = [round(min(py), 2), round(max(py), 2)]
+    REPORT["heads_to_pancake_mm"] = round(min(min_gap(heads, near), min_gap(heads, far)), 2)
+    for o in (near, far, heads):
         bpy.data.objects.remove(o)
 
 def ax6_mount_matrix():
@@ -308,12 +408,14 @@ REPORT = {}
 bpy.ops.wm.read_factory_settings(use_empty=True)
 PARTS["head-bracket"] = head_bracket()
 PARTS["ax6-l-bracket"] = l_bracket()
+PARTS["ax5-motor-plate"] = motor_plate()
 CHECKS.append(check_head_bracket)
+CHECKS.append(check_motor_plate)
 CHECKS.append(check_l_bracket)
 
 for check in CHECKS:
     check()
-print("WRIST", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, "ax6_offset_y": AX6_Y, **REPORT}))
+print("WRIST", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, "ax6_offset_y": AX6_Y, "pitch_x": PITCH_X, **REPORT}))
 os.makedirs(OUT, exist_ok=True)
 for n, o in PARTS.items():
     o.matrix_world = Matrix()

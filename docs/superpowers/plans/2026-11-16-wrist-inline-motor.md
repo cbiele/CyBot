@@ -170,7 +170,7 @@
 1. Free the old wrist hub with heat, or soak it in acetone, and clean the tube end.
 2. Slide the 6705's inner ring onto the outer tube's Ø25 end. It's a slip fit; don't glue it yet.
 3. Seat the 6705's outer ring in the bracket.
-4. Slide the bracket onto the drive tube with the 0.3 shim against the 6701's inner ring. CA the socket, then wick CA into the 6705's inner ring.
+4. Slide the bracket onto the drive tube with a U-shaped 0.3 shim against the 6701's inner ring. CA the socket, then wick CA into the 6705's inner ring. Once it has set, pull the shim out downwards through the slot in the bracket's wall just in front of the 6705.
 5. Pre-fit the 60T on axis 5's input, then bolt axis 5's housing on.
 6. Put the belt over the 60T and into the channel.
-7. Push the pancake, with its 20T already fixed, through the motor plate's pilot slot into the belt loop. Then screw the plate onto the arm's inserts and tension the belt with the motor slots.
+7. Bolt the pancake to the motor plate, its 20T already fixed, then push the 20T into the belt loop and screw the plate onto the arm's inserts. To tension the belt, slide the whole plate along its four slotted screw holes. The screw heads are on the outside.
