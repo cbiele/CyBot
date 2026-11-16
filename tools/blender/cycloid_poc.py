@@ -346,6 +346,7 @@ RAIL_X0 = HOUSING_R + 2.0
 MOUNT_HALF_W = RAIL_GAP / 2 + RAIL_W
 CB_R, CB_DEPTH = 3.0, 3.2                    # M3 socket heads sunk in the housing face, under the housing
 MOTOR_SHAFT_L = 20.0                         # shortest NEMA 17 shaft we fit (pancake), from the face
+NUT_AF, NUT_T = 5.8, 2.6                     # M3 nut pockets in the T8 mount's belt face: an M3 x 50 through the forearm flange, housing and mount ends 0.4 past it
 POST_R, POST_RAD, POST_ANGLES = 26.0, 4.5, (90, 180, 270)   # MOTOR7 bracket's posts, on the side away from the belt
 POST_INSERT_DEPTH = 5.0
 COUPLER_L, COUPLER_R = 25.0, 9.5             # 5 to 5 mm flexible coupler, about Ø19 x 25; check when it arrives
@@ -388,6 +389,11 @@ def motor_mount():
     L.cut(m, L.cyl_z("hub", 0, 0, HUB_CLEAR_R, -MOUNT_T - 1, 1, n=96))
     for a in BOLT_ANGLES:
         L.cut(m, L.cyl_z("bolt", *polar(BOLT_R, a), BOLT_HOLE_R, -MOUNT_T - 1, 1, n=32))
+        if HOLLOW_T8:
+            x, y = polar(BOLT_R, a)
+            rc = NUT_AF / math.sqrt(3)
+            hexagon = [(x + rc * math.cos(math.radians(60 * k)), y + rc * math.sin(math.radians(60 * k))) for k in range(6)]
+            L.cut(m, prism("nut", hexagon, -MOUNT_T - 1, -MOUNT_T + NUT_T))
     L.cut(m, slot("pilot", MOTOR_X, 0, NEMA_PILOT_R, SLOT, -MOUNT_T - 1, 1))
     for sx in (-1, 1):
         for sy in (-1, 1):
@@ -414,6 +420,11 @@ def check_motor_mount():
         assert abs(L.stats(m)["dims"][2] - (MOUNT_T + RAIL_H)) < 0.01
         return
     assert MOUNT_T - CB_DEPTH >= 2.5, "too little plate under the post screw heads"
+    if HOLLOW_T8:
+        assert MOUNT_T - NUT_T >= 3.0, "too little plate over the nuts"
+        for a in BOLT_ANGLES:
+            d = bore_diameter(m, *polar(BOLT_R, a), -MOUNT_T + NUT_T / 2)
+            assert NUT_AF - 0.05 <= d <= NUT_AF / math.cos(math.pi / 6) + 0.05, ("no nut pocket", a, d)
     z0, z_front, z_coupler1 = bracket_z()
     flange_r = 40 / math.pi - 0.254 + 1.0
     bolt_heads = [polar(BOLT_R, b) for b in BOLT_ANGLES]
