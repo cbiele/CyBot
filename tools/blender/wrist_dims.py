@@ -21,8 +21,8 @@ PANCAKE_OUTBOARD = True                      # rolling with axis 4 it can't stra
 BOLT_ANGLES = [45, 135, 225, 315]
 AX5_TEETH, AX5_BELT = 60, 234                # 60:1: at 40:1 the layout needed 1.07 N·m against the pancake's measured 1.2
 
-ARM_HALF_W = 28.0
-MP_WALL_V = (21.5, 28.0)                     # outside the pancake's 42.3 square
+ARM_HALF_W = 29.5
+MP_WALL_V = (21.5, 29.5)                     # outside the pancake's 42.3 square
 MP_SCREW_V = 24.5
 MP_LOCAL_Z = {"plate": (-23.5, -17.5), "walls": (-17.5, -6.0)}   # the old mount mirrored about the belt plane at -11.75
 

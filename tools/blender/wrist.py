@@ -23,6 +23,7 @@ ARM_CUT_X = 40.0                                 # the 188 arm is cut off here, 
 BOLT_HEAD_R, BOLT_HEAD_H = 2.75, 3.0
 MOTOR7_DISC_Z, MOTOR7_DISC_R = (-56.0, -51.0), 30.5   # cycloid_poc's motor7-bracket disc, in axis 6's frame
 FAR_POST_HALF_X, FAR_POST_Y = 4.5, (22.0, 30.0)   # axis 6 frame: the far side's tie between the mount and the gripper motor's disc; flat underside bridges in print
+M3_STOCK = (40, 45, 50)                         # the user's long M3s; through-bolts end in hex nut pockets
 DRIVER_R, DRIVER_MAX_TILT = 1.3, 10.0          # 2.5 hex key shaft; a ball-end works to about 25 deg
 RIB_Z0, RIB_Z1 = 10.0, 17.0                    # outside the driver path to the base disc's screws (|z| 9.5), inside axis 6's nut pockets (from z 17.85)
 NUT_AF, NUT_T = 5.8, 2.6                         # cycloid_poc's nut pockets in the T8 mount
@@ -255,6 +256,12 @@ def check_head_bracket():
         p = ax5_matrix() @ Vector((*polar(BOLT_R, a), 1.0))
         hit = t.ray_cast(p, Vector((0, 1, 0)))[0]
         assert hit is None, ("axis 5 housing bolt hole blocked", a, hit)
+        mid = ax5_matrix() @ Vector((*polar(BOLT_R, a), -MOUNT_T + NUT_T / 2))
+        rot = ax5_matrix().to_3x3()
+        wall = min((t.ray_cast(mid, rot @ Vector((math.cos(k * math.pi / 12), math.sin(k * math.pi / 12), 0)))[0] - mid).length for k in range(24))
+        assert wall >= NUT_AF / 2 - 0.05, ("axis 5 nut pocket narrowed", a, round(wall, 2))
+    REPORT["arm_insert_edge_mm"] = round(ARM_HALF_W - (MP_SCREW_V + 2.0), 2)
+    assert REPORT["arm_insert_edge_mm"] >= 2.5, ("arm's inserts too near its edge", REPORT["arm_insert_edge_mm"])
     assert overlap(b, brg) > 0.0 or touching(brg, b), "6705 seat not on the 6705"
     ys = [v.co.y for v in b.data.vertices]
     assert max(ys) <= AX5_REAR_Y + MOUNT_T + 1e-3 and min(ys) >= -SKIRT_R - 1e-3, ("bracket leaves its y slab", min(ys), max(ys))
@@ -292,6 +299,8 @@ def check_motor_plate():
         for du in (-SLOT, SLOT):   # the plate slides on its four screws to tension the belt; the heads stay outside
             q = ax5_matrix() @ Vector((u + du, v, MP_LOCAL_Z["plate"][0] - MP_CB_DEPTH - 0.5))
             assert t.ray_cast(q, Vector((0, -1, 0)))[0] is None, ("plate screw hole not slotted for tensioning", u, du)
+    REPORT["plate_counterbore_edge_mm"] = round(MP_WALL_V[1] - (MP_SCREW_V + 3.0), 2)
+    assert REPORT["plate_counterbore_edge_mm"] >= 1.5, ("counterbores too near the plate's edge", REPORT["plate_counterbore_edge_mm"])
     tip = MP_LOCAL_Z["plate"][0] + MP_CB_DEPTH + MP_SCREW_L
     assert tip <= -MOUNT_T + INSERT_DEPTH + 1e-6 and tip - (-MOUNT_T) >= 4.0, ("M3 x 20 misses the insert", tip)
     near, far = ax5_pancake(MOTOR5_X - SLOT), ax5_pancake(MOTOR5_X + SLOT)
@@ -480,6 +489,16 @@ def check_l_bracket():
     for o in (plate, t8, heads, m7_heads, m7_body, coupler):
         bpy.data.objects.remove(o)
 
+def bolt_for(grip):
+    """Shortest stock M3 that passes right through a nut pocketed at the end of the grip, at most 2 past."""
+    fits = [n for n in M3_STOCK if grip <= n <= grip + 2.0]
+    assert fits, ("no stock M3 for this grip", grip, M3_STOCK)
+    return fits[0]
+
+def check_bolts():
+    REPORT["bolts"] = {"axis 5 housing to head bracket": bolt_for(2 * 19.3 + MOUNT_T),
+                       "axis 6 housing to L-bracket": bolt_for(T8_HOUSING_L + MOUNT_T)}
+
 REPORT = {}
 bpy.ops.wm.read_factory_settings(use_empty=True)
 PARTS["head-bracket"] = head_bracket()
@@ -488,6 +507,7 @@ PARTS["ax5-motor-plate"] = motor_plate()
 CHECKS.append(check_head_bracket)
 CHECKS.append(check_motor_plate)
 CHECKS.append(check_l_bracket)
+CHECKS.append(check_bolts)
 
 for check in CHECKS:
     check()
