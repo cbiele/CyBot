@@ -840,8 +840,40 @@ def main():
             o.data.transform(elbow_rot(90) @ elbow_rot(at).inverted())
         render("elbow-iso", (1, -1.1, 0.6), arm, target=tuple(ELBOW_AT + Vector((80, 0, -40))), scale=820)
     show(new)
+    frame_viewports()
     bpy.ops.wm.save_as_mainfile(filepath=BLEND)
+    if ELBOW:
+        save_v2_only()
     print("HEAD DONE")
+
+
+def save_v2_only():
+    """The V2 arm alone, elbow to hand: V1 stays in the head-concept file only, for the clash checks and comparisons."""
+    for name in ("V1 arm kept", "V1 head (for comparison)"):
+        for o in list(COLS[name].objects):
+            bpy.data.objects.remove(o)
+        bpy.data.collections.remove(COLS.pop(name))
+    bpy.data.orphans_purge(do_recursive=True)
+    show(set(COLS))
+    frame_viewports()
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(MODEL, "cybot-v2.blend"))
+
+
+def frame_viewports():
+    """The parts are in mm, hundreds of units from the origin: Blender's default views (15 units out, clipped at 1000) open on nothing."""
+    pts = [o.matrix_world @ v.co for o in scene.objects if o.type == 'MESH' for v in o.data.vertices]
+    lo = Vector([min(p[i] for p in pts) for i in range(3)])
+    hi = Vector([max(p[i] for p in pts) for i in range(3)])
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            if area.type == 'VIEW_3D':
+                space = area.spaces.active
+                space.clip_start, space.clip_end = 1.0, 20000.0
+                r = space.region_3d
+                r.view_location = (lo + hi) / 2
+                r.view_distance = (hi - lo).length * 1.2
+                r.view_rotation = Vector((1, -1.1, 0.7)).normalized().to_track_quat('Z', 'Y')
+                r.view_perspective = 'PERSP'
 
 
 main()
