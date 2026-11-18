@@ -480,7 +480,7 @@ def tube_axis4_report():
 
 ELBOW_AT = Vector((AX4_REAR_X + E.ELBOW_FX, 0, ROLL_Z - E.OFFSET))   # V1's roll height kept, so nothing past the elbow moves
 ELBOW_COL, ELBOW_COMPACT_COL = "Elbow and upper arm", "Elbow compact"
-ELBOW_MOVING_STL = ("elbow-collar-lower", "elbow-collar-upper", "elbow-hub")
+ELBOW_MOVING_STL = ("elbow-collar-lower", "elbow-collar-upper", "elbow-hub", "elbow-stop-collar")
 BRACKET_G = 60                                 # collar, tubes and hub, my estimate
 FOREARM_MEASURED_G = 1300                      # the user's scale, elbow forward, no hand, T8 cut to length (2026-11-17)
 HOLD_17HS8401B, HOLD_PANCAKE = 0.52, 0.13      # N·m, build-plan §7: scales the measured pancake figure to the elbow motor

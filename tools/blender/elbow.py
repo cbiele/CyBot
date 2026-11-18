@@ -255,6 +255,7 @@ def collar():
 def hub():
     """On the elbow compact's output plate, turning in plate B's 6810; its lug carries the tubes' hub ends."""
     h = cyl_y("elbow-hub", 0, 0, HUB_R, HUB_DISC_Y[1], HUB_DISC_Y[0], n=192)
+    L.union(h, cyl_y("inner ring land", 0, 0, HUB_INNER_LAND_R, HUB_6810_Y[0], HUB_DISC_Y[1] + 0.01, n=192))
     L.union(h, cyl_y("journal", 0, 0, B6810[0], HUB_END_Y, HUB_DISC_Y[1] + 0.01, n=96))
     bosses = [cyl_y("lug root", 0, 0, HUB_R, *LUG_Y, n=96)]
     for name in TUBE_ENDS:
@@ -275,8 +276,13 @@ def hub():
     for name in TUBE_ENDS:
         a, b = tube_axis(name)
         L.cut(h, socket_cut(b, (b - a).normalized(), "socket"))
-    L.union(h, stop_tab())
-    L.cut(h, rod("magnet", Vector((0, sum(TAB_Y) / 2, -TAB_R[1] - 1)), Vector((0, sum(TAB_Y) / 2, -TAB_R[1] + MAGNET_D)), MAGNET_R + 0.1, n=32))
+    kx, kz = polar(1.0, KEY_DEG)
+    key = L.box("key slot", HUB_BORE_R - 1.0, B6810[0] + 1.0, HUB_END_Y - 1, HUB_END_Y + KEY_DEPTH_Y, -KEY_W / 2, KEY_W / 2)
+    key.data.transform(Matrix.Rotation(-math.radians(KEY_DEG), 4, 'Y'))
+    L.cut(h, key)
+    for a in COLLAR_SCREW_ANGLES:
+        x, z = polar(COLLAR_SCREW_R, a)
+        L.cut(h, cyl_y("collar insert", x, z, 2.0, HUB_END_Y - 1, HUB_END_Y + 5.0, n=32))
     PRINT_POSE["elbow-hub"] = basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, 0, -HUB_END_Y))
     return h
 
@@ -315,16 +321,35 @@ def stop_blocks():
             sector_y("stop", STOP_R[0], STOP_R[1], at_min, at_min + STOP_BLOCK_DEG, y0, y1)]
 
 
-def sensor_block():
-    """Holds the TO-92 Hall facing the magnet at home (elbow 0), where the tab points to +x."""
-    r_face = TAB_R[1] + SENSOR_GAP
-    b = L.box("sensor block", r_face, r_face + SENSOR[2] + 2.5, TAB_Y[1], -Y_REAR - PLATE_T + 0.01, -SENSOR[0] / 2 - 2.5, SENSOR[0] / 2 + 2.5)
-    return b
+def stop_collar():
+    """Keyed onto the hub's journal end outside plate B: clamps the 6810's inner ring, carries the stop tab and the Hall magnet."""
+    y_face, y_end = STOP_COLLAR_Y
+    flange_in = HUB_END_Y - 0.3
+    c = cyl_y("elbow-stop-collar", 0, 0, HUB_INNER_LAND_R, y_face - 2.0, y_face, n=192)
+    L.union(c, cyl_y("body", 0, 0, STOP_COLLAR_R, y_end, y_face - 2.0 + 0.01, n=192))
+    L.union(c, stop_tab())
+    L.finish(c)
+    L.cut(c, cyl_y("bore", 0, 0, B6810[0] + 0.05, flange_in, y_face + 1, n=192))
+    L.cut(c, cyl_y("wires", 0, 0, HUB_BORE_R + 0.5, y_end - 1, y_face + 1, n=96))
+    tongue = L.box("tongue", HUB_BORE_R - 0.5, B6810[0] + 0.06, HUB_END_Y + 0.3, flange_in + 0.01, -KEY_W / 2 + 0.2, KEY_W / 2 - 0.2)
+    tongue.data.transform(Matrix.Rotation(-math.radians(KEY_DEG), 4, 'Y'))
+    L.union(c, tongue)
+    L.cut(c, L.box("wire window", -8.0, 8.0, y_end - 1, y_face - 2.5, 10.0, 40.0))
+    for a in COLLAR_SCREW_ANGLES:
+        x, z = polar(COLLAR_SCREW_R, a)
+        L.cut(c, cyl_y("screw", x, z, 1.7, y_end - 1, flange_in + 1, n=32))
+    mx, mz = polar(MAGNET_AT_R, TAB_PHI)
+    L.cut(c, cyl_y("magnet", mx, mz, MAGNET_R + 0.1, TAB_Y[0] - MAGNET_RECESS - MAGNET_D, TAB_Y[0] + 1, n=32))
+    PRINT_POSE["elbow-stop-collar"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, -y_end))
+    return c
 
 
 def sensor_pocket():
-    r_face = TAB_R[1] + SENSOR_GAP
-    return L.box("sensor pocket", r_face - 0.01, r_face + SENSOR[2] + 0.1, TAB_Y[1] - 1, -Y_REAR - PLATE_T - 0.4, -SENSOR[0] / 2 - 0.1, SENSOR[0] / 2 + 0.1)
+    """The TO-92 flush in plate B's outer face where the tab's magnet passes at home (elbow 0, tab at +x), leads out radially."""
+    y = -Y_REAR - PLATE_T
+    p = L.box("sensor pocket", MAGNET_AT_R - SENSOR[1] / 2 - 0.1, MAGNET_AT_R + SENSOR[1] / 2 + 0.1, y - 1, y + SENSOR[2] + 0.1, -SENSOR[0] / 2 - 0.1, SENSOR[0] / 2 + 0.1)
+    L.union(p, L.box("leads", MAGNET_AT_R, PLATE_R + 1, y - 1, y + 1.0, -1.5, 1.5))
+    return p
 
 
 def prism_y(name, outline, y0, y1):
@@ -388,7 +413,7 @@ def plate_a():
 def plate_b():
     y0, y1 = -Y_REAR, -Y_REAR - PLATE_T
     p = stadium("upper-plate-B", y1, y0)
-    for b in stop_blocks() + [sensor_block()]:
+    for b in stop_blocks():
         L.union(p, b)
     L.finish(p)
     seat(p, 0.0, y0, y1)
@@ -484,7 +509,7 @@ def span_line_x(z):
 
 def check_plates():
     pa, pb, idl = PARTS["upper-plate-A"], PARTS["upper-plate-B"], PARTS["belt-idler"]
-    for n in ("upper-plate-A", "upper-plate-B", "belt-idler"):
+    for n in ("upper-plate-A", "upper-plate-B", "belt-idler", "elbow-stop-collar"):
         assert islands(PARTS[n]) == 1, (n, "islands", island_bounds(PARTS[n]))
         assert L.stats(PARTS[n])["non_manifold"] == 0, (n, "non-manifold", non_manifold_at(PARTS[n]))
     ang = math.atan2(250.0, 220.0)
@@ -544,6 +569,24 @@ def check_plates():
             ym = (Y_REAR + PLATE_T / 2) * (1 if o is pa else -1)
             d = seat_diameter(o, z, ym, x=x)
             assert 2 * TUBE_OR <= d <= 2 * TUBE_OR + 0.3, ("cross member hole", n, x, z, d)
+    win = MOTOR_SQ / 2 + 1.0
+    for x, z in CROSS_MEMBERS:
+        walls = [PLATE_R - abs(x) - CM_HOLE_R]
+        dz = max(MOTOR_Z - win - MOTOR_SLOT - z, z - (MOTOR_Z + win + MOTOR_SLOT), 0.0)
+        dx = max(abs(x) - win, 0.0)
+        walls.append(math.hypot(dx, dz) - CM_HOLE_R)
+        for psi in INDEX_ANGLES:
+            ix, iz = polar(INDEX_R, INDEX_PIN_DEG + psi)
+            walls.append(math.hypot(x - ix, z - SHOULDER_Z - iz) - CM_HOLE_R - INDEX_HOLE_R)
+        walls.append(math.hypot(x, z - SHOULDER_Z) - CM_HOLE_R - B6810[1])
+        assert min(walls) >= 3.0, ("cross member hole wall", x, z, [round(w, 2) for w in walls])
+    bpy.ops.wm.stl_import(filepath=os.path.join(OUT, "axis3-pulley-60T.stl"))
+    p60 = bpy.context.selected_objects[0]
+    p60.data.transform(Matrix.Translation((0, PULLEY_Y0 + PULLEY_H, 0)) @ Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1))))
+    gap60 = min(v.co.y for v in p60.data.vertices) - (Y_REAR + PLATE_T)
+    assert 0.9 <= gap60 <= 1.2, ("60T's inside face to plate A", gap60)
+    assert not bvh_hit(p60, heads[1]) and not bvh_hit(p60, heads[-1]), "60T on a screw head"
+    REPORT["pulley60_to_plate_a_mm"] = round(gap60, 2)
     moving = [PARTS["elbow-hub"]] + TUBES
     hits = []
     for th in range(int(RANGE[0]), int(RANGE[1]) + 1, 2):
@@ -554,22 +597,37 @@ def check_plates():
     assert not hits, ("hub or tubes hit a cross member", hits)
     tab = stop_tab(); blocks = hull_free_join(stop_blocks(), "blocks")
     gaps = {}
-    for th in (STOPS[0] + 0.5, RANGE[0], RANGE[1], STOPS[1] - 0.5, STOPS[0], STOPS[1]):
+    for th in (-22.0, RANGE[0], RANGE[1], 152.0, STOPS[0], STOPS[1]):
         t = copy(tab, "t"); t.data.transform(rot_elbow(th))
         gaps[th] = round(min_gap(t, blocks), 2)
         bpy.data.objects.remove(t)
     assert gaps[STOPS[0]] <= 0.05 and gaps[STOPS[1]] <= 0.05, ("tab doesn't meet the stops", gaps)
-    assert gaps[STOPS[0] + 0.5] <= 0.3 and gaps[STOPS[1] - 0.5] <= 0.3, ("plan's -22/+152 not within 0.3", gaps)
+    assert gaps[-22.0] <= 0.3 and gaps[152.0] <= 0.3, ("plan's -22/+152 not within 0.3", gaps)
     assert gaps[RANGE[0]] >= 1.0 and gaps[RANGE[1]] >= 1.0, ("stops within 1 mm inside the range", gaps)
+    stall_n = 7.0e3 / ((STOP_R[0] + STOP_R[1]) / 2)
+    tang = math.radians(STOP_BLOCK_DEG) * STOP_R[0]
+    lever = (abs(TAB_Y[1] - TAB_Y[0])) / 2 + 0.5
+    stop_mpa = stall_n * lever / ((STOP_R[1] - STOP_R[0]) * tang ** 2 / 6)
+    assert stop_mpa <= 10.0, ("stop block bending at a motor stall, across layers", round(stop_mpa, 1))
+    REPORT["stop_block_mpa_at_stall"] = round(stop_mpa, 1)
     for th in range(int(RANGE[0]), int(RANGE[1]) + 1, 2):
         t = copy(tab, "t"); t.data.transform(rot_elbow(th))
         assert not bvh_hit(t, blocks), ("tab hits a stop inside the range", th)
         bpy.data.objects.remove(t)
-    magnet = rot_elbow(0.0) @ Vector((0, sum(TAB_Y) / 2, -TAB_R[1]))
-    sensor_face = Vector((TAB_R[1] + SENSOR_GAP, sum(TAB_Y) / 2, 0))
-    gap = (sensor_face - magnet).length
+    sc = PARTS["elbow-stop-collar"]
+    mx, mz = polar(MAGNET_AT_R, TAB_PHI)
+    floor = ray_len(sc, (mx, TAB_Y[0] + 1.0, mz), (0, -1, 0)) - 1.0
+    magnet = rot_elbow(0.0) @ Vector((mx, TAB_Y[0] - floor + MAGNET_D, mz))
+    sensor_face = Vector((MAGNET_AT_R, -Y_REAR - PLATE_T, 0))
+    assert math.hypot(magnet.x - sensor_face.x, magnet.z - sensor_face.z) < 0.5, ("magnet not over the sensor at home", magnet)
+    gap = abs(magnet.y - sensor_face.y)
     assert 1.0 <= gap <= 2.0, ("Hall gap at home", gap)
-    assert ray_len(pb, (TAB_R[1] + SENSOR_GAP + 0.2, -Y_REAR - PLATE_T - 2.0, 0), (1, 0, 0)) >= SENSOR[2] - 0.2, "sensor pocket missing"
+    assert ray_len(pb, (MAGNET_AT_R, -Y_REAR - PLATE_T - 1.0, 0), (0, 1, 0)) >= 1.0 + SENSOR[2], "sensor pocket missing"
+    for o, n in ((pb, "plate B"), (PARTS["elbow-hub"], "hub")):
+        assert overlap(sc, o) < 0.05, ("stop collar hits", n)
+    assert touching(sc, PARTS["elbow-hub"]), "stop collar doesn't seat on the hub"
+    trap = [v.co for v in sc.data.vertices if v.co.y > HUB_6810_Y[1] + 0.01]
+    assert not trap, "stop collar reaches into the 6810"
     REPORT.update({"belt_centre_mm": BELT_C, "idler_deflection_mm": round(dx, 2), "stop_gaps_mm": gaps, "hall_gap_mm": round(gap, 2),
                    "bolts": {"elbow compact to plate A (nut on its front face)": bolt_for_nut(PLATE_T + HOUSING_L),
                              "motor to plate A": 12, "idler axle (nut on plate A's inner face)": 40, "collar clamp": 20, "hub to compact carrier": 12}})
@@ -646,7 +704,7 @@ def bench_stand():
 def index_holes(p):
     for psi in INDEX_ANGLES:
         x, z = polar(INDEX_R, INDEX_PIN_DEG + psi)
-        L.cut(p, cyl_y("index", x, SHOULDER_Z + z, INDEX_HOLE_R, -Y_REAR - PLATE_T - 1, -Y_REAR + 1, n=32))
+        L.cut(p, cyl_y("index", x, SHOULDER_Z + z, INDEX_HOLE_R, -Y_REAR - PLATE_T - 1, -Y_REAR + 1, n=30))
 
 
 def rot_shoulder(psi):
@@ -774,10 +832,12 @@ def check_bracket():
         if o != "outer tube":
             assert overlap(col_lo, ctx[o]) < 0.05, ("collar hits", o)
     assert overlap(hub, ctx["elbow output plate"]) < 1.0, "hub hits the output plate outside its dog holes"
-    shoulder = [v.co for v in hub.data.vertices if HUB_6810_Y[0] - 0.01 < v.co.y < HUB_DISC_Y[1] - 0.01 and math.hypot(v.co.x, v.co.z) > B6810[0] + 0.05]
+    trap = [v.co for v in hub.data.vertices if v.co.y < HUB_6810_Y[0] - 0.01 and math.hypot(v.co.x, v.co.z) > B6810[0] + 0.01]
+    assert not trap, ("the 6810 can't slide onto the journal from its end", max(math.hypot(p.x, p.z) for p in trap))
+    shoulder = [v.co for v in hub.data.vertices if HUB_6810_Y[0] - 0.01 < v.co.y < HUB_DISC_Y[1] - 0.01 and math.hypot(v.co.x, v.co.z) > HUB_INNER_LAND_R + 0.05]
     assert not shoulder, "hub bears past the 6810's inner ring"
-    assert abs(min(v.co.y for v in hub.data.vertices if math.hypot(v.co.x, v.co.z) > B6810[0] + 0.5 and v.co.y > -Y_REAR - PLATE_T) - HUB_DISC_Y[1]) < 0.01, "hub reaches into the 6810 between the plates"
-    assert HUB_R <= (B6810[0] + B6810[1]) / 2, "hub shoulder reaches the 6810's outer ring"
+    assert abs(min(v.co.y for v in hub.data.vertices if math.hypot(v.co.x, v.co.z) > B6810[0] + 0.5 and v.co.y > -Y_REAR - PLATE_T) - HUB_6810_Y[0]) < 0.01, "hub's land doesn't reach the 6810's inner ring"
+    assert HUB_INNER_LAND_R <= (B6810[0] + B6810[1]) / 2, "hub shoulder reaches the 6810's outer ring"
     for x, z in [polar(F.DOG_PCD_R, a) for a in F.DOG_ANGLES]:
         assert ray_len(hub, (x, Y_OUT + 0.01, z), (0, -1, 0)) >= F.DOG_H, "dog hole too shallow"
     for x, z in [polar(F.INSERT_PCD_R, a) for a in F.INSERT_ANGLES]:
@@ -791,7 +851,7 @@ def check_bracket():
     assert max(abs(p.y) for p in tv) <= PLATE_GAP / 2 - 1.0, "a tube is within 1 of a plate"
     for o in (hub, col_lo):
         lug = [v.co.y for v in o.data.vertices if math.hypot(v.co.x, v.co.z) > B6810[1] + 1.0]
-        assert min(lug) >= -PLATE_GAP / 2 + 1.0 or o is col_lo, ("lug within 1 of plate B", o.name, min(lug))
+        assert o is col_lo or min(lug) >= -PLATE_GAP / 2 + 1.0, ("lug within 1 of plate B", o.name, min(lug))
     lengths = tube_lengths()
     assert max(lengths.values()) <= TUBE_STOCK, ("tube too long for a 125 cut", lengths)
     dog_mpa = ELBOW_TORQUE_NMM / F.DOG_PCD_R / 3 / (2 * F.DOG_R * F.DOG_H)
@@ -823,6 +883,7 @@ PARTS["elbow-hub"] = hub()
 PARTS["upper-plate-A"] = plate_a()
 PARTS["upper-plate-B"] = plate_b()
 PARTS["belt-idler"] = idler()
+PARTS["elbow-stop-collar"] = stop_collar()
 PARTS["shoulder-hub"] = shoulder_hub()
 PARTS["shoulder-hub-clamp"] = shoulder_clamp()
 PARTS["bench-stand"] = bench_stand()

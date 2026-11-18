@@ -12,8 +12,8 @@ The project files in `print/` hold the plates below, arranged and set up. Open, 
 | Plate | File | Parts | Layer | Supports | Sliced (est.) |
 |---|---|---|---|---|---|
 | 1 | `print/plate-1-upper-plate-A-0.16.3mf` | `upper-plate-A`, at 45° | 0.16 | none | 3 h 20, 95 g |
-| 2 | `print/plate-2-upper-plate-B-0.16.3mf` | `upper-plate-B`, at 45° | 0.16 | none | 2 h 28, 73 g |
-| 3 | `print/plate-3-hubs-collar-0.16-supports.3mf` | `elbow-hub`, `elbow-collar-lower`, `elbow-collar-upper`, `shoulder-hub`, `shoulder-hub-clamp` | 0.16 | tree (auto), build plate only | 7 h 40, 203 g |
+| 2 | `print/plate-2-upper-plate-B-0.16.3mf` | `upper-plate-B`, at 45° | 0.16 | none | 2 h 27, 74 g |
+| 3 | `print/plate-3-hubs-collar-0.16-supports.3mf` | `elbow-hub`, `elbow-stop-collar`, `elbow-collar-lower`, `elbow-collar-upper`, `shoulder-hub`, `shoulder-hub-clamp` | 0.16 | tree (auto), build plate only | 7 h 53, 204 g |
 | 4 | `print/plate-4-pulleys-idler-0.12.3mf` | `axis3-pulley-20T`, `axis3-pulley-60T`, `belt-idler`, `forearm-tube/ax4-output-plate` (the elbow compact's, same part) | 0.12 | none | 3 h 04, 36 g |
 | 5 | `print/plate-5-bench-stand-0.16-supports.3mf` | `bench-stand` | 0.16 | tree (auto), build plate only | 6 h 38, 185 g |
 
@@ -69,37 +69,45 @@ Suggested cuts (allow about 1 mm per cut):
 | Stand to hub ends | 8 × M3 × 12 |
 | Stand index pin | an M4 × 40 bolt or a Ø4 rod, through the stand's cheek into plate B's index hole |
 | 20T and 60T | 1 × M3 × 3 × 4.5 heat-set insert each, pressed in radially, plus an M3 set screw (the 20T on the motor's flat, the 60T on the rod's flat) |
-| Hall | a TO-92 Hall sensor (A3144 type) in plate B's pocket, plus a Ø6 × 3 magnet in the hub's tab |
+| Stop collar to hub | 2 × M3 × 8 into 2 × M3 heat-set inserts in the hub's journal end face; its tongue keys into the journal's slot |
+| Hall | a TO-92 Hall sensor (A3144 type) flush in plate B's outer-face pocket (leads out radially), plus a Ø6 × 3 magnet pushed to the bottom of the stop collar's tab pocket (1.2 mm gap at home) |
 
 The idler's stack is 30.5 mm plus the nut, so it takes an M3 × 40. Its tail stands about 7 mm into the space between the plates, where nothing runs.
 
 ## Assembly
 
+Plate B slides on along the elbow axis onto both journals at once, so the order matters.
+
 1. **Collar on the forearm.** Fit the two halves round the outer tube's Ø36 section, with their keys over axis 4's four bolt heads. Clamp them with the M3 × 20s. Nothing on the forearm comes apart.
-2. **Glue the bracket tubes.** Set the hub in place on the compact's output plate first, so the tubes go in at the right angle. Then glue the three tubes into the collar's and hub's sockets with epoxy or CA. Each socket is 15 deep.
-3. **Plate A.**
+2. **Plate A.**
    - Bolt the compact's rear face to plate A's inner face with the M3 × 50s and nuts.
    - Mount the motor on the inner face, its shaft through the slot.
-   - Fit the 60T on the rod and the 20T on the shaft, hubs towards the plate.
+   - Fit the 60T on the rod and the 20T on the shaft, hubs towards the plate. Set the 60T 1 mm off plate A's outer face (a 1 mm shim while you tighten its set screw), clear of the compact's bolt heads.
    - Fit the idler on its boss.
-4. **Shoulder.**
-   - Press a 6810 into each plate's shoulder seat from the outer face, against the lip.
-   - Slide the shoulder hub through from plate A's side, its shoulder on plate A's inner ring.
+3. **Hub and bracket.**
+   - Put the printed output plate on the compact's carrier, then the hub over its dogs.
+   - Fit the M3 × 12s through the hub's bore into the carrier's inserts.
+   - Glue the three tubes into the hub's and the collar's sockets (epoxy or CA, 15 deep), with the forearm held in place.
+4. **Plate B.**
+   - Press the elbow 6810 into plate B from the inner face, against the lip.
+   - Press a shoulder 6810 into each plate from its outer face, against its inner lip.
+   - Slide plate B along the elbow axis onto the hub's journal, until the 6810's inner ring sits on the hub's land.
+5. **Stop collar.**
+   - Slide it onto the journal end outside plate B, its tongue in the journal's slot.
+   - Screw it down with the two M3 × 8s. That clamps the 6810's inner ring against the hub.
+6. **Shoulder.**
+   - Slide the shoulder hub through plate A, then plate B, its shoulder on plate A's inner ring.
    - Push the clamp onto the hub's other end against plate B's inner ring, then tighten the pinch screw.
-5. **Elbow.**
-   - Press the elbow 6810 into plate B from the inner face.
-   - Bring plate B up so the hub's journal enters it and the stop tab sits outside.
-   - Bolt the hub to the output with the M3 × 12s through its bore.
-6. **Cross members.** Push the four tubes through both plates and glue them, with the plates square and parallel.
-7. **Belt.** Fit the belt, tension it by sliding the motor along its slots, then set the idler.
-8. **Hall and stand.**
-   - Fit the Hall sensor and the magnet.
+7. **Cross members.** Push the four tubes through both plates and glue them, with the plates square and parallel.
+8. **Belt.** Fit the belt, tension it by sliding the motor along its slots, then set the idler.
+9. **Hall and stand.**
+   - Fit the Hall sensor.
    - Bolt the stand's cheeks to both hub ends, then pin the arm at home, 45° or 90°.
    - Clamp the stand to the bench.
 
 ## Range, stops and load
 
-- **Range:** −20° (back past vertical) to +150°, with home straight up. The tab meets the stops at −22.5° and +152.5°.
-- **Hall:** at home the magnet faces the sensor across 1.5 mm.
+- **Range:** −20° (back past vertical) to +150°, with home straight up. The stop collar's tab meets 30° blocks on plate B at −22.4° and +152.4°. The blocks are sized to take a motor stall across their layers.
+- **Hall:** at home the magnet passes over the sensor with a 1.2 mm gap.
 - **Load:** worst static load 5.16 N·m, with the forearm 20° below level, the hand on and a 200 g tool. The estimate for the 48 mm NEMA17 at 60:1 is 7.0 N·m, so 1.36×. Bench-test it before trusting it.
 - **On the stand:** with the upper arm vertical, the hand reaches the stand's base past 140° of elbow when pitched down.

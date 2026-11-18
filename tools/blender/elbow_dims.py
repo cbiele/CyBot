@@ -6,7 +6,7 @@ import forearm_dims as F
 
 OFFSET, UPPER_L = 80.0, 220.0
 ELBOW_FX = 40.0                              # just in front of axis 4's housing, so its compact, motor and mount counterweight the wrist
-RANGE, STOPS = (-20.0, 150.0), (-22.5, 152.5)   # stop faces 0.25 past the plan's -22/+152 so -20/+150 keep 1 mm
+RANGE, STOPS = (-20.0, 150.0), (-22.4, 152.4)   # stop faces just past the plan's -22/+152 (within 0.3 at the tab's r 38) so -20/+150 keep 1 mm
 
 B6810 = (25.0, 32.5, 7.0)                    # bore r, OD r, width
 TUBE_OR, TUBE_IR = 4.5, 3.5                  # 9 x 7 aluminium
@@ -66,14 +66,21 @@ IDLER_BOSS_R = 7.0
 BELT_ENVELOPE_Y = Y_REAR + PLATE_T + PULLEY_GAP + PULLEY_H + 3.5 + 2.0   # pulley tops plus the idler bolt's head, plus 2
 SHOULDER_6810_Y = ((Y_REAR, Y_REAR + B6810[2]), (-Y_REAR, -Y_REAR - B6810[2]))
 LIP_IN_R = 28.5                              # bears on the outer ring only
-CROSS_MEMBERS = [(27.0, -95.0), (-27.0, -95.0), (27.0, -176.0), (-27.0, -176.0)]   # the lower pair clear of the stand's index holes
+CROSS_MEMBERS = [(27.0, -95.0), (-27.0, -95.0), (29.5, -182.0), (-29.5, -182.0)]   # the lower pair 3+ from the motor window, the index holes and the edge
 CM_HOLE_R = TUBE_OR + 0.1
 WINDOW = (16.0, -45.0, -118.0)               # lightening: |x|, z top, z bottom
-TAB_PHI, TAB_HALF, TAB_R, TAB_Y = 270.0, 12.0, (27.0, 33.0), (-PLATE_GAP / 2 - PLATE_T - 0.5, HUB_END_Y)   # hard-stop tab on the hub's journal end, outside plate B
-STOP_BLOCK_DEG, STOP_R = 8.0, (26.0, 33.5)
-MAGNET_R, MAGNET_D = 3.0, 3.0                # Ø6 x 3, in the tab's outer face
-SENSOR = (4.6, 3.6, 1.6)                     # TO-92 Hall: width, height, thickness; its face 1.5 from the magnet at home
-SENSOR_GAP = 1.5
+# The stops and the Hall magnet ride on a collar keyed onto the hub's journal end after plate B is on: anything wider than
+# the 6810's bore outboard of it would trap the bearing. The collar also clamps the 6810's inner ring against the hub.
+HUB_INNER_LAND_R = 27.0                      # the hub's shoulder on the 6810's inner ring
+STOP_COLLAR_R, STOP_COLLAR_FLANGE = 29.5, 3.0
+STOP_COLLAR_Y = (HUB_6810_Y[1], HUB_END_Y - 0.3 - STOP_COLLAR_FLANGE)   # face on the inner ring; flange over the journal end, 0.3 off it
+COLLAR_SCREW_R, COLLAR_SCREW_ANGLES = 21.5, (135.0, 225.0)              # M3 x 8 into inserts in the journal's end face
+KEY_DEG, KEY_W, KEY_DEPTH_Y = 0.0, 6.0, 6.0                             # the collar's tongue in a slot in the journal end
+TAB_PHI, TAB_HALF, TAB_R, TAB_Y = 270.0, 12.0, (STOP_COLLAR_R - 0.1, 38.0), (-PLATE_GAP / 2 - PLATE_T - 0.5, HUB_END_Y)
+STOP_BLOCK_DEG, STOP_R = 30.0, (31.0, 38.0)          # wide enough to take a stall across the layers
+MAGNET_R, MAGNET_D, MAGNET_AT_R, MAGNET_RECESS = 3.0, 3.0, 34.0, 0.7   # Ø6 x 3, axial in the tab's plate-side face
+SENSOR = (4.6, 3.6, 1.6)                     # TO-92 Hall: width, height, thickness; flush in plate B's outer face, under the tab's path at home
+SENSOR_GAP = MAGNET_RECESS + 0.5
 
 # Shoulder: both 6810s go in from the plates' outer faces against lips on the inner faces; the hub's shoulder (plate A side)
 # and a pinch clamp (plate B side) push the inner rings inwards, so the pair is held in an X.
