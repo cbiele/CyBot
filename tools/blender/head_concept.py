@@ -14,15 +14,17 @@ import hand_lib as L
 import cycloid_math as C
 import forearm_dims as F
 import wrist_dims as W
+import elbow_dims as E
 
 ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
 MODEL = os.path.join(ROOT, "model")
 COMPACT_DRIVE = "--compact-drive" in sys.argv
-OFFSET_WRIST = "--offset-wrist" in sys.argv   # UR-style wrist on the tube forearm's flange (model/wrist/), axis 6 the hollow T8
+ELBOW = "--elbow" in sys.argv                 # the V2 elbow and upper arm (model/elbow/) under the offset wrist
+OFFSET_WRIST = "--offset-wrist" in sys.argv or ELBOW   # UR-style wrist on the tube forearm's flange (model/wrist/), axis 6 the hollow T8
 T8_THROUGH = "--t8-through" in sys.argv or OFFSET_WRIST
 TUBE_FOREARM = "--tube-forearm" in sys.argv or OFFSET_WRIST   # axis 4 compact at the elbow end turns the 190 aluminium tube out to a wrist flange
-OUT = os.path.join(MODEL, "head-concept", *(["offset-wrist"] if OFFSET_WRIST else ["tube-forearm"] if TUBE_FOREARM else ["compact-drive"] if COMPACT_DRIVE else ["t8-through"] if T8_THROUGH else []))
-BLEND = os.path.join(MODEL, "head-concept-wrist.blend" if OFFSET_WRIST else "head-concept-tube.blend" if TUBE_FOREARM else "head-concept-compact.blend" if COMPACT_DRIVE else "head-concept-t8.blend" if T8_THROUGH else "head-concept.blend")
+OUT = os.path.join(MODEL, "head-concept", *(["elbow"] if ELBOW else ["offset-wrist"] if OFFSET_WRIST else ["tube-forearm"] if TUBE_FOREARM else ["compact-drive"] if COMPACT_DRIVE else ["t8-through"] if T8_THROUGH else []))
+BLEND = os.path.join(MODEL, "head-concept-elbow.blend" if ELBOW else "head-concept-wrist.blend" if OFFSET_WRIST else "head-concept-tube.blend" if TUBE_FOREARM else "head-concept-compact.blend" if COMPACT_DRIVE else "head-concept-t8.blend" if T8_THROUGH else "head-concept.blend")
 PLACE = json.load(open(os.path.join(MODEL, "placements.json")))
 
 ROLL_Z, PITCH_X = 555.0, 250.0                 # both V1's, so the reach stays comparable
@@ -399,7 +401,7 @@ def v1_parts():
     for name, e in PLACE.items():
         g = name.split("/")[0]
         path = os.path.join(ROOT, e["file"])
-        if g in ("mainbody", "axis1", "axis2", "axis3") or (name == "axis4/axis4_axis5_holder" and not TUBE_FOREARM):
+        if g in (("mainbody", "axis1") if ELBOW else ("mainbody", "axis1", "axis2", "axis3")) or (name == "axis4/axis4_axis5_holder" and not TUBE_FOREARM):
             if "alternates" in e["collection"]:
                 continue
             place(stl(path, name), "V1 arm kept", "v1", Matrix(e["matrix_world"]))
@@ -474,6 +476,133 @@ def tube_axis4_report():
         "pitch_x": PITCH_X,
         "reach_vs_v1_mm": round(PITCH_X - 250.0, 1),
     }
+
+
+ELBOW_AT = Vector((AX4_REAR_X + E.ELBOW_FX, 0, ROLL_Z - E.OFFSET))   # V1's roll height kept, so nothing past the elbow moves
+ELBOW_COL, ELBOW_COMPACT_COL = "Elbow and upper arm", "Elbow compact"
+ELBOW_MOVING_STL = ("elbow-collar-lower", "elbow-collar-upper", "elbow-hub")
+BRACKET_G = 60                                 # collar, tubes and hub, my estimate
+FOREARM_MEASURED_G = 1300                      # the user's scale, elbow forward, no hand, T8 cut to length (2026-11-17)
+HOLD_17HS8401B, HOLD_PANCAKE = 0.52, 0.13      # N·m, build-plan §7: scales the measured pancake figure to the elbow motor
+
+
+def elbow_frame():
+    return Matrix.Translation(ELBOW_AT)
+
+
+def elbow_arm():
+    """The elbow and upper arm from model/elbow/, posed back from print orientation, at the head concept's elbow (forearm level)."""
+    folder = os.path.join(MODEL, "elbow")
+    poses = json.load(open(os.path.join(folder, "poses.json")))
+    m = elbow_frame()
+    for name, rows in poses.items():
+        mat = "moving" if name in ELBOW_MOVING_STL else "fixed"
+        place(stl(os.path.join(folder, name + ".stl"), "elbow " + name), ELBOW_COL, mat, m @ Matrix(rows))
+    for name, ((ax, az), (bx, bz)) in E.TUBE_ENDS.items():
+        a, b = Vector((ax, E.TUBE_PLANE_Y, az)), Vector((bx, E.TUBE_PLANE_Y, bz))
+        d = (b - a).normalized()
+        t = L.cyl_between("elbow tube " + name, a - d * E.SOCKET_DEPTH, b + d * E.SOCKET_DEPTH, E.TUBE_OR, n=24)
+        t.data.transform(t.matrix_world); t.matrix_world = Matrix()
+        place(t, ELBOW_COL, "steel", m)
+    for x, z in E.CROSS_MEMBERS:
+        place(L.cyl_between("elbow cross member", (x, -E.Y_REAR - E.PLATE_T, z), (x, E.Y_REAR + E.PLATE_T, z), E.TUBE_OR, n=24), ELBOW_COL, "steel")
+    for o in [o for o in COLS[ELBOW_COL].objects if o.name.startswith("elbow cross member")]:
+        o.data.transform(m @ o.matrix_world); o.matrix_world = Matrix()
+    h = E.MOTOR_SQ / 2
+    place(L.box("elbow motor 17HS8401B", -h, h, E.Y_REAR - E.MOTOR_L, E.Y_REAR, E.MOTOR_Z - h, E.MOTOR_Z + h), ELBOW_COL, "motor", m)
+    up = Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))   # a pulley's z (free flange to hub) onto -y, hub towards plate A
+    top = E.PULLEY_Y0 + E.PULLEY_H
+    for name, z in (("axis3-pulley-60T", 0.0), ("axis3-pulley-20T", E.MOTOR_Z)):
+        place(stl(os.path.join(folder, name + ".stl"), "elbow " + name), ELBOW_COL, "pulley", m @ Matrix.Translation((0, top, z)) @ up)
+    belt = basis_frame((0, 0, -1), (-1, 0, 0), (0, 1, 0))
+    ring_prism("elbow belt 420-3M", ELBOW_COL, "belt", m @ belt, 20 * 3 / math.pi / 2, 60 * 3 / math.pi / 2, E.BELT_C, E.TEETH_Y[0] + 1, E.TEETH_Y[1] - 1, 1.6)
+    cm = m @ basis_frame((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, E.Y_REAR, 0))
+    cycloid("20-1-compact", "ax3", ELBOW_COMPACT_COL, cm)
+    place(stl(os.path.join(MODEL, "forearm-tube", "ax4-output-plate.stl"), "ax3 output plate"), ELBOW_COMPACT_COL, "moving", cm @ Matrix.Translation((0, 0, F.PLATE_X[0])))
+
+
+def basis_frame(u, v, w, origin=(0, 0, 0)):
+    mm = Matrix.Identity(4)
+    for i in range(3):
+        mm[i][0], mm[i][1], mm[i][2], mm[i][3] = u[i], v[i], w[i], origin[i]
+    return mm
+
+
+def elbow_rot(theta):
+    """Elbow angle theta (0 = forearm straight up, 90 = level, as modelled) about the elbow axis."""
+    return Matrix.Translation(ELBOW_AT) @ Matrix.Rotation(math.radians(theta - 90.0), 4, 'Y') @ Matrix.Translation(-ELBOW_AT)
+
+
+def past_elbow():
+    """Everything the elbow carries, split into what pitches with axis 5 and what doesn't."""
+    body = set(pitch_body())
+    rest = [o for n in COLS if n not in (ELBOW_COL, ELBOW_COMPACT_COL, "V1 arm kept", "V1 head (for comparison)") for o in COLS[n].objects if o not in body]
+    rest += [o for o in COLS[ELBOW_COL].objects if any(o.name == "elbow " + k for k in ELBOW_MOVING_STL) or o.name.startswith("elbow tube")]
+    return list(body), rest
+
+
+def elbow_fixed():
+    """The upper arm's own parts; the bench stand is the bench, reported apart."""
+    return [o for o in COLS[ELBOW_COL].objects if not (any(o.name == "elbow " + k for k in ELBOW_MOVING_STL) or o.name.startswith("elbow tube")
+            or "60T" in o.name or "belt" in o.name or "bench-stand" in o.name)] + [o for o in COLS[ELBOW_COMPACT_COL].objects if "housing" in o.name]
+
+
+def elbow_masses():
+    """(centre, grams) groups past the elbow, scaled so the forearm without the hand weighs the user's measured 1300 g."""
+    pitch = [(centre(mass_group(k)), g, True) for k, g in PITCH_MASSES.items()]
+    fixed = [(centre(mass_group(k)), g, False) for k, g in FIXED_HEAD_MASSES.items()]
+    known = sum(PITCH_MASSES.values()) + sum(FIXED_HEAD_MASSES.values()) - PITCH_MASSES["Three-finger hand"]
+    rest = [(centre(list(COLS[AX4_COL].objects)), FOREARM_MEASURED_G - known, False),
+            (centre([o for o in COLS[ELBOW_COL].objects if any(o.name == "elbow " + k for k in ELBOW_MOVING_STL)]), BRACKET_G, False)]
+    return pitch + fixed + rest
+
+
+def elbow_torque(theta, pitch_deg, groups, tip):
+    em, pm = elbow_rot(theta), pitch_matrix(pitch_deg)
+    s = 0.0
+    for c, g, pitches in groups + [(tip, TOOL_KG * 1000, True)]:
+        p = em @ (pm @ c if pitches else c)
+        s += g * (p.x - ELBOW_AT.x)
+    return 9.81 * abs(s) * 1e-6
+
+
+def elbow_clash_pairs(pose, body, rest):
+    th, pitch = pose
+    out = []
+    for f in elbow_fixed():
+        tf = merged_tree([f])
+        for o in body + rest:
+            mm = elbow_rot(th) @ (pitch_matrix(pitch) if o in body else Matrix())
+            if tf.overlap(merged_tree([o], mm)):
+                out.append((o.name, f.name))
+    return out
+
+
+def elbow_report(report):
+    body, rest = past_elbow()
+    fixed = merged_tree(elbow_fixed())
+    hits = []
+    for pitch in (-90, 0, 90):
+        for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 2):
+            em = elbow_rot(th)
+            if fixed.overlap(merged_tree(rest, em)) or fixed.overlap(merged_tree(body, em @ pitch_matrix(pitch))):
+                hits.append((th, pitch))
+    stand = merged_tree([bpy.data.objects["elbow bench-stand"]])
+    reaches_stand = [(th, p) for p in (-90, 0, 90) for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 2)
+                     if stand.overlap(merged_tree(body, elbow_rot(th) @ pitch_matrix(p))) or stand.overlap(merged_tree(rest, elbow_rot(th)))]
+    report["hand_reaches_bench_stand_at"] = reaches_stand
+    grip = world_verts(col="Three-finger hand")
+    tip = Vector((max(p.x for p in grip), AX6_Y, ROLL_Z))
+    groups = elbow_masses()
+    worst = max(((th, p) for p in (-90, 0, 90) for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 2)), key=lambda tp: elbow_torque(*tp, groups, tip))
+    t = elbow_torque(*worst, groups, tip)
+    capacity = MEASURED_NM_AT_40 * (HOLD_17HS8401B / HOLD_PANCAKE) * 60 / 40
+    report.update({"elbow_at": [round(c, 1) for c in ELBOW_AT], "elbow_sweep_clash": hits,
+                   "elbow_torque_worst_nm": round(t, 2), "elbow_worst_pose_theta_pitch": list(worst),
+                   "elbow_capacity_nm": round(capacity, 2), "elbow_margin": round(capacity / t, 2),
+                   "elbow_mass_past_g": round(sum(g for _, g, _ in groups) + TOOL_KG * 1000)})
+    assert not hits, ("the forearm or head hits the upper arm", hits, elbow_clash_pairs(hits[0], body, rest))
+    assert t <= capacity, f"the elbow needs {t:.2f} N·m, over the {capacity:.2f} estimated: bring it to the user (spec)"
 
 
 PITCH_MASSES = {"ax6 cycloid": 150, "ax6 pancake": 120, "ax7 gripper motor": 230, "Gripper drive, past axis 6": 80,
@@ -627,6 +756,8 @@ def check(z_motor):
         for k in ("pitch_deg_before_front_meets_fork_root", "swing_clear_of_fork_root_mm", "fork_inner_half_width_mm"):
             report.pop(k)
         offset_wrist_report(report)
+    if ELBOW:
+        elbow_report(report)
     print("HEAD", json.dumps(report))
 
 
@@ -657,6 +788,8 @@ def main():
     adapter(ax6_frame())
     hand(*(compact_drive() if COMPACT_DRIVE else screw_drive()))
     structure()
+    if ELBOW:
+        elbow_arm()
     check(z_motor)
     COLS["V1 head (for comparison)"].hide_viewport = True
     cam = bpy.data.cameras.new("Concept camera"); cam.type = 'ORTHO'; cam.clip_end = 5000
@@ -693,6 +826,19 @@ def main():
             render(name, (0, -1, 0), new, target=head, scale=560)
         for o in body:
             o.data.transform(pitch_matrix(90))
+    if ELBOW:
+        arm = new - {"V1 arm kept"} | {ELBOW_COL, ELBOW_COMPACT_COL}
+        body, rest = past_elbow()
+        movers = body + rest
+        at = 90.0
+        for theta, name in ((90, "elbow-side"), (0, "elbow-side-up"), (-20, "elbow-side-back"), (150, "elbow-side-down")):
+            for o in movers:
+                o.data.transform(elbow_rot(theta) @ elbow_rot(at).inverted())
+            at = theta
+            render(name, (0, -1, 0), arm, target=tuple(ELBOW_AT + Vector((80, 0, 0))), scale=820)
+        for o in movers:
+            o.data.transform(elbow_rot(90) @ elbow_rot(at).inverted())
+        render("elbow-iso", (1, -1.1, 0.6), arm, target=tuple(ELBOW_AT + Vector((80, 0, -40))), scale=820)
     show(new)
     bpy.ops.wm.save_as_mainfile(filepath=BLEND)
     print("HEAD DONE")

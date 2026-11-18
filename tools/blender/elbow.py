@@ -46,7 +46,8 @@ def compact_matrix():
 
 
 def rot_elbow(theta):
-    return Matrix.Rotation(math.radians(90.0 - theta), 4, 'Y')
+    """Elbow angle theta about the elbow axis: 0 = forearm straight up, 90 = level (as built), 150 = 60 below level."""
+    return Matrix.Rotation(math.radians(theta - 90.0), 4, 'Y')
 
 
 def cyl_y(name, x, z, r, y0, y1, n=96):
@@ -299,27 +300,28 @@ def stop_tab():
 
 
 def tab_angle(theta):
-    return TAB_PHI + theta - 90.0
+    """The tab's centre angle (x-z plane, from +x towards +z) at elbow angle theta: it turns the other way to theta."""
+    return TAB_PHI - theta + 90.0
 
 
 def stop_blocks():
-    hi = tab_angle(STOPS[1]) + TAB_HALF
-    lo = tab_angle(STOPS[0]) - TAB_HALF
+    at_max = tab_angle(STOPS[1]) - TAB_HALF
+    at_min = tab_angle(STOPS[0]) + TAB_HALF
     y0, y1 = TAB_Y[1], -Y_REAR - PLATE_T + 0.01
-    return [sector_y("stop", STOP_R[0], STOP_R[1], hi, hi + STOP_BLOCK_DEG, y0, y1),
-            sector_y("stop", STOP_R[0], STOP_R[1], lo - STOP_BLOCK_DEG, lo, y0, y1)]
+    return [sector_y("stop", STOP_R[0], STOP_R[1], at_max - STOP_BLOCK_DEG, at_max, y0, y1),
+            sector_y("stop", STOP_R[0], STOP_R[1], at_min, at_min + STOP_BLOCK_DEG, y0, y1)]
 
 
 def sensor_block():
-    """Holds the TO-92 Hall facing the magnet at home (elbow 0), where the tab points to -x."""
+    """Holds the TO-92 Hall facing the magnet at home (elbow 0), where the tab points to +x."""
     r_face = TAB_R[1] + SENSOR_GAP
-    b = L.box("sensor block", -(r_face + SENSOR[2] + 2.5), -r_face, TAB_Y[1], -Y_REAR - PLATE_T + 0.01, -SENSOR[0] / 2 - 2.5, SENSOR[0] / 2 + 2.5)
+    b = L.box("sensor block", r_face, r_face + SENSOR[2] + 2.5, TAB_Y[1], -Y_REAR - PLATE_T + 0.01, -SENSOR[0] / 2 - 2.5, SENSOR[0] / 2 + 2.5)
     return b
 
 
 def sensor_pocket():
     r_face = TAB_R[1] + SENSOR_GAP
-    return L.box("sensor pocket", -(r_face + SENSOR[2] + 0.1), -r_face + 0.01, TAB_Y[1] - 1, -Y_REAR - PLATE_T - 0.4, -SENSOR[0] / 2 - 0.1, SENSOR[0] / 2 + 0.1)
+    return L.box("sensor pocket", r_face - 0.01, r_face + SENSOR[2] + 0.1, TAB_Y[1] - 1, -Y_REAR - PLATE_T - 0.4, -SENSOR[0] / 2 - 0.1, SENSOR[0] / 2 + 0.1)
 
 
 def prism_y(name, outline, y0, y1):
@@ -561,10 +563,10 @@ def check_plates():
         assert not bvh_hit(t, blocks), ("tab hits a stop inside the range", th)
         bpy.data.objects.remove(t)
     magnet = rot_elbow(0.0) @ Vector((0, sum(TAB_Y) / 2, -TAB_R[1]))
-    sensor_face = Vector((-(TAB_R[1] + SENSOR_GAP), sum(TAB_Y) / 2, 0))
+    sensor_face = Vector((TAB_R[1] + SENSOR_GAP, sum(TAB_Y) / 2, 0))
     gap = (sensor_face - magnet).length
     assert 1.0 <= gap <= 2.0, ("Hall gap at home", gap)
-    assert ray_len(pb, (-(TAB_R[1] + SENSOR_GAP) - 0.2, -Y_REAR - PLATE_T - 2.0, 0), (-1, 0, 0)) >= SENSOR[2] - 0.2, "sensor pocket missing"
+    assert ray_len(pb, (TAB_R[1] + SENSOR_GAP + 0.2, -Y_REAR - PLATE_T - 2.0, 0), (1, 0, 0)) >= SENSOR[2] - 0.2, "sensor pocket missing"
     REPORT.update({"belt_centre_mm": BELT_C, "idler_deflection_mm": round(dx, 2), "stop_gaps_mm": gaps, "hall_gap_mm": round(gap, 2),
                    "bolts": {"elbow compact to plate A (nut on its front face)": bolt_for_nut(PLATE_T + HOUSING_L),
                              "motor to plate A": 12, "idler axle": 30, "collar clamp": 20, "hub to compact carrier": 12}})
@@ -828,4 +830,6 @@ for n, o in PARTS.items():
     o.matrix_world = Matrix()
     o.data.transform(PRINT_POSE[n])
     L.export(o, os.path.join(OUT, n + ".stl"))
+with open(os.path.join(OUT, "poses.json"), "w") as f:   # each STL back into the elbow frame, for head_concept.py --elbow
+    json.dump({n: [[round(c, 6) for c in row] for row in PRINT_POSE[n].inverted()] for n in PARTS}, f, indent=1)
 print("ELBOW DONE")
