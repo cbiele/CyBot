@@ -65,7 +65,7 @@ IDLER_BOSS_R = 7.0
 BELT_ENVELOPE_Y = Y_REAR + PLATE_T + PULLEY_GAP + PULLEY_H + 3.5 + 2.0   # pulley tops plus the idler bolt's head, plus 2
 SHOULDER_6810_Y = ((Y_REAR, Y_REAR + B6810[2]), (-Y_REAR, -Y_REAR - B6810[2]))
 LIP_IN_R = 28.5                              # bears on the outer ring only
-CROSS_MEMBERS = [(27.0, -95.0), (-27.0, -95.0), (27.0, -182.0), (-27.0, -182.0)]
+CROSS_MEMBERS = [(27.0, -95.0), (-27.0, -95.0), (27.0, -176.0), (-27.0, -176.0)]   # the lower pair clear of the stand's index holes
 CM_HOLE_R = TUBE_OR + 0.1
 WINDOW = (16.0, -45.0, -118.0)               # lightening: |x|, z top, z bottom
 TAB_PHI, TAB_HALF, TAB_R, TAB_Y = 270.0, 12.0, (27.0, 33.0), (-PLATE_GAP / 2 - PLATE_T - 0.5, HUB_END_Y)   # hard-stop tab on the hub's journal end, outside plate B
@@ -73,3 +73,16 @@ STOP_BLOCK_DEG, STOP_R = 8.0, (26.0, 33.5)
 MAGNET_R, MAGNET_D = 3.0, 3.0                # Ø6 x 3, in the tab's outer face
 SENSOR = (4.6, 3.6, 1.6)                     # TO-92 Hall: width, height, thickness; its face 1.5 from the magnet at home
 SENSOR_GAP = 1.5
+
+# Shoulder: both 6810s go in from the plates' outer faces against lips on the inner faces; the hub's shoulder (plate A side)
+# and a pinch clamp (plate B side) push the inner rings inwards, so the pair is held in an X.
+SHOULDER_HUB_R, SHOULDER_BORE_R = B6810[0], 22.0
+SHOULDER_SHOULDER_R = 27.5
+SHOULDER_HUB_Y = (-Y_REAR - PLATE_T - 10.5, BELT_ENVELOPE_Y + 8.0)   # past plate B by the clamp; past the belt by 8 on plate A's side
+HUB_END_R, HUB_END_T = 34.0, 7.0
+HUB_END_INSERT_R, HUB_END_ANGLES, HUB_END_INSERT_DEPTH = 29.0, [45, 135, 225, 315], 5.0   # the body's and the shoulder drive's interface
+CLAMP_Y = (SHOULDER_HUB_Y[0], -Y_REAR - PLATE_T - 0.5)
+CLAMP_SPLIT, CLAMP_PINCH = 1.5, (HUB_END_R - 3.5)
+INDEX_R, INDEX_HOLE_R, INDEX_PIN_DEG, INDEX_ANGLES = 40.0, 2.1, 45.0, (0.0, 45.0, 90.0)   # Ø4 pin; shoulder pitch 0 = upper arm straight up
+STAND_T, STAND_BASE_Z, STAND_BASE_T = 8.0, SHOULDER_Z - 55.0, 10.0
+STAND_PAD = (40.0, 60.0)
