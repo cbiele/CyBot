@@ -18,7 +18,7 @@ The shoulder end of the upper arm is designed here only as a bearing interface; 
 
 ## Non-goals
 
-- The shoulder drive (axis 2): its motor (a NEMA23 for now), gearbox and mounting to the body come next. This design fixes only the upper arm's side of the shoulder bearings.
+- The shoulder drive (axis 2): its motor (the user wants to try a 48 mm NEMA17 first, as on the elbow, stepping up to a NEMA23 only if it falls short), gearbox and mounting to the body come next. This design fixes only the upper arm's side of the shoulder bearings.
 - A counterbalance spring. Decided against for now; added only if the bench shows the motor short.
 - Encoders. Homing is by Hall sensor.
 - Changes to the built forearm and wrist parts. The bracket attaches without taking anything apart.
