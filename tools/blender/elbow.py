@@ -267,8 +267,11 @@ def hub():
     L.cut(h, L.box("wire window", -8.0, 8.0, HUB_END_Y + 0.8, HUB_6810_Y[1] - LIP_T - 0.5, 10.0, 30.0))
     for x, z in [polar(F.DOG_PCD_R, a) for a in F.DOG_ANGLES]:
         L.cut(h, cyl_y("dog", x, z, F.DOG_R + 0.15, Y_OUT - F.DOG_H - 0.5, Y_OUT + 1, n=32))
+    carrier_face = Y_OUT + (F.PLATE_X[1] - F.PLATE_X[0])
+    head_y = carrier_face + 3.3 - HUB_SCREW_L
     for x, z in [polar(F.INSERT_PCD_R, a) for a in F.INSERT_ANGLES]:
         L.cut(h, cyl_y("screw", x, z, 1.7, Y_OUT - HUB_FLOOR - 1, Y_OUT + 1, n=32))
+        L.cut(h, cyl_y("screw cb", x, z, HUB_SCREW_CB_R, Y_OUT - HUB_FLOOR - 1, head_y, n=32))
     for name in TUBE_ENDS:
         a, b = tube_axis(name)
         L.cut(h, socket_cut(b, (b - a).normalized(), "socket"))
@@ -569,7 +572,7 @@ def check_plates():
     assert ray_len(pb, (TAB_R[1] + SENSOR_GAP + 0.2, -Y_REAR - PLATE_T - 2.0, 0), (1, 0, 0)) >= SENSOR[2] - 0.2, "sensor pocket missing"
     REPORT.update({"belt_centre_mm": BELT_C, "idler_deflection_mm": round(dx, 2), "stop_gaps_mm": gaps, "hall_gap_mm": round(gap, 2),
                    "bolts": {"elbow compact to plate A (nut on its front face)": bolt_for_nut(PLATE_T + HOUSING_L),
-                             "motor to plate A": 12, "idler axle": 30, "collar clamp": 20, "hub to compact carrier": 12}})
+                             "motor to plate A": 12, "idler axle (nut on plate A's inner face)": 40, "collar clamp": 20, "hub to compact carrier": 12}})
 
 
 def non_manifold_at(o):
@@ -780,6 +783,10 @@ def check_bracket():
     for x, z in [polar(F.INSERT_PCD_R, a) for a in F.INSERT_ANGLES]:
         r = ray_len(hub, (x, Y_OUT + 0.01, z), (0, -1, 0))
         assert r is None or r > HUB_FLOOR, "screw hole blocked"
+        floor = Y_OUT - HUB_FLOOR - 2.0 + ray_len(hub, (x + 2.4, Y_OUT - HUB_FLOOR - 2.0, z), (0, 1, 0))
+        carrier_face = Y_OUT + (F.PLATE_X[1] - F.PLATE_X[0])
+        reach = HUB_SCREW_L - (carrier_face - floor)
+        assert 3.0 <= reach <= 4.0, ("M3 x 12 into the carrier's inserts", reach)
     tv = [v.co for v in t_all.data.vertices]
     assert max(abs(p.y) for p in tv) <= PLATE_GAP / 2 - 1.0, "a tube is within 1 of a plate"
     for o in (hub, col_lo):

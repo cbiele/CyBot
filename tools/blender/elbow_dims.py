@@ -22,6 +22,7 @@ HUB_6810_Y = (-PLATE_GAP / 2, -PLATE_GAP / 2 - B6810[2])
 NUT_AF, NUT_T = 5.8, 2.6
 
 HUB_R, HUB_FLOOR = 27.5, 5.0                 # the disc's rim is the shoulder on the 6810's inner ring
+HUB_SCREW_L, HUB_SCREW_CB_R = 12.0, 3.0      # M3 x 12 through the floor and output plate, 3.3 into the carrier's inserts as on the wrist
 HUB_DISC_Y = (Y_OUT, HUB_6810_Y[0] + 1.0)
 HUB_END_Y = HUB_6810_Y[1] - LIP_T - 8.0      # the journal runs past plate B for the wires' window and the stop tab
 HUB_BORE_R = 18.0
