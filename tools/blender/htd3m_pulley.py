@@ -28,6 +28,8 @@ Z_MOUNT = 28.25                                     # axis1: teeth at 29.75-41.2
 PULLEYS = [                                         # name, teeth, bore radius, flat offset, hub length, insert, folder
     ("axis1-pulley-27T", 27, 2.6, 1.6, 4.75, False, "base"),    # O5 D shaft, 4.0 across the flat, about 0.1 clearance each
     ("axis2-pulley-30T", 30, 3.275, 2.675, 7.0, True, "axis2"), # O6.35 D shaft, 5.85 across the flat
+    ("axis3-pulley-20T", 20, 2.6, 1.6, 7.0, True, "elbow"),     # the elbow's 17HS8401B, the same D shaft as axis 1
+    ("axis3-pulley-60T", 60, 2.6, 2.1, 7.0, True, "elbow"),     # the elbow compact's Ø5 rod, flat 2.1 off the axis as on the GT2 60Ts
 ]
 
 z_teeth0 = FLANGE_T; z_teeth1 = z_teeth0 + TEETH_W
