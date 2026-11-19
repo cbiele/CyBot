@@ -94,3 +94,8 @@ CLAMP_SPLIT, CLAMP_PINCH = 1.5, (HUB_END_R - 3.5)
 INDEX_R, INDEX_HOLE_R, INDEX_PIN_DEG, INDEX_ANGLES = 40.0, 2.1, 45.0, (0.0, 45.0, 90.0)   # Ø4 pin; shoulder pitch 0 = upper arm straight up
 STAND_T, STAND_BASE_Z, STAND_BASE_T = 8.0, SHOULDER_Z - 55.0, 10.0
 STAND_PAD = (40.0, 60.0)
+# The rear tube is 45 degrees off the other two, so it can't go in with them: its hub socket runs through the lug and
+# the tube is fed in from outside the hub, after the other two are in, then 15 into the collar.
+THROUGH_SOCKET = "rear"
+# A wedge pushed in from outside through the collar's and the journal's wire windows: keys the collar to the hub with the tongue.
+WEDGE_HALF_W, WEDGE_Y, WEDGE_R = 7.9, (-45.5, -39.7), (HUB_BORE_R + 0.5, STOP_COLLAR_R - 0.1)

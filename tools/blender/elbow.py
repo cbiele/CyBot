@@ -203,8 +203,8 @@ def socket_boss(mouth, d, name):
     return rod(name, mouth, mouth + d * (SOCKET_DEPTH + SOCKET_WALL), SOCKET_R + SOCKET_WALL)
 
 
-def socket_cut(mouth, d, name):
-    return rod(name, mouth - d * 3.0, mouth + d * SOCKET_DEPTH, SOCKET_R)
+def socket_cut(mouth, d, name, through=False):
+    return rod(name, mouth - d * 3.0, mouth + d * (SOCKET_DEPTH + (SOCKET_WALL + 2.0 if through else 0.0)), SOCKET_R)
 
 
 def span_keepouts(part):
@@ -275,7 +275,7 @@ def hub():
         L.cut(h, cyl_y("screw cb", x, z, HUB_SCREW_CB_R, Y_OUT - HUB_FLOOR - 1, head_y, n=32))
     for name in TUBE_ENDS:
         a, b = tube_axis(name)
-        L.cut(h, socket_cut(b, (b - a).normalized(), "socket"))
+        L.cut(h, socket_cut(b, (b - a).normalized(), "socket", through=name == THROUGH_SOCKET))
     kx, kz = polar(1.0, KEY_DEG)
     key = L.box("key slot", HUB_BORE_R - 1.0, B6810[0] + 1.0, HUB_END_Y - 1, HUB_END_Y + KEY_DEPTH_Y, -KEY_W / 2, KEY_W / 2)
     key.data.transform(Matrix.Rotation(-math.radians(KEY_DEG), 4, 'Y'))
@@ -331,7 +331,7 @@ def stop_collar():
     L.finish(c)
     L.cut(c, cyl_y("bore", 0, 0, B6810[0] + 0.05, flange_in, y_face + 1, n=192))
     L.cut(c, cyl_y("wires", 0, 0, HUB_BORE_R + 0.5, y_end - 1, y_face + 1, n=96))
-    tongue = L.box("tongue", HUB_BORE_R - 0.5, B6810[0] + 0.06, HUB_END_Y + 0.3, flange_in + 0.01, -KEY_W / 2 + 0.2, KEY_W / 2 - 0.2)
+    tongue = L.box("tongue", HUB_BORE_R - 0.5, B6810[0] + 0.5, flange_in - 0.5, HUB_END_Y + KEY_DEPTH_Y - 0.3, -KEY_W / 2 + 0.2, KEY_W / 2 - 0.2)
     tongue.data.transform(Matrix.Rotation(-math.radians(KEY_DEG), 4, 'Y'))
     L.union(c, tongue)
     L.cut(c, L.box("wire window", -8.0, 8.0, y_end - 1, y_face - 2.5, 10.0, 40.0))
@@ -342,6 +342,18 @@ def stop_collar():
     L.cut(c, cyl_y("magnet", mx, mz, MAGNET_R + 0.1, TAB_Y[0] - MAGNET_RECESS - MAGNET_D, TAB_Y[0] + 1, n=32))
     PRINT_POSE["elbow-stop-collar"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, -y_end))
     return c
+
+
+def key_wedge():
+    """Pushed in from outside through the stop collar's and the journal's wire windows, so the collar can't turn on the hub."""
+    w = cyl_y("elbow-key-wedge", 0, 0, WEDGE_R[1], WEDGE_Y[0], WEDGE_Y[1], n=192)
+    L.cut(w, cyl_y("bore", 0, 0, WEDGE_R[0], WEDGE_Y[0] - 1, WEDGE_Y[1] + 1, n=192))
+    for x0, x1 in ((-40, -WEDGE_HALF_W), (WEDGE_HALF_W, 40)):
+        L.cut(w, L.box("side", x0, x1, WEDGE_Y[0] - 1, WEDGE_Y[1] + 1, -40, 40))
+    L.cut(w, L.box("below", -40, 40, WEDGE_Y[0] - 1, WEDGE_Y[1] + 1, -40, 0))
+    L.finish(w)
+    PRINT_POSE["elbow-key-wedge"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, -WEDGE_Y[0]))
+    return w
 
 
 def sensor_pocket():
@@ -628,9 +640,33 @@ def check_plates():
     assert touching(sc, PARTS["elbow-hub"]), "stop collar doesn't seat on the hub"
     trap = [v.co for v in sc.data.vertices if v.co.y > HUB_6810_Y[1] + 0.01]
     assert not trap, "stop collar reaches into the 6810"
+    kx, kz = polar((HUB_BORE_R + B6810[0]) / 2, KEY_DEG)
+    tip = ray_len(sc, (kx, HUB_END_Y + KEY_DEPTH_Y + 1.0, kz), (0, -1, 0))
+    assert tip is not None and abs(tip - 1.3) < 0.05, ("tongue doesn't fill the key slot", tip)
+    check_wedge(sc, pb)
     REPORT.update({"belt_centre_mm": BELT_C, "idler_deflection_mm": round(dx, 2), "stop_gaps_mm": gaps, "hall_gap_mm": round(gap, 2),
                    "bolts": {"elbow compact to plate A (nut on its front face)": bolt_for_nut(PLATE_T + HOUSING_L),
                              "motor to plate A": 12, "idler axle (nut on plate A's inner face)": 40, "collar clamp": 20, "hub to compact carrier": 12}})
+
+
+def check_wedge(sc, pb):
+    w, hub = PARTS["elbow-key-wedge"], PARTS["elbow-hub"]
+    assert islands(w) == 1 and L.stats(w)["non_manifold"] == 0, "wedge"
+    for o, n in ((hub, "hub"), (sc, "stop collar"), (pb, "plate B")):
+        assert overlap(w, o) < 0.05, ("wedge hits", n)
+    for o, n in ((hub, "hub"), (sc, "stop collar")):
+        for s in (1, -1):
+            side = ray_len(o, (0, sum(WEDGE_Y) / 2, 27.0 if o is sc else 22.0), (s, 0, 0))   # each within its part's wall
+            assert side is not None and side - WEDGE_HALF_W <= 0.2, ("wedge loose in the window", n, side)
+    vs = [v.co for v in w.data.vertices]
+    assert min(math.hypot(p.x, p.z) for p in vs) >= HUB_BORE_R + 0.4, "wedge narrows the wire bore"
+    assert max(math.hypot(p.x, p.z) for p in vs) <= STOP_COLLAR_R, "wedge stands proud of the collar"
+    assert max(p.y for p in vs) <= -Y_REAR - PLATE_T - 0.5, "wedge within 0.5 of plate B"
+    stall_n, ly = 7.0e3 / B6810[0], WEDGE_Y[1] - WEDGE_Y[0]
+    shear_mpa = stall_n / (ly * 2 * WEDGE_HALF_W)                   # across the wedge where it passes from journal to collar
+    bearing_mpa = stall_n / (ly * (B6810[0] - WEDGE_R[0]))          # on the journal window's side, the smaller face
+    assert max(shear_mpa, bearing_mpa) <= 10.0, ("wedge at a motor stall", shear_mpa, bearing_mpa)
+    REPORT["wedge_mpa_at_stall"] = {"shear": round(shear_mpa, 1), "bearing": round(bearing_mpa, 1)}
 
 
 def non_manifold_at(o):
@@ -805,6 +841,9 @@ def check_bracket():
         d = (b - a).normalized()
         for part, mouth, into in ((col_lo, a, -d), (hub, b, d)):
             inside = ray_len(part, mouth + into * 1.0, into)
+            if part is hub and name == THROUGH_SOCKET:
+                assert inside is None, (name, "hub socket doesn't run through for the tube to go in from outside", inside)
+                continue
             assert inside is not None and abs(inside + 1.0 - SOCKET_DEPTH) < 0.06, (name, part.name, "socket depth", inside)
             assert ray_len(part, mouth - into * 2.0, into) is None or ray_len(part, mouth - into * 2.0, into) > 2.0 + SOCKET_DEPTH - 0.06, (name, part.name, "socket mouth closed")
     t_all = join(TUBES, "tubes")
@@ -884,6 +923,7 @@ PARTS["upper-plate-A"] = plate_a()
 PARTS["upper-plate-B"] = plate_b()
 PARTS["belt-idler"] = idler()
 PARTS["elbow-stop-collar"] = stop_collar()
+PARTS["elbow-key-wedge"] = key_wedge()
 PARTS["shoulder-hub"] = shoulder_hub()
 PARTS["shoulder-hub-clamp"] = shoulder_clamp()
 PARTS["bench-stand"] = bench_stand()

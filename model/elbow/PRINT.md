@@ -13,11 +13,14 @@ The project files in `print/` hold the plates below, arranged and set up. Open, 
 |---|---|---|---|---|---|
 | 1 | `print/plate-1-upper-plate-A-0.16.3mf` | `upper-plate-A`, at 45° | 0.16 | none | 3 h 20, 95 g |
 | 2 | `print/plate-2-upper-plate-B-0.16.3mf` | `upper-plate-B`, at 45° | 0.16 | none | 2 h 27, 74 g |
-| 3 | `print/plate-3-hubs-collar-0.16-supports.3mf` | `elbow-hub`, `elbow-stop-collar`, `elbow-collar-lower`, `elbow-collar-upper`, `shoulder-hub`, `shoulder-hub-clamp` | 0.16 | tree (auto), build plate only | 7 h 53, 204 g |
+| 3 | `print/plate-3-hubs-collar-0.16-supports.3mf` | `elbow-hub`, `elbow-stop-collar`, `elbow-key-wedge`, `elbow-collar-lower`, `elbow-collar-upper`, `shoulder-hub`, `shoulder-hub-clamp` | 0.16 | tree (auto), build plate only | 7 h 14, 189 g |
 | 4 | `print/plate-4-pulleys-idler-0.12.3mf` | `axis3-pulley-20T`, `axis3-pulley-60T`, `belt-idler`, `forearm-tube/ax4-output-plate` (the elbow compact's, same part) | 0.12 | none | 3 h 04, 36 g |
 | 5 | `print/plate-5-bench-stand-0.16-supports.3mf` | `bench-stand` | 0.16 | tree (auto), build plate only | 6 h 38, 185 g |
+| 6 | `print/plate-6-reprint-stop-collar-wedge-shoulder-0.16-supports.3mf` | `elbow-stop-collar`, `elbow-key-wedge`, `shoulder-hub`, `shoulder-hub-clamp` | 0.16 | tree (auto), build plate only | 3 h 07, 115 g |
 
 All plates: 4 walls, 40% gyroid, Arachne walls, as on the wrist.
+
+**Plate 6** is for a build whose plate 3 was printed before 2026-11-18. Its stop collar had a tongue that reached only 0.3 mm into the hub's key slot, and that plate had no wedge. It also holds the shoulder hub and clamp, if those weren't printed yet. You can keep a hub printed then: drill the rear tube's socket through with a Ø9 drill, guided by the socket. Its 2 mm floor is the only thing in the way.
 
 - **The plates are 296 mm long.** They only fit the 256 bed on the diagonal, so they're placed at 45°. Don't let arrange rotate them back.
 - **Plates 1 and 2 print inner face down.**
@@ -26,7 +29,7 @@ All plates: 4 walls, 40% gyroid, Arachne walls, as on the wrist.
 - **Plate 3:**
   - The elbow hub prints journal end down. Its disc and lug overhang that journal, so they need supports.
   - **Keep supports out of the holes.** Paint them off:
-    - the tube sockets in the hub and the lower collar
+    - the tube sockets in the hub and the lower collar (the hub's rear socket runs right through its lug)
     - the hub's Ø36 wire bore and its dog holes
     - the shoulder hub's bore and its inserts
 - **Plate 5:** the stand's Ø44 wire holes and its bolt holes run sideways through the cheeks, so let supports in there.
@@ -69,7 +72,7 @@ Suggested cuts (allow about 1 mm per cut):
 | Stand to hub ends | 8 × M3 × 12 |
 | Stand index pin | an M4 × 40 bolt or a Ø4 rod, through the stand's cheek into plate B's index hole |
 | 20T and 60T | 1 × M3 × 3 × 4.5 heat-set insert each, pressed in radially, plus an M3 set screw (the 20T on the motor's flat, the 60T on the rod's flat) |
-| Stop collar to hub | 2 × M3 × 8 into 2 × M3 heat-set inserts in the hub's journal end face; its tongue keys into the journal's slot |
+| Stop collar to hub | 2 × M3 × 8 into 2 × M3 heat-set inserts in the hub's journal end face; its tongue keys into the journal's slot, and the printed `elbow-key-wedge` keys it through the wire windows |
 | Hall | a TO-92 Hall sensor (A3144 type) flush in plate B's outer-face pocket (leads out radially), plus a Ø6 × 3 magnet pushed to the bottom of the stop collar's tab pocket (1.2 mm gap at home) |
 
 The idler's stack is 30.5 mm plus the nut, so it takes an M3 × 40. Its tail stands about 7 mm into the space between the plates, where nothing runs.
@@ -87,7 +90,8 @@ Plate B slides on along the elbow axis onto both journals at once, so the order 
 3. **Hub and bracket.**
    - Put the printed output plate on the compact's carrier, then the hub over its dogs.
    - Fit the M3 × 12s through the hub's bore into the carrier's inserts.
-   - Glue the three tubes into the hub's and the collar's sockets (epoxy or CA, 15 deep), with the forearm held in place.
+   - Glue the front and middle tubes into the hub's and the collar's sockets (epoxy or CA, 15 deep), with the forearm held in place.
+   - Feed the rear (78.1) tube in from outside the hub, through its lug's open socket, and 15 into the collar. It ends flush with the lug's outer face. It's 45° off the other two, so it can't go in with them. Glue both ends.
 4. **Plate B.**
    - Press the elbow 6810 into plate B from the inner face, against the lip.
    - Press a shoulder 6810 into each plate from its outer face, against its inner lip.
@@ -95,6 +99,7 @@ Plate B slides on along the elbow axis onto both journals at once, so the order 
 5. **Stop collar.**
    - Slide it onto the journal end outside plate B, its tongue in the journal's slot.
    - Screw it down with the two M3 × 8s. That clamps the 6810's inner ring against the hub.
+   - Push the wedge in from outside through the collar's and the journal's wire windows, its curved faces matching theirs. Fix it with a drop of CA. The wires leave through the open Ø36 bore at the journal's end, not the window.
 6. **Shoulder.**
    - Slide the shoulder hub through plate A, then plate B, its shoulder on plate A's inner ring.
    - Push the clamp onto the hub's other end against plate B's inner ring, then tighten the pinch screw.
