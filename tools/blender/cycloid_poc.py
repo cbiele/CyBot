@@ -16,6 +16,11 @@ P = json.load(open(os.path.join(BASE, "params.json")))
 
 HOLLOW_T8 = "--hollow-t8" in sys.argv        # T8 lead screw right through with clearance, held only by the motor's coupler and the hand's bearing
 HOLLOW = "--hollow" in sys.argv or HOLLOW_T8 # axis 6: eccentric as a hollow sleeve, the gripper's shaft through it
+M25_ROLL = "--m25-roll" in sys.argv          # M2.5 x 20 roll pins: only the housing halves change, to 20-1-compact-m25/
+assert not (M25_ROLL and HOLLOW), "--m25-roll is a spin-off of the plain compact"
+if M25_ROLL:                                 # ring pin coupon, 2026-11-18: a 2.5 roll pin presses into a printed 2.80
+    P.update(ring_pin_press=2.80, ring_pin_slip=2.90)
+RING_PIN_D = 2.5 if M25_ROLL else 2 * C.RP
 LIP_T, BRG_W, SHOULDER_T, PLATE_T, GAP, DISK_T, COLLAR_T = 0.8, (4.0 if HOLLOW_T8 else 7.0), 0.5, 4.0, 0.5, 6.0, 1.0
 B625_W, B6800_W = 5.0, (4.0 if HOLLOW_T8 else 5.0)
 # Ring lands for the hollow's 6801 and 6700 are estimates scaled from the 6800's; measure the real bearings when they arrive.
@@ -217,6 +222,7 @@ INSERT_R, INSERT_DEPTH, INSERT_PCD_R = 2.0, 3.5, (8.5 if HOLLOW_T8 else 6.5)   #
 INSERT_ANGLES = [90 + 120 * k for k in range(3)]
 RELIEF_T = 0.4
 RING_PIN_L, OUT_PIN_L = 20.0, 20.0           # holes for 20 mm ring pins; the T8 runs its 21 M2.5 x 18 spring pins in them (smoother than Ø3), M4 x 20 output pins
+RING_HOLE_L = 18.0 if M25_ROLL else RING_PIN_L  # the housings printed and tested with 20 mm pins were cut for 18s: 9 rear + 11 front
 SLIP_EXTRA = 2.0                             # front slip holes run past the pin ends; flush-depth holes kept the halves from closing
 
 def polar(r, deg):
@@ -243,8 +249,8 @@ def housing():
     L.cut(front, L.box("split", -50, 50, -50, 50, -5, Z_MID))
     for k in range(C.N + 1):
         x, y = polar(C.R, 360 * k / (C.N + 1))
-        L.cut(rear, L.cyl_z("pin", x, y, P["ring_pin_press"] / 2, Z_MID - RING_PIN_L / 2, Z_MID + 1, n=24))
-        L.cut(front, L.cyl_z("pin", x, y, P["ring_pin_slip"] / 2, Z_MID - 1, Z_MID + RING_PIN_L / 2 + SLIP_EXTRA, n=24))
+        L.cut(rear, L.cyl_z("pin", x, y, P["ring_pin_press"] / 2, Z_MID - RING_HOLE_L / 2, Z_MID + 1, n=24))
+        L.cut(front, L.cyl_z("pin", x, y, P["ring_pin_slip"] / 2, Z_MID - 1, Z_MID + RING_HOLE_L / 2 + SLIP_EXTRA, n=24))
     L.finish(rear); L.finish(front); return rear, front
 
 TUBE_STOP_R = 5.8                            # rear carrier for the tube: clears the Ø11 tube, stops the end sleeve (Ø11.95) from walking out towards the 40T
@@ -280,9 +286,9 @@ def check_housing_and_carriers():
     assert C.R - P["ring_pin_press"] / 2 - CARRIER_BORE_R >= 0.8, "ring pin hole breaks into the carrier bore"
     assert BOLT_R - BOLT_HOLE_R - (C.R + C.RP) >= 1.5, "bolt hole too close to the ring pins"
     assert HOUSING_R - BOLT_R - BOLT_HOLE_R >= 1.5, "bolt hole too close to the outside"
-    assert Z_DISK0 - (Z_MID - RING_PIN_L / 2) >= 2.0, "ring pins engage less than 2 mm"
+    assert Z_DISK0 - (Z_MID - RING_HOLE_L / 2) >= 2.0, "ring pins engage less than 2 mm"
     assert 2.5 <= (OUT_PIN_L - 2 * (Z_MID - z_in)) / 2 <= PLATE_T, "output pins engage each plate 2.5 mm to the full plate"
-    assert P["ring_pin_slip"] - 2 * C.RP >= 0.1, "front half won't slide over the ring pins"
+    assert P["ring_pin_slip"] - RING_PIN_D >= 0.1, "front half won't slide over the ring pins"
     assert HUB_D / 2 - END_BRG_SEAT / 2 >= 1.5, "carrier hub too thin round the 625"
     assert INSERT_PCD_R + INSERT_R <= HUB_D / 2 - 1.0, "insert breaks out of the hub"
     for name in ("housing-rear", "housing-front", "carrier-rear", "carrier-front"):
@@ -291,6 +297,15 @@ def check_housing_and_carriers():
     assert abs(bore_diameter(rear, 0, 0, LIP_T + BRG_W / 2) - P["seat_6804"]) < 0.03
     assert abs(bore_diameter(rear, 0, 0, LIP_T + BRG_W + 2) - 2 * CARRIER_BORE_R) < 0.05
     assert abs(bore_diameter(PARTS["carrier-rear"], 0, 0, z_in - END_BRG_W / 2) - END_BRG_SEAT) < 0.03
+    if M25_ROLL:
+        x, y = polar(C.R, 0)
+        assert abs(L.bore_floor_z(rear, x, y, Z_MID - 0.5) - (Z_MID - 9.0)) < 0.01, "rear pin holes not the tested 9 deep"
+        tree, bm = L._tree(PARTS["housing-front"])
+        top = tree.ray_cast(mathutils.Vector((x, y, Z_MID + 0.5)), mathutils.Vector((0, 0, 1)))[0]; bm.free()
+        assert abs(top.z - (Z_MID + 11.0)) < 0.01, ("front pin holes not the tested 11 deep", top.z - Z_MID)
+        for half, z, d in (("housing-rear", Z_MID - 8, 2.80), ("housing-front", Z_MID + 8, 2.90)):
+            got = bore_diameter(PARTS[half], x, y, z)
+            assert d * math.cos(math.pi / 24) - 0.01 <= got <= d + 0.01, (half, d, got)
 
 PARTS["housing-rear"], PARTS["housing-front"] = housing()
 PARTS["carrier-rear"] = carrier(False)
@@ -532,9 +547,10 @@ TEST_PARTS = {"bench-upright", "test-arm"}
 if HOLLOW:
     print("GRIP ROD z", grip_rod_z(), "bracket z", bracket_z())
 for n, o in PARTS.items():
-    if HOLLOW and n in TEST_PARTS:
+    if HOLLOW and n in TEST_PARTS or M25_ROLL and not n.startswith("housing"):
         continue
-    folder = "test-parts" if n in TEST_PARTS else "20-1-hollow-t8" if HOLLOW_T8 else "20-1-hollow" if HOLLOW else "20-1-compact"
+    folder = ("test-parts" if n in TEST_PARTS else "20-1-hollow-t8" if HOLLOW_T8 else "20-1-hollow" if HOLLOW else
+              "20-1-compact-m25" if M25_ROLL else "20-1-compact")
     os.makedirs(os.path.join(BASE, folder), exist_ok=True)
     o.matrix_world = Matrix()
     if n in PRINT_FLIP:   # on the mesh: as an object rotation, float32 sin(pi) tilts the mating face enough to split it across a slicing plane
