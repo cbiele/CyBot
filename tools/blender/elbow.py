@@ -675,125 +675,10 @@ def non_manifold_at(o):
     bm.free(); return pts[:8]
 
 
-def shoulder_hub():
-    """Fixed to the body; the plates turn on it. Shoulder on plate A's 6810, end flanges carry the body's interface."""
-    z, y0, y1 = SHOULDER_Z, SHOULDER_HUB_Y[0], SHOULDER_HUB_Y[1]
-    h = cyl_y("shoulder-hub", 0, z, SHOULDER_HUB_R, y0, y1, n=192)
-    L.union(h, cyl_y("shoulder", 0, z, SHOULDER_SHOULDER_R, Y_REAR + PLATE_T + 0.3, y1 - HUB_END_T + 0.01, n=192))
-    L.union(h, cyl_y("end", 0, z, HUB_END_R, y1 - HUB_END_T, y1, n=192))
-    L.finish(h)
-    L.cut(h, cyl_y("bore", 0, z, SHOULDER_BORE_R, y0 - 1, y1 + 1, n=128))
-    for a in HUB_END_ANGLES:
-        x, dz = polar(HUB_END_INSERT_R, a)
-        L.cut(h, cyl_y("insert", x, z + dz, 2.0, y1 - HUB_END_INSERT_DEPTH, y1 + 1, n=32))
-    PRINT_POSE["shoulder-hub"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, y1)) @ Matrix.Translation((0, 0, -z))
-    return h
-
-
-def shoulder_clamp():
-    """Pinch collar on the hub's plate B end: pushes plate B's 6810 inner ring inwards, carries the other end flange."""
-    z, y0, y1 = SHOULDER_Z, CLAMP_Y[0], CLAMP_Y[1]
-    c = cyl_y("shoulder-hub-clamp", 0, z, HUB_END_R, y0, y1 - 0.5, n=192)
-    L.union(c, cyl_y("face", 0, z, SHOULDER_SHOULDER_R, y1 - 0.51, y1, n=192))
-    L.finish(c)
-    L.cut(c, cyl_y("bore", 0, z, SHOULDER_HUB_R, y0 - 1, y1 + 1, n=192))
-    L.cut(c, L.box("split", -CLAMP_SPLIT / 2, CLAMP_SPLIT / 2, y0 - 1, y1 + 1, z + SHOULDER_HUB_R - 1, z + HUB_END_R + 1))
-    ym = (y0 + y1) / 2 - 1.0
-    L.cut(c, rod("pinch", Vector((-12, ym, z + CLAMP_PINCH)), Vector((12, ym, z + CLAMP_PINCH)), 1.7, n=24))
-    L.cut(c, L.box("pinch nut", 4.0, 4.0 + NUT_T, ym - NUT_AF / 2, ym + NUT_AF / 2, z + CLAMP_PINCH - NUT_AF / 2, z + HUB_END_R + 1))
-    for a in HUB_END_ANGLES:
-        x, dz = polar(HUB_END_INSERT_R, a)
-        L.cut(c, cyl_y("insert", x, z + dz, 2.0, y0 - 1, y0 + HUB_END_INSERT_DEPTH, n=32))
-    PRINT_POSE["shoulder-hub-clamp"] = basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, 0, -y0)) @ Matrix.Translation((0, 0, -z))
-    return c
-
-
-def bench_stand():
-    """Two cheeks bolted to the hub's end faces, a base with clamp pads, and a Ø4 index pin hole into plate B."""
-    z = SHOULDER_Z
-    ya, yb = SHOULDER_HUB_Y[1], SHOULDER_HUB_Y[0]
-    w = HUB_END_R + 6.0
-    parts = [L.box("cheek A", -w, w, ya, ya + STAND_T, STAND_BASE_Z - 0.01, z),
-             cyl_y("cheek A top", 0, z, w, ya, ya + STAND_T, n=96),
-             L.box("cheek B", -w, w, yb - STAND_T, yb, STAND_BASE_Z - 0.01, z),
-             cyl_y("cheek B top", 0, z, w, yb - STAND_T, yb, n=96),
-             L.box("base", -w, w, yb - STAND_T, ya + STAND_T, STAND_BASE_Z - STAND_BASE_T, STAND_BASE_Z)]
-    px, pz = polar(INDEX_R, INDEX_PIN_DEG)
-    parts.append(L.box("pin arm", -w, px + 6.0, yb - STAND_T, yb, z, z + pz + 6.0))
-    for sx in (1, -1):
-        x0, x1 = sorted((sx * w, sx * (STAND_PAD[0] + 40.0)))
-        parts.append(L.box("pad", x0 - 0.01, x1 + 0.01, (yb + ya) / 2 - STAND_PAD[1] / 2, (yb + ya) / 2 + STAND_PAD[1] / 2, STAND_BASE_Z - STAND_BASE_T, STAND_BASE_Z))
-    s = join(parts, "bench-stand")
-    for o in parts:
-        bpy.data.objects.remove(o)
-    L.finish(s)
-    L.cut(s, cyl_y("pin", px, z + pz, INDEX_HOLE_R, yb - STAND_T - 1, yb + 1, n=32))
-    for yf, yo in ((ya, ya + STAND_T), (yb - STAND_T, yb)):
-        L.cut(s, cyl_y("wires", 0, z, SHOULDER_BORE_R, yf - 1, yo + 1, n=96))
-        for a in HUB_END_ANGLES:
-            x, dz = polar(HUB_END_INSERT_R, a)
-            L.cut(s, cyl_y("bolt", x, z + dz, 1.7, yf - 1, yo + 1, n=32))
-    PRINT_POSE["bench-stand"] = Matrix.Translation((0, 0, -(STAND_BASE_Z - STAND_BASE_T)))
-    return s
-
-
 def index_holes(p):
     for psi in INDEX_ANGLES:
         x, z = polar(INDEX_R, INDEX_PIN_DEG + psi)
         L.cut(p, cyl_y("index", x, SHOULDER_Z + z, INDEX_HOLE_R, -Y_REAR - PLATE_T - 1, -Y_REAR + 1, n=30))
-
-
-def rot_shoulder(psi):
-    """The upper arm pitched forward by psi about the shoulder axis (elbow towards +x)."""
-    c = Vector((0, 0, SHOULDER_Z))
-    return Matrix.Translation(c) @ Matrix.Rotation(math.radians(psi), 4, 'Y') @ Matrix.Translation(-c)
-
-
-def check_shoulder():
-    hub, clamp, stand = PARTS["shoulder-hub"], PARTS["shoulder-hub-clamp"], PARTS["bench-stand"]
-    for n in ("shoulder-hub", "shoulder-hub-clamp", "bench-stand"):
-        assert islands(PARTS[n]) == 1, (n, "islands", island_bounds(PARTS[n]))
-        assert L.stats(PARTS[n])["non_manifold"] == 0, (n, "non-manifold", non_manifold_at(PARTS[n]))
-    for y0, y1 in SHOULDER_6810_Y:
-        ym = (y0 + y1) / 2
-        r = 60 - sum(ray_len(hub, (60 * math.cos(a), ym, SHOULDER_Z + 60 * math.sin(a)), (-math.cos(a), 0, -math.sin(a)))
-                     for a in [2 * math.pi * (k + 0.37) / 24 for k in range(24)]) / 24
-        assert B6810[0] - 0.01 <= r <= B6810[0] + 0.1, ("shoulder journal", ym, r)
-    assert seat_diameter(hub, SHOULDER_Z, 0.0) >= 2 * SHOULDER_BORE_R - 0.05, "shoulder wire bore under Ø44"
-    sh = [v.co for v in hub.data.vertices if math.hypot(v.co.x, v.co.z - SHOULDER_Z) > B6810[0] + 0.05 and abs(v.co.y) < Y_REAR + PLATE_T + 0.4]
-    assert not sh or max(math.hypot(p.x, p.z - SHOULDER_Z) for p in sh) <= SHOULDER_SHOULDER_R + 0.01, "hub shoulder past the inner ring"
-    assert SHOULDER_SHOULDER_R <= 27.5
-    assert SHOULDER_HUB_Y[1] >= BELT_ENVELOPE_Y + 8.0 - 0.01 and max(v.co.y for v in hub.data.vertices) >= SHOULDER_HUB_Y[1] - 0.01
-    for y_face, o, into in ((SHOULDER_HUB_Y[1], hub, -1), (SHOULDER_HUB_Y[0], clamp, 1)):
-        for a in HUB_END_ANGLES:
-            x, z = polar(HUB_END_INSERT_R, a)
-            d = ray_len(o, (x, y_face - into * 1.0, SHOULDER_Z + z), (0, into, 0))
-            assert d is not None and abs(d - 1.0 - HUB_END_INSERT_DEPTH) < 0.06, ("hub end insert", o.name, a, d)
-    for n, o in (("plate A", PARTS["upper-plate-A"]), ("plate B", PARTS["upper-plate-B"])):
-        assert overlap(hub, o) < 0.05 and overlap(clamp, o) < 0.05, ("shoulder hub hits", n)
-    assert overlap(clamp, hub) < 0.05 and touching(clamp, hub), "clamp doesn't grip the hub's journal"
-    for psi in INDEX_ANGLES:
-        m = rot_shoulder(psi)
-        moving = [copy(PARTS[k], "mv") for k in ("upper-plate-A", "upper-plate-B")] + [motor_posed(s, MOTOR_L_MAX) for s in (-1, 1)] + [belt_envelope(s) for s in (-1, 1)]
-        for o in moving:
-            o.data.transform(m)
-            assert not bvh_hit(o, stand), ("stand hits the arm at shoulder", psi, o.name)
-        pb = moving[1]
-        px, pz = polar(INDEX_R, INDEX_PIN_DEG)
-        hit = tree(pb).ray_cast(Vector((px, -Y_REAR - PLATE_T - 3.0, SHOULDER_Z + pz)), Vector((0, 1, 0)))[0]
-        assert hit is None or hit.y > -Y_REAR + 0.1, ("index hole doesn't line up with the stand's pin", psi)
-        for o in moving:
-            bpy.data.objects.remove(o)
-    px, pz = polar(INDEX_R, INDEX_PIN_DEG)
-    pin = ray_len(stand, (px, SHOULDER_HUB_Y[0] - STAND_T - 5.0, SHOULDER_Z + pz), (0, 1, 0))
-    assert pin is None or pin > STAND_T + 6.0, "stand has no pin hole"
-    pads = [v.co for v in stand.data.vertices if abs(v.co.z - (STAND_BASE_Z - STAND_BASE_T)) < 0.01]
-    assert pads and max(abs(p.x) for p in pads) >= STAND_PAD[0] + 40.0 - 0.01, "stand has no clamp pads"
-    for n in ("shoulder-hub", "shoulder-hub-clamp", "bench-stand"):
-        c = copy(PARTS[n], "fp"); c.data.transform(PRINT_POSE[n]); d = c.dimensions
-        assert d.x <= 220 and d.y <= 250 and d.z <= 250, (n, "doesn't fit the bed", tuple(d))
-        bpy.data.objects.remove(c)
-    REPORT.update({"shoulder_hub_y": SHOULDER_HUB_Y, "hub_end_interface": {"insert_r": HUB_END_INSERT_R, "angles": HUB_END_ANGLES, "bore_d": 2 * SHOULDER_BORE_R}})
 
 
 def copy_xz(o):
@@ -924,12 +809,8 @@ PARTS["upper-plate-B"] = plate_b()
 PARTS["belt-idler"] = idler()
 PARTS["elbow-stop-collar"] = stop_collar()
 PARTS["elbow-key-wedge"] = key_wedge()
-PARTS["shoulder-hub"] = shoulder_hub()
-PARTS["shoulder-hub-clamp"] = shoulder_clamp()
-PARTS["bench-stand"] = bench_stand()
 CHECKS.append(check_bracket)
 CHECKS.append(check_plates)
-CHECKS.append(check_shoulder)
 for check in CHECKS:
     check()
 print("ELBOW", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, **REPORT}))

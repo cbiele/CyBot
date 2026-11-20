@@ -542,9 +542,9 @@ def past_elbow():
 
 
 def elbow_fixed():
-    """The upper arm's own parts; the bench stand is the bench, reported apart."""
+    """The upper arm's own parts."""
     return [o for o in COLS[ELBOW_COL].objects if not (any(o.name == "elbow " + k for k in ELBOW_MOVING_STL) or o.name.startswith("elbow tube")
-            or "60T" in o.name or "belt" in o.name or "bench-stand" in o.name)] + [o for o in COLS[ELBOW_COMPACT_COL].objects if "housing" in o.name]
+            or "60T" in o.name or "belt" in o.name)] + [o for o in COLS[ELBOW_COMPACT_COL].objects if "housing" in o.name]
 
 
 def elbow_masses():
@@ -587,10 +587,6 @@ def elbow_report(report):
             em = elbow_rot(th)
             if fixed.overlap(merged_tree(rest, em)) or fixed.overlap(merged_tree(body, em @ pitch_matrix(pitch))):
                 hits.append((th, pitch))
-    stand = merged_tree([bpy.data.objects["elbow bench-stand"]])
-    reaches_stand = [(th, p) for p in (-90, 0, 90) for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 2)
-                     if stand.overlap(merged_tree(body, elbow_rot(th) @ pitch_matrix(p))) or stand.overlap(merged_tree(rest, elbow_rot(th)))]
-    report["hand_reaches_bench_stand_at"] = reaches_stand
     grip = world_verts(col="Three-finger hand")
     tip = Vector((max(p.x for p in grip), AX6_Y, ROLL_Z))
     groups = elbow_masses()
