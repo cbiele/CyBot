@@ -7,7 +7,8 @@ import elbow_dims as E
 import forearm_dims as F
 import cycloid_math as _C
 
-PSI_RANGE, PSI_STOPS = (-90.0, 90.0), (-92.0, 92.0)
+PSI_STOPS = (-93.0, 93.0)                    # shoulder.py checks this is the widest the turntable's rim allows, less 2
+PSI_RANGE = (PSI_STOPS[0] + 2.0, PSI_STOPS[1] - 2.0)
 PHI_RANGE, PHI_STOPS = (-170.0, 170.0), (-172.0, 172.0)
 
 B6810 = E.B6810
@@ -40,7 +41,7 @@ FLANGE_Y = {"A": (PLATE_FACES["A"][1], PLATE_FACES["A"][1] + FLANGE_T), "B": (PL
 # Walls: wall A outside the elbow's belt envelope; wall B far enough out for hub B's cone (and the stops between).
 WALL_T = B6810[2] + E.LIP_T
 WALL_Y = {"A": (71.0, 71.0 + WALL_T), "B": (-60.0, -60.0 - WALL_T)}          # (inner face, outer face)
-WALL_6810_Y = {"A": (71.0, 71.0 + B6810[2]), "B": (-60.0, -60.0 - B6810[2])}
+WALL_6810_Y = {"B": (-60.0, -60.0 - B6810[2])}   # wall A has no bearing: it holds the stub
 WALL_LIP_R = 31.0                            # bears on the outer ring only
 END_CHAMFER = 1.0
 
@@ -60,15 +61,18 @@ HUB_SCREW_L = 12.0
 JIG_T, JIG_SPIGOT_DEPTH, JIG_R, JIG_FENCE = 10.0, 6.0, 44.0, (E.PLATE_R + 0.1, 44.0)
 JIG_KEY = (8.0, (E.PLATE_R + 0.6, E.PLATE_R + 4.6))   # half width, z range below the axis
 
-# Body walls: each prints inner face down, so its feet turn outwards. The axis height leaves a NEMA23 (half 28.5) at
-# slot -3 clear of wall A's foot with the shoulder belt up to 30 degrees off vertical (Task 3's call).
-SHOULDER_AXIS_Z = 158.0
-WALL_BOSS_R = {"A": 50.0, "B": 48.0}
-WALL_BOTTOM_HALF_W, FOOT_T, FOOT_W, WINDOW_BORDER, WINDOW_RIB = 66.0, 8.0, 22.0, 9.0, 6.0
+# Body walls, low (2026-11-20 spec): each stands on the turntable on its bottom face, held by M3s from under the
+# turntable into inserts in that face. Each prints inner face down. The axis height is the lowest that keeps
+# everything under it 3 above the turntable at psi 0 and still lets the stops sit past 92 (shoulder.py checks both).
+SHOULDER_AXIS_Z = 46.5
+WALL_BOSS_R = {"A": 46.0, "B": 48.0}
+WALL_BOTTOM_HALF_W = {"A": 35.0, "B": 40.0}
 WALL_B_FRONT = (44.0, -52.0)                 # wall B stops at x 44 above z -52: the palm passes at elbow 150, wrist pitch 90 (head_concept)
-WALL_FOOT = {s: [(x, WALL_Y[s][1] + (FOOT_W / 2 if s == "A" else -FOOT_W / 2)) for x in (-52.0, -22.0, 22.0, 52.0)] for s in "AB"}
-FOOT_BOLT_L = 12
-BODY_MIN = 6.0
+WALL_INSERTS = {s: [(x, sum(WALL_Y[s]) / 2) for x in ((-25.0, 0.0, 25.0) if s == "A" else (-25.0, 10.0, 25.0))] for s in "AB"}   # B's middle one beside the Hall's leads
+WALL_SCREW_L = 12
+WALL_A_BORE_R = 30.1                         # the stub's r30 body, a slip fit
+BODY_MIN, INSERT_WALL_MIN = 6.0, 2.0
+TURNTABLE_R = 89.0                           # provisional (Task 4): both walls' bottoms with 2 of edge
 
 # The compact inside the arm on a fixed stub (2026-11-20 spec). The stub's flange sits on wall A's outer face, so it
 # prints flange-down; its land carries plate A's 6810, whose inner ring is clamped between the stub's shoulder and a
@@ -85,11 +89,12 @@ STUB = {"bore_r": REAR_HUB_PROUD_R, "bearing_r": B6810[0], "shoulder_r": 26.8, "
         "screw_l": 16, "screw_engage": 4.0, "cb_r": 3.3}
 STUB["head_y"] = COMPACT_REAR_Y - STUB["screw_engage"] + STUB["screw_l"]
 STUB_SPACER = (B6810[0] + 0.1, STUB["shoulder_r"], COMPACT_REAR_Y, LIP_FACE_Y["A"])   # r0, r1, y0, y1
+STUB_FIX_R, STUB_FIX_ANGLES, STUB_FIX_L = 38.0, (45.0, 135.0, 225.0, 315.0), 10   # flange to wall A's inserts, plain holes
 HUB_B_NOSE = (E.LIP_IN_R - 0.5, COMPACT_Y - OUT_PLATE_T, LIP_FACE_Y["B"])           # r, y0 (its face), y1
 HUB_Y = (WALL_Y["B"][1] - 8.0, HUB_B_NOSE[1])           # B's journal end (past wall B for the stop collar), its nose face
 RING_ZONE = (B6810[1] - 5.0, B6810[1])                   # the 6810's turning outer ring, radially
 R80_OD = (80 * 3.0 / math.pi - 0.762) / 2
-PULLEY80_Y = 129.1                                       # the first build's, so its drive still checks; Task 3 sets it past the stub
+PULLEY80_Y = STUB["y"][1] + 1.0                          # its hub's face, 1.0 off the stub's outer end
 PULLEY80_TEETH_Y = (PULLEY80_Y + E.PULLEY_HUB + 1.5, PULLEY80_Y + E.PULLEY_HUB + 1.5 + 11.5)
 SHOULDER_BELT_PLANE_Y = sum(PULLEY80_TEETH_Y) / 2
 ROD_OUT = PULLEY80_Y + E.PULLEY_H - COMPACT_REAR_Y        # the input rod past the housing's rear face, through the stub and the 80T
@@ -99,16 +104,21 @@ ROD_OUT = PULLEY80_Y + E.PULLEY_H - COMPACT_REAR_Y        # the input rod past t
 HUB_INNER_LAND_R, STOP_COLLAR_R, STOP_COLLAR_FLANGE = E.HUB_INNER_LAND_R, 29.5, 3.0
 STOP_COLLAR_Y = (WALL_6810_Y["B"][1], HUB_Y[0] - 0.3 - STOP_COLLAR_FLANGE)
 COLLAR_SCREW_R, COLLAR_SCREW_ANGLES, COLLAR_SCREW_L = 21.5, (90.0, 270.0), 8
-KEY_ANGLES, KEY_W, KEY_DEPTH_Y = (0.0, 180.0), 6.0, 6.0
+KEY_ANGLES, KEY_W, KEY_DEPTH_Y = (0.0, 160.0), 6.0, 6.0   # not 180 apart: the collar only goes on tab down
 TAB_PHI, TAB_HALF, TAB_R, TAB_Y = 270.0, 12.0, (STOP_COLLAR_R - 0.1, 42.0), (WALL_Y["B"][1] - 0.5, STOP_COLLAR_Y[1])
 STOP_BLOCK_DEG, STOP_R = 30.0, (31.0, 42.0)
 MAGNET_R, MAGNET_D, MAGNET_AT_R, MAGNET_RECESS = 3.0, 3.0, 36.0, 0.7
 SENSOR = E.SENSOR
 
-# The shoulder motor: 48 degrees off straight down towards the rear, so a NEMA23 clears wall A's edge, body inboard
-# (towards wall A) behind a swap plate on an upright bracket on the turntable, slotted along the belt line.
-SHOULDER_MOTOR_DEG, MOTOR_SLOT = 48.0, 3.0
-BELT_U = (-math.sin(math.radians(SHOULDER_MOTOR_DEG)), -math.cos(math.radians(SHOULDER_MOTOR_DEG)))   # (x, z) from the 80T to the motor
+# The shoulder motor (2026-11-20 spec): behind the arm, its body outwards (+y) so it never enters the arm's swing,
+# the belt 10 degrees above level towards the rear, so the motor's plate clears the turntable's rim. The motor goes
+# on its drop-in plate at the bench; the plate slides into a box-section bracket that's part of wall A, from the 80T's
+# side, against the bracket's roof. Four M3s from outside through slots in the roof, and a pull screw through the box's
+# end into a tab on the plate, which sets the belt's tension. Local frame about the motor at slot 0: u along the belt
+# away from the 80T, w square to it in the belt's plane (upwards), y as the shoulder frame's.
+SHOULDER_MOTOR_DEG, MOTOR_SLOT, MOTOR_WALL = 10.0, 3.0, "A"
+BELT_U = (-math.cos(math.radians(SHOULDER_MOTOR_DEG)), math.sin(math.radians(SHOULDER_MOTOR_DEG)))   # (x, z) from the 80T to the motor
+BELT_W = (BELT_U[1], -BELT_U[0])
 
 
 def motor_at(slot=0.0):
@@ -116,27 +126,28 @@ def motor_at(slot=0.0):
 
 
 SHOULDER_MOTOR_AT = (motor_at()[0], SHOULDER_BELT_PLANE_Y, motor_at()[1])
-MOTORS = {"17": {"sq": 42.3, "hole": 31.0 / 2, "hole_r": M3_CLEAR_R, "pilot_r": 22.4 / 2 + 0.1, "length": 60.0, "shaft": 24.0},
-          "23": {"sq": 57.0, "hole": 47.14 / 2, "hole_r": M5_CLEAR_R, "pilot_r": 38.5 / 2 + 0.1, "length": 76.0, "shaft": 21.0}}
-BRACKET_Y = (PULLEY80_Y - 1.0 - 8.0, PULLEY80_Y - 1.0)          # the 20T's hub 1.0 off its face, as the elbow's
-SWAP_Y = (BRACKET_Y[0] - 5.0, BRACKET_Y[0])                      # the motor's face on the swap plate's far side
-SWAP_HALF = 43.0
-PLATE_MOUNT = [(36.0, 0.0), (0.0, 36.0), (-36.0, 0.0), (0.0, -36.0)]   # inserts in each swap plate, about the motor's axis
-SWAP_SCREW_L = 12
-CHAMFER_D = 52.0                                                 # the swap plate's corner towards the 80T, square to the belt line
-LUG_D, LUG_HALF_W = (CHAMFER_D + MOTOR_SLOT + 1.0, CHAMFER_D + MOTOR_SLOT + 11.0), 7.0
-PUSH_SCREW_L = 20
-BRACKET_BOX = (-50.0, 56.0, -52.0, 52.0)                          # x0, x1 about the motor; z1 about it (z0 is the turntable)
-BRACKET_WINDOW_R = 12.0
-BRACKET_FOOT_Y = (103.0, BRACKET_Y[0])
-BRACKET_FOOT = [(-37.0, 0.0), (0.0, 0.0), (37.0, 0.0)]           # x about the motor; y at the foot's middle
+MOTORS = {"17": {"sq": 42.3, "hole": 31.0 / 2, "hole_r": M3_CLEAR_R, "pilot_r": 22.4 / 2 + 0.1, "length": 60.0, "shaft": 24.0, "head": (2.75, 3.0)},
+          "23": {"sq": 57.0, "hole": 47.14 / 2, "hole_r": M5_CLEAR_R, "pilot_r": 38.5 / 2 + 0.1, "length": 76.0, "shaft": 21.0, "head": (4.25, 5.0)}}
+PULLEY20_HUB_Y = (PULLEY80_TEETH_Y[1] + 1.5, PULLEY80_TEETH_Y[1] + 1.5 + E.PULLEY_HUB)   # its hub towards the motor
+MOTOR_FACE_Y = PULLEY20_HUB_Y[1] + 2.5          # the motor screws' heads then stand 0.5 off the belt's envelope
+MOTOR_PLATE_Y = (MOTOR_FACE_Y - 6.0, MOTOR_FACE_Y)
+BRACKET_Y = (MOTOR_FACE_Y, MOTOR_FACE_Y + 8.0)                    # the roof: the plate's face on its underside
+PLATE_HALF = 48.0
+PLATE_MOUNT = [(40.0, 40.0), (40.0, -40.0), (-40.0, 40.0), (-40.0, -40.0)]   # inserts in each plate, about the motor's axis
+PLATE_SCREW_L = 12
+MOTOR_SLOT_U = 29.5 + MOTOR_SLOT             # the roof's slot round the motor's body: open towards the 80T, closed here
+MOTOR_SLOT_W = 29.5
+TAB = {"u": (PLATE_HALF - 14.0, PLATE_HALF), "w": 7.0, "y": (MOTOR_PLATE_Y[0] - 6.0, MOTOR_PLATE_Y[1])}
+PULL_Y = sum(TAB["y"]) / 2
+BOX = {"u": (-SHOULDER_BELT_C + 45.0, PLATE_HALF + 4.0 + 8.0), "w": 60.0, "slab": 8.0, "end": PLATE_HALF + 4.0,
+       "back_u0": -SHOULDER_BELT_C}          # the box starts 45 along the belt from the axis, clear of the stub's screws
+PULL_SCREW_L, PULL_BORE = 20, 12.0          # the pull screw's insert, then a clearance bore on into the tab
 
 # The base (axis 1): the base axis is the shoulder frame's z axis. The turntable turns on two 6810s on a printed Ø50
 # spigot rising from the fixed base; a cap and a spacer clamp the inner rings onto the spigot's shoulder, the
 # turntable's top lip and the 130T ring (screwed under its hub) hold the outer rings. One piece each fits the bed.
 TURNTABLE_Z = -SHOULDER_AXIS_Z
 TURNTABLE_T = 8.0
-TURNTABLE_XY = (-149.0, 99.0, -93.0, 122.0)                     # the walls' and bracket's feet, the electronics area
 BASE_6810_Z = (TURNTABLE_Z - 7.0 - B6810[2], TURNTABLE_Z - 7.0 - B6810[2] - 45.0)   # each bearing's lower face; centres 45 apart
 TT_LIP_R, RING_LIP_R = 31.0, 31.0
 TT_HUB_R, TT_HUB_Z0 = 44.0, BASE_6810_Z[1]                       # the hub's lower face, on the lower 6810's
@@ -174,11 +185,9 @@ BASE_MOTOR_L = 60.0
 BASE_DESIGN_NMM = 4.0e3                     # a 17HS19 stalled through 6.5:1
 # Stops: one tab under the turntable, one block on the fixed base opposite it at home; they meet at +-172.
 PHI_TAB_DEG, PHI_HALF, PHI_R = 180.0, 4.0, (66.0, 90.0)
-PHI_TAB_Z, PHI_BLOCK_TOP = (TURNTABLE_Z - TURNTABLE_T, -214.0), -207.0
+PHI_TAB_Z, PHI_BLOCK_TOP = (TURNTABLE_Z - TURNTABLE_T, TURNTABLE_Z - 56.0), TURNTABLE_Z - 49.0
 BASE_HALL = {"magnet": (78.0, PHI_TAB_DEG, PHI_TAB_Z[1] + MAGNET_RECESS), "sensor_top": PHI_TAB_Z[1] - 0.5}
 HALL_POST_HALF = 5.0
-ELECTRONICS_AREA = (-51.0, 99.0, -50.0, 50.0, 25.0)              # x0, x1, y0, y1 on the turntable, and the parts' height
-ELECTRONICS_PILOTS = [(-46.0, -45.0), (94.0, -45.0), (-46.0, 45.0), (94.0, 45.0), (40.0, 0.0), (67.0, 0.0), (94.0, 0.0)]
 SHOULDER_HALL = {"magnet": (MAGNET_AT_R, TAB_PHI, TAB_Y[0] - MAGNET_RECESS), "sensor_face_y": WALL_Y["B"][1]}
 
 # Legs: four Ø9 aluminium tubes, 250 long, in sockets on the fixed base's rim. The sockets rise inwards from a mouth
