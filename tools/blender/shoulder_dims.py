@@ -42,7 +42,6 @@ WALL_T = B6810[2] + E.LIP_T
 WALL_Y = {"A": (71.0, 71.0 + WALL_T), "B": (-60.0, -60.0 - WALL_T)}          # (inner face, outer face)
 WALL_6810_Y = {"A": (71.0, 71.0 + B6810[2]), "B": (-60.0, -60.0 - B6810[2])}
 WALL_LIP_R = 31.0                            # bears on the outer ring only
-HUB_Y = (WALL_Y["B"][1] - 8.0, WALL_Y["A"][1] + 1.0)   # B's journal runs on past wall B for the stop collar; A's end face takes the output plate
 END_CHAMFER = 1.0
 
 # Plate lock: M3 x 12 from inside the plate gap, through the plate's shoulder boss, into inserts in the flange.
@@ -56,8 +55,10 @@ OUT_PLATE_R, OUT_PLATE_T = 16.0, 5.0
 DOG_PCD_R, DOG_R, DOG_H, DOG_ANGLES = 11.0, 3.5, 6.0, F.DOG_ANGLES
 HUB_SCREW_L = 12.0
 
-# Drill jig: a spigot in the Ø65 seat, fences on the plate's straight sides so it only goes on one way round.
+# Drill jig, plate B only: a spigot in the Ø65 seat, fences on the plate's straight sides, and a key just past the
+# round end that lands on the plate if the jig is turned half round, so it can't seat the wrong way.
 JIG_T, JIG_SPIGOT_DEPTH, JIG_R, JIG_FENCE = 10.0, 6.0, 44.0, (E.PLATE_R + 0.1, 44.0)
+JIG_KEY = (8.0, (E.PLATE_R + 0.6, E.PLATE_R + 4.6))   # half width, z range below the axis
 
 # Body walls: each prints inner face down, so its feet turn outwards. The axis height leaves a NEMA23 (half 28.5) at
 # slot -3 clear of wall A's foot with the shoulder belt up to 30 degrees off vertical (Task 3's call).
@@ -69,19 +70,29 @@ WALL_FOOT = {s: [(x, WALL_Y[s][1] + (FOOT_W / 2 if s == "A" else -FOOT_W / 2)) f
 FOOT_BOLT_L = 12
 BODY_MIN = 6.0
 
-# The compact: its housing's front face on a printed cage on wall A (the R30 holes sit over wall A's 6810, and a
-# boss on the wall itself would overhang its lip bore), the output plate between the carrier and the hub's A end.
-COMPACT_Y = HUB_Y[1] + OUT_PLATE_T                       # the carrier's (output) face
-HOUSING_FRONT_Y = COMPACT_Y + F.HUB_FACE - F.HOUSING_L
-COMPACT_REAR_Y = COMPACT_Y + F.HUB_FACE
-CAGE_Y, CAGE_R, CAGE_BORE_R = (WALL_Y["A"][1], HOUSING_FRONT_Y), 49.0, (26.0, 18.0)   # r26 round the hub's end, r18 round the output plate
-CAGE_SCREW_R, CAGE_SCREW_ANGLES, CAGE_SCREW_L = 41.0, (0.0, 90.0, 180.0, 270.0), 12
-COMPACT_BOLT_L, BOLT_HEAD_H = 45, E.BOLT_HEAD_H
+# The compact inside the arm on a fixed stub (2026-11-20 spec). The stub's flange sits on wall A's outer face, so it
+# prints flange-down; its land carries plate A's 6810, whose inner ring is clamped between the stub's shoulder and a
+# spacer on the housing's rear face. The stub stops STUB_GAP short of the housing, so its screws clamp through the
+# spacer and the inner ring. A pilot in the housing's r15 rear lip centres the compact; a 625 at the stub's outer end
+# carries the long input rod next to the 80T.
+COMPACT_REAR_Y = E.Y_REAR - 0.5
+COMPACT_Y = COMPACT_REAR_Y - F.HUB_FACE                  # the carrier's (output) face
+STUB_GAP, BOLT_HEAD_H = 0.2, E.BOLT_HEAD_H
+B625 = (2.5, 8.0, 5.0)                                   # bore r, seat r (params.json seat_625), width
+STUB = {"bore_r": REAR_HUB_PROUD_R, "bearing_r": B6810[0], "shoulder_r": 26.8, "body_r": 30.0, "flange_r": 42.0,
+        "flange_t": 7.0, "pilot_r": 14.9, "pilot_y": COMPACT_REAR_Y - 0.5, "lip_r": 6.5,
+        "y": (COMPACT_REAR_Y + STUB_GAP, WALL_Y["A"][1] + 7.0), "shoulder_y": (PLATE_FACES["A"][1], PLATE_FACES["A"][1] + 1.0),
+        "screw_l": 16, "screw_engage": 4.0, "cb_r": 3.3}
+STUB["head_y"] = COMPACT_REAR_Y - STUB["screw_engage"] + STUB["screw_l"]
+STUB_SPACER = (B6810[0] + 0.1, STUB["shoulder_r"], COMPACT_REAR_Y, LIP_FACE_Y["A"])   # r0, r1, y0, y1
+HUB_B_NOSE = (E.LIP_IN_R - 0.5, COMPACT_Y - OUT_PLATE_T, LIP_FACE_Y["B"])           # r, y0 (its face), y1
+HUB_Y = (WALL_Y["B"][1] - 8.0, HUB_B_NOSE[1])           # B's journal end (past wall B for the stop collar), its nose face
+RING_ZONE = (B6810[1] - 5.0, B6810[1])                   # the 6810's turning outer ring, radially
 R80_OD = (80 * 3.0 / math.pi - 0.762) / 2
-PULLEY80_Y = COMPACT_REAR_Y + BOLT_HEAD_H + 1.0           # its hub's face, towards the compact
+PULLEY80_Y = 129.1                                       # the first build's, so its drive still checks; Task 3 sets it past the stub
 PULLEY80_TEETH_Y = (PULLEY80_Y + E.PULLEY_HUB + 1.5, PULLEY80_Y + E.PULLEY_HUB + 1.5 + 11.5)
 SHOULDER_BELT_PLANE_Y = sum(PULLEY80_TEETH_Y) / 2
-ROD_OUT = PULLEY80_Y + E.PULLEY_H - COMPACT_REAR_Y        # the input rod past the housing's rear face, through the 80T
+ROD_OUT = PULLEY80_Y + E.PULLEY_H - COMPACT_REAR_Y        # the input rod past the housing's rear face, through the stub and the 80T
 
 # Stops and Hall, as on the elbow: a collar keyed onto hub B's journal end outside wall B (a tab under hub B's
 # flange can't print end-down) carries the tab and the magnet; the blocks and the sensor are on wall B's outer face.

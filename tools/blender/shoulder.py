@@ -12,7 +12,7 @@ ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
 MODEL = os.path.join(ROOT, "model")
 OUT = os.path.join(MODEL, "shoulder")
 ELBOW = os.path.join(MODEL, "elbow")
-COMPACT = os.path.join(MODEL, "cycloid-poc", "20-1-compact-m25")
+COMPACT = os.path.join(MODEL, "cycloid-poc", "20-1-compact-stub")
 PARTS, CHECKS, PRINT_POSE, REPORT = {}, [], {}, {}
 with open(os.path.join(ELBOW, "poses.json")) as _f:
     ELBOW_POSES = json.load(_f)
@@ -200,60 +200,91 @@ def upper_arm_moving():
 
 
 def hub_half(side):
-    """Spigot in the plate's Ø65 seat against its lip, flange on the plate's outer face, 45-degree cone, shoulder, journal in the wall's 6810."""
-    sgn, name = (1, "shoulder-hub-a") if side == "A" else (-1, "shoulder-hub-b")
-    Y = lambda a, b: sorted((sgn * a, sgn * b))
-    lip, face = abs(LIP_FACE_Y[side]), E.Y_REAR + E.PLATE_T
-    f1, wall_in, end = face + FLANGE_T, abs(WALL_6810_Y[side][0]), abs(HUB_Y[1] if side == "A" else HUB_Y[0])
+    """Hub B: spigot in plate B's Ø65 seat against its lip, flange on the plate's outer face, 45-degree cone, shoulder,
+    journal in wall B's 6810. Its nose reaches in through the lip to the compact's output plate; the bore is open from
+    wall B's side, so the floor screws drive from there."""
+    assert side == "B", "hub A went with the first build: plate A turns on the stub"
+    name, lip, face = "shoulder-hub-b", abs(LIP_FACE_Y["B"]), E.Y_REAR + E.PLATE_T
+    f1, wall_in, end = face + FLANGE_T, abs(WALL_6810_Y["B"][0]), abs(HUB_Y[0])
+    Y = lambda a, b: sorted((-a, -b))
+    nose_r, nose_face = HUB_B_NOSE[0], HUB_Y[1]
     h = cyl_y(name, 0, 0, SPIGOT_R, *Y(lip, face + 0.01), n=192)
+    L.union(h, cyl_y("nose", 0, 0, nose_r, LIP_FACE_Y["B"] - 0.01, nose_face, n=192))
     L.union(h, cyl_y("flange", 0, 0, FLANGE_R, *Y(face, f1), n=192))
-    L.union(h, cone_y("cone", FLANGE_R, sgn * (f1 - 0.01), HUB_SHOULDER_R, sgn * (f1 + CONE)))
+    L.union(h, cone_y("cone", FLANGE_R, -(f1 - 0.01), HUB_SHOULDER_R, -(f1 + CONE)))
     L.union(h, cyl_y("shoulder", 0, 0, HUB_SHOULDER_R, *Y(f1 + CONE - 0.01, wall_in), n=192))
     L.union(h, cyl_y("journal", 0, 0, B6810[0], *Y(wall_in - 0.01, end - END_CHAMFER), n=192))
-    L.union(h, cone_y("end", B6810[0], sgn * (end - END_CHAMFER - 0.01), B6810[0] - END_CHAMFER, sgn * end))
+    L.union(h, cone_y("end", B6810[0], -(end - END_CHAMFER - 0.01), B6810[0] - END_CHAMFER, -end))
     L.finish(h)
-    L.cut(h, cyl_y("wire bore", 0, 0, HUB_BORE_R, *Y(lip - 1.0, end - HUB_FLOOR if side == "A" else end + 1.0), n=128))
+    floor = nose_face - HUB_FLOOR
+    cone_r = F.INSERT_PCD_R + 3.5                # the floor's ceiling: a 45-degree cone down to a small bridge
+    L.cut(h, cyl_y("bore", 0, 0, HUB_BORE_R, -end - 1.0, floor - (HUB_BORE_R - cone_r) + 0.01, n=128))
+    L.cut(h, cone_y("bore cone", HUB_BORE_R, floor - (HUB_BORE_R - cone_r), cone_r, floor))
     for a in LOCK_ANGLES:
         x, z = polar(LOCK_R, a)
         L.cut(h, cyl_y("lock insert", x, z, M3_INSERT_R, *Y(face - 1.0, face + M3_INSERT_DEPTH), n=32))
-    if side == "A":
-        for x, z in [polar(DOG_PCD_R, a) for a in DOG_ANGLES]:
-            L.cut(h, cyl_y("dog", x, z, DOG_R + 0.15, end - DOG_H - 0.5, end + 1.0, n=48))
-        head_y = end + OUT_PLATE_T + 3.3 - HUB_SCREW_L
-        for x, z in [polar(F.INSERT_PCD_R, a) for a in F.INSERT_ANGLES]:
-            L.cut(h, cyl_y("screw", x, z, M3_CLEAR_R, end - HUB_FLOOR - 1.0, end + 1.0, n=32))
-            L.cut(h, cyl_y("screw cb", x, z, 3.0, end - HUB_FLOOR - 1.0, head_y, n=32))
-    else:
-        for a in KEY_ANGLES:
-            s = L.box("key slot", HUB_BORE_R - 1.0, B6810[0] + 1.0, -end - 1.0, -end + KEY_DEPTH_Y, -KEY_W / 2, KEY_W / 2)
-            s.data.transform(Matrix.Rotation(-math.radians(a), 4, 'Y'))
-            L.cut(h, s)
-        for x, z in [polar(COLLAR_SCREW_R, a) for a in COLLAR_SCREW_ANGLES]:
-            L.cut(h, cyl_y("collar insert", x, z, M3_INSERT_R, -end - 1.0, -end + M3_INSERT_DEPTH, n=32))
-    PRINT_POSE[name] = basis((1, 0, 0), (0, 0, -sgn), (0, sgn, 0), (0, 0, end))
+    for x, z in [polar(DOG_PCD_R, a) for a in DOG_ANGLES]:
+        L.cut(h, cyl_y("dog", x, z, DOG_R + 0.15, nose_face - DOG_H - 0.5, nose_face + 1.0, n=48))
+    head_y = nose_face + OUT_PLATE_T + 3.3 - HUB_SCREW_L
+    for x, z in [polar(F.INSERT_PCD_R, a) for a in F.INSERT_ANGLES]:
+        L.cut(h, cyl_y("screw", x, z, M3_CLEAR_R, floor - 1.0, nose_face + 1.0, n=32))
+        L.cut(h, cyl_y("screw cb", x, z, STUB["cb_r"], floor - 1.0, head_y, n=32))
+    for a in KEY_ANGLES:
+        s = L.box("key slot", HUB_BORE_R - 1.0, B6810[0] + 1.0, -end - 1.0, -end + KEY_DEPTH_Y, -KEY_W / 2, KEY_W / 2)
+        s.data.transform(Matrix.Rotation(-math.radians(a), 4, 'Y'))
+        L.cut(h, s)
+    for x, z in [polar(COLLAR_SCREW_R, a) for a in COLLAR_SCREW_ANGLES]:
+        L.cut(h, cyl_y("collar insert", x, z, M3_INSERT_R, -end - 1.0, -end + M3_INSERT_DEPTH, n=32))
+    PRINT_POSE[name] = basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, 0, end))
     return h
 
 
-def hub():
-    return hub_half("A"), hub_half("B")
+def stub():
+    """Wall A's fixed axle: flange on wall A's outer face, body through the wall, shoulder and land in plate A's 6810,
+    a pilot into the housing's rear lip; the 625 for the rod at its outer end, the compact's screws from that end."""
+    S = STUB; (y_in, y_out), (ys0, ys1) = S["y"], S["shoulder_y"]
+    s = cyl_y("shoulder-stub", 0, 0, S["flange_r"], y_out - S["flange_t"], y_out, n=192)
+    L.union(s, cyl_y("body", 0, 0, S["body_r"], ys1, y_out - S["flange_t"] + 0.01, n=192))
+    L.union(s, cyl_y("shoulder", 0, 0, S["shoulder_r"], ys0, ys1 + 0.01, n=192))
+    L.union(s, cyl_y("land", 0, 0, S["bearing_r"], y_in, ys0 + 0.01, n=192))
+    L.union(s, cyl_y("pilot", 0, 0, S["pilot_r"], S["pilot_y"], y_in + 0.01, n=192))
+    L.finish(s)
+    L.cut(s, cyl_y("bore", 0, 0, S["bore_r"], S["pilot_y"] - 1.0, y_out - B625[2] - 1.0, n=128))
+    L.cut(s, cyl_y("lip", 0, 0, S["lip_r"], y_out - B625[2] - 2.0, y_out + 1.0, n=64))
+    L.cut(s, cyl_y("625", 0, 0, B625[1] + 0.05, y_out - B625[2], y_out + 1.0, n=96))
+    for a in STUB_SCREW_ANGLES:
+        x, z = polar(STUB_SCREW_R, a)
+        L.cut(s, cyl_y("screw", x, z, M3_CLEAR_R, y_in - 1.0, S["head_y"] + 0.01, n=30))   # 30, not 32: on the axes, 32 left open edges
+        L.cut(s, cyl_y("screw cb", x, z, S["cb_r"], S["head_y"], y_out + 1.0, n=30))
+    PRINT_POSE["shoulder-stub"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, y_out))
+    return s
+
+
+def stub_spacer():
+    r0, r1, y0, y1 = STUB_SPACER
+    p = cyl_y("shoulder-stub-spacer", 0, 0, r1, y0, y1, n=192)
+    L.cut(p, cyl_y("bore", 0, 0, r0, y0 - 1.0, y1 + 1.0, n=192))
+    PRINT_POSE["shoulder-stub-spacer"] = basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, 0, -y0))
+    return p
 
 
 def output_plate():
-    """Replaces the compact's forearm output plate: three bigger, longer dogs for the shoulder's torque."""
+    """Replaces the compact's forearm output plate: three bigger, longer dogs into hub B's nose, for the shoulder's torque."""
     y0 = HUB_Y[1]
     p = cyl_y("shoulder-output-plate", 0, 0, OUT_PLATE_R, y0, y0 + OUT_PLATE_T, n=128)
     for x, z in [polar(DOG_PCD_R, a) for a in DOG_ANGLES]:
         L.union(p, cyl_y("dog", x, z, DOG_R, y0 - DOG_H, y0 + 0.01, n=48))
     for x, z in [polar(F.INSERT_PCD_R, a) for a in F.INSERT_ANGLES]:
         L.cut(p, cyl_y("screw", x, z, M3_CLEAR_R, y0 - 1.0, y0 + OUT_PLATE_T + 1.0, n=32))
-        L.cut(p, cyl_y("head", x, z, 3.0, y0 - 1.0, y0 + 3.2, n=48))
+        L.cut(p, cyl_y("head", x, z, 3.0, y0 - 1.0, y0 + 3.2, n=48))   # the floor screws' heads stay in hub B's floor; this clears their shanks' fillets
     L.finish(p)
     PRINT_POSE["shoulder-output-plate"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, y0 + OUT_PLATE_T))
     return p
 
 
 def drill_jig():
-    """On plate A's outer face (turned half round about z for plate B): spigot in the seat, fences on the straight sides, Ø3.4 guides."""
+    """For plate B: built on plate A's outer face, then turned half round about z. A spigot in the seat, fences on the
+    straight sides, Ø3.4 guides, and a key just below the round end, which lands on the plate if the jig is turned over."""
     face = E.Y_REAR + E.PLATE_T
     top, w = face + JIG_T, JIG_FENCE[1]
     j = cyl_y("plate-drill-jig", 0, 0, JIG_R, face, top, n=192)
@@ -261,91 +292,187 @@ def drill_jig():
     L.union(j, cyl_y("spigot", 0, 0, SEAT_R - 0.1, face - JIG_SPIGOT_DEPTH, face + 0.01, n=192))
     for s in (1, -1):
         L.union(j, L.box("fence", *sorted((s * JIG_FENCE[0], s * w)), face - JIG_SPIGOT_DEPTH, face + 0.01, 3.0, 46.0))
+    kw, (k0, k1) = JIG_KEY
+    L.union(j, L.box("key", -kw, kw, face - JIG_SPIGOT_DEPTH, face + 0.01, -k1, -k0))
     L.finish(j)
     L.cut(j, cyl_y("window", 0, 0, 20.0, face - JIG_SPIGOT_DEPTH - 1.0, top + 1.0, n=96))
     for a in LOCK_ANGLES:
         x, z = polar(LOCK_R, a)
         L.cut(j, cyl_y("guide", x, z, LOCK_HOLE_R, face - JIG_SPIGOT_DEPTH - 1.0, top + 1.0, n=32))
-    PRINT_POSE["plate-drill-jig"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, top))
+    j.data.transform(Matrix.Rotation(math.pi, 4, 'Z'))
+    PRINT_POSE["plate-drill-jig"] = basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, 0, top))
     return j
 
 
-def check_hub():
-    ha, hb, jig, op = PARTS["shoulder-hub-a"], PARTS["shoulder-hub-b"], PARTS["plate-drill-jig"], PARTS["shoulder-output-plate"]
+_TREES = {}
+
+
+def ctree(o):
+    """A BVH tree of o, kept while o lives (the screw checks cast many rays at the same parts)."""
+    k = o.as_pointer()
+    if k not in _TREES:
+        _TREES[k] = tree(o)
+    return _TREES[k]
+
+
+def screw_access(what, seat, out, head_r, head_h, objs):
+    """The head on its seat (seat: the centre of its seat face, out: from the seat towards the driver): 0.5 of room
+    round it and a straight path of 30 past its top, for a driver about r 1.2, against every part in objs."""
+    out, seat = Vector(out).normalized(), Vector(seat)
+    head = rod("head room", seat + out * 0.02, seat + out * head_h, head_r + 0.5, n=32)
+    th = tree(head)
+    for o in objs:
+        assert not th.overlap(ctree(o)), (what, "no room round the head", o.name)
+    bpy.data.objects.remove(head)
+    a = out.orthogonal().normalized(); b = out.cross(a)
+    top = seat + out * (head_h + 0.02)
+    for p in [Vector()] + [(a * math.cos(k * math.pi / 2) + b * math.sin(k * math.pi / 2)) * 1.2 for k in range(4)]:
+        for o in objs:
+            h = ctree(o).ray_cast(top + p, out)
+            assert h[0] is None or h[3] >= 30.0, (what, "no straight path to the head", o.name, round(h[3], 1))
+
+
+def cross_members():
+    """The upper arm's aluminium tubes, in the shoulder frame."""
+    return concat([cyl_y("cm", x, z + E.UPPER_L, E.TUBE_OR, -E.Y_REAR - E.PLATE_T, E.Y_REAR + E.PLATE_T, n=32)
+                   for x, z in E.CROSS_MEMBERS], "cross members")
+
+
+def fixed_shoulder():
+    """What stays with the body inside and beside the arm: the stub, its spacer and the compact's housing."""
+    return [copy(PARTS["shoulder-stub"], "stub"), copy(PARTS["shoulder-stub-spacer"], "spacer"), compact_posed()]
+
+
+def ring_zone():
+    return cyl_y("6810 outer ring", 0, 0, RING_ZONE[1], LIP_FACE_Y["A"], PLATE_FACES["A"][1], n=192)
+
+
+def turning_shoulder(psi):
+    """What turns with the arm round the fixed stub and compact, at psi: the plates, the elbow motor at both slot
+    ends, its belt, the cross members, hub B, the output plate and plate A's 6810's outer ring."""
+    ring = ring_zone(); L.cut(ring, cyl_y("bore", 0, 0, RING_ZONE[0], LIP_FACE_Y["A"] - 1.0, PLATE_FACES["A"][1] + 1.0, n=192))
+    objs = list(upper_arm_moving().values()) + [cross_members(), copy(PARTS["shoulder-hub-b"], "hb"),
+                                                 copy(PARTS["shoulder-output-plate"], "op"), ring]
+    o = concat(objs, f"turning {psi}")
+    o.data.transform(rot_shoulder(psi))
+    return o
+
+
+def check_shoulder_core():
+    names = ("shoulder-stub", "shoulder-stub-spacer", "shoulder-hub-b", "shoulder-output-plate", "plate-drill-jig")
+    st, sp, hb, op, jig = (PARTS[n] for n in names)
     pa, pb = elbow_part("upper-plate-A"), elbow_part("upper-plate-B")
-    for n in ("shoulder-hub-a", "shoulder-hub-b", "plate-drill-jig", "shoulder-output-plate"):
+    for n in names:
         part_ok(n); on_bed(n)
-    for h, side in ((ha, "A"), (hb, "B")):
-        j = radial_r(h, sum(WALL_6810_Y[side]) / 2)
-        assert B6810[0] - 0.01 <= j <= B6810[0] + 0.1, ("journal", side, j)
-        s = radial_r(h, sum((LIP_FACE_Y[side], PLATE_FACES[side][1] if side == "A" else PLATE_FACES[side][0])) / 2)
-        assert SPIGOT_R - 0.01 <= s <= SPIGOT_R + 0.1, ("spigot", side, s)
-        sgn = 1 if side == "A" else -1
-        bore = radial_r(h, sgn * (abs(LIP_FACE_Y[side]) + 3.0), inward=False)
-        assert bore >= HUB_BORE_R - 0.05, ("wire bore", side, bore)
-        past = [v.co for v in h.data.vertices if sgn * v.co.y > abs(WALL_6810_Y[side][0]) + 0.01]
-        assert max(math.hypot(p.x, p.z) for p in past) <= B6810[0] + 0.01, ("the 6810 can't slide onto the journal", side)
-        land = [v.co for v in h.data.vertices if abs(FLANGE_Y[side][1 if side == "A" else 0]) + CONE - 0.005 <= sgn * v.co.y <= abs(WALL_6810_Y[side][0]) + 0.005]
-        assert land and max(math.hypot(p.x, p.z) for p in land) <= HUB_SHOULDER_R + 0.01, ("shoulder past the 6810's inner ring", side)
-        assert max(sgn * v.co.y for v in h.data.vertices if math.hypot(v.co.x, v.co.z) > B6810[0] + 0.5) >= abs(WALL_6810_Y[side][0]) - 0.01, ("shoulder doesn't reach the 6810", side)
-    both = join([ha, hb], "hubs")
-    run = ray_len(both, (0, HUB_Y[0] - 1.0, 0), (0, 1, 0))
-    assert run is not None and run - 1.0 >= HUB_Y[1] - HUB_Y[0] - 10.0, ("wire bore blocked", run)
-    for h, p, side in ((ha, pa, "A"), (hb, pb, "B")):
-        assert overlap(h, p) < 0.05, ("hub hits its plate", side)
-        sgn = 1 if side == "A" else -1
-        spig = min(sgn * v.co.y for v in h.data.vertices if math.hypot(v.co.x, v.co.z) > E.LIP_IN_R + 0.5)
-        lip = sgn * 35.0 - sgn * ray_len(p, (30.0, sgn * 35.0, 0), (0, -sgn, 0))
-        assert abs(spig - sgn * lip) <= 0.05, ("spigot not on the lip", side, spig, lip)
-        assert touching(h, p), ("flange not on the plate", side)
-    walls = {s: round(lock_wall(p, s), 2) for p, s in ((pa, "A"), (pb, "B"))}
-    assert min(walls.values()) >= WALL_MIN, ("lock hole wall", walls)
-    n = len(LOCK_ANGLES)
-    f = SHOULDER_DESIGN_NMM / LOCK_R / n
+    # Plate A's 6810 on the stub: the land across its width, the inner ring clamped by the shoulder and the spacer.
+    y0, y1 = LIP_FACE_Y["A"], PLATE_FACES["A"][1]
+    land = radial_r(st, (y0 + y1) / 2)
+    assert STUB["bearing_r"] - 0.01 <= land <= STUB["bearing_r"] + 0.1, ("stub's bearing land", land)
+    assert min(v.co.y for v in st.data.vertices if math.hypot(v.co.x, v.co.z) > STUB["bearing_r"] + 0.05) >= y1 - 0.01, "stub wider than its land in the 6810"
+    for r in (STUB["bearing_r"] + 0.15, STUB["shoulder_r"] - 0.15):
+        up, down = ray_len(st, (r, (y0 + y1) / 2, 0), (0, 1, 0)), ray_len(sp, (r, (y0 + y1) / 2, 0), (0, -1, 0))
+        assert up is not None and abs(up - (y1 - y0) / 2) < 0.02, ("stub's shoulder not on the inner ring", r, up)
+        assert down is not None and abs(down - (y1 - y0) / 2) < 0.02, ("spacer not on the inner ring", r, down)
+    assert STUB["shoulder_r"] - STUB["bearing_r"] >= 0.3 and STUB_SPACER[1] - STUB_SPACER[0] >= 0.3, "inner ring contact under 0.3"
+    cp = compact_posed()
+    band = [v.co for o in (st, sp, cp) for v in o.data.vertices if E.Y_REAR - 0.5 <= v.co.y <= y1 + 0.5 and math.hypot(v.co.x, v.co.z) > RING_ZONE[0] - 0.5]
+    assert not [p for p in band if p.y > COMPACT_REAR_Y + 0.01], ("fixed part within 0.5 of the outer ring or the lip", band[:3])
+    sp_y = [v.co.y for v in sp.data.vertices]
+    assert abs(min(sp_y) - COMPACT_REAR_Y) < 0.01 and abs(max(sp_y) - y0) < 0.01, "spacer not between the housing and the inner ring"
+    assert abs(min(v.co.y for v in st.data.vertices if math.hypot(v.co.x, v.co.z) > STUB["pilot_r"] + 0.05) - STUB["y"][0]) < 0.01, "stub's end face"
+    assert overlap(st, cp) < 0.05 and overlap(sp, cp) < 0.05 and overlap(st, sp) < 0.05, "stub, spacer and housing overlap"
+    assert touching(sp, cp), "spacer not on the housing"
+    bore = radial_r(st, STUB["y"][0] + 0.5, inward=False)
+    assert bore >= REAR_HUB_PROUD_R - 0.05, ("stub's bore on the rear carrier's hub", bore)
+    assert radial_r(st, sum(STUB["y"]) / 2, inward=False) >= B625[0] + 0.5, "rod rubs the stub"
+    seat = radial_r(st, STUB["y"][1] - B625[2] / 2, inward=False)
+    assert B625[1] - 0.01 <= seat <= B625[1] + 0.1, ("625 seat", seat)
+    for a in STUB_SCREW_ANGLES:
+        x, z = polar(STUB_SCREW_R, a)
+        assert ray_len(st, (x, STUB["y"][1] + 1.0, z), (0, -1, 0)) is None, ("stub screw hole blocked", a)
+        seat_y = STUB["y"][1] + 1.0 - ray_len(st, (x + 2.5, STUB["y"][1] + 1.0, z), (0, -1, 0))
+        assert abs(seat_y - STUB["head_y"]) < 0.02, ("stub screw head seat", a, seat_y)
+        assert material_round(st, (x, (y0 + y1) / 2, z), (0, 1, 0), M3_CLEAR_R) >= WALL_MIN, ("stub screw wall", a)
+    grip = STUB["head_y"] - COMPACT_REAR_Y
+    assert 3.0 <= STUB["screw_l"] - grip <= M3_INSERT_DEPTH - 0.5, ("stub screws into the housing", STUB["screw_l"] - grip)
+    # Running gaps: the stub and the compact clear everything that turns with the arm, a full turn round.
+    fixed = concat(fixed_shoulder(), "fixed shoulder")
+    fv = [v.co.copy() for v in fixed.data.vertices]; fbox, tf = bounds(fv, 10.0), tree(fixed)
+    arm0 = turning_shoulder(0.0)
+    worst, at = math.inf, None
+    for psi in range(-180, 181):
+        arm = copy(arm0, "arm"); arm.data.transform(rot_shoulder(psi))
+        g = sweep_gap(arm, tf, fv, fbox)
+        if g < worst:
+            worst, at = g, psi
+        bpy.data.objects.remove(arm)
+    assert worst >= 0.5, ("a fixed part of the shoulder within 0.5 of a turning one", round(worst, 2), at)
+    # The link: the output plate's dogs in hub B's nose, its screws into the carrier, the nose inside plate B's lip.
+    end = HUB_Y[1]
+    assert max(math.hypot(v.co.x, v.co.z) for v in hb.data.vertices if LIP_FACE_Y["B"] + 0.01 <= v.co.y <= end + 0.01) <= HUB_B_NOSE[0] + 0.01, "nose wider than plate B's lip"
+    assert overlap(op, hb) < 0.05 and touching(op, hb), "output plate's dogs don't sit in hub B's nose"
+    assert abs(max(v.co.y for v in op.data.vertices) - COMPACT_Y) < 0.01, "output plate not on the compact's carrier"
+    assert overlap(op, cp) < 0.05, "output plate hits the housing"
+    dog = SHOULDER_DESIGN_NMM / DOG_PCD_R / len(DOG_ANGLES) / (2 * DOG_R * DOG_H)
+    J = math.pi / 2 * (HUB_B_NOSE[0] ** 4 - HUB_BORE_R ** 4)
+    nose = SHOULDER_DESIGN_NMM * HUB_B_NOSE[0] / J
+    assert dog <= PRINTED_MPA and nose <= PRINTED_MPA, ("link", dog, nose)
+    for x, z in [polar(DOG_PCD_R, a) for a in DOG_ANGLES]:
+        assert ray_len(hb, (x, end + 0.01, z), (0, -1, 0)) >= DOG_H + 0.2, "dog hole too shallow"
+    for x, z in [polar(F.INSERT_PCD_R, a) for a in F.INSERT_ANGLES]:
+        y_floor = end - HUB_FLOOR - 1.0
+        seat = y_floor + ray_len(hb, (x + 2.5, y_floor, z), (0, 1, 0))
+        reach = HUB_SCREW_L - (COMPACT_Y - seat)
+        assert 3.0 <= reach <= 4.0, ("M3 x 12 into the carrier's inserts", reach)
+        assert ray_len(hb, (x, end + 0.01, z), (0, -1, 0)) is None, ("hub floor screw hole blocked", x, z)
+    # Hub B's lock to plate B, carried over.
+    assert overlap(hb, pb) < 0.05 and touching(hb, pb), "hub B on plate B"
+    wall = round(lock_wall(pb, "B"), 2)
+    assert wall >= WALL_MIN, ("lock hole wall", wall)
+    f = SHOULDER_DESIGN_NMM / LOCK_R / len(LOCK_ANGLES)
     shear, bearing = f / (math.pi * 1.5 ** 2), f / (3.0 * E.PLATE_T)
     assert shear <= PRINTED_MPA and bearing <= PRINTED_MPA, ("plate lock", shear, bearing)
-    for h, side in ((ha, "A"), (hb, "B")):
-        sgn = 1 if side == "A" else -1
-        for a in LOCK_ANGLES:
-            x, z = polar(LOCK_R, a)
-            d = ray_len(h, (x, sgn * (PLATE_FACES[side][1] if side == "A" else -PLATE_FACES[side][0]) - sgn * 1.0, z), (0, sgn, 0))
-            assert d is not None and abs(d - 1.0 - M3_INSERT_DEPTH) < 0.06, ("lock insert", side, a, d)
-            assert LOCK_BOLT_L - E.PLATE_T >= 3.0 and LOCK_BOLT_L - E.PLATE_T <= M3_INSERT_DEPTH - 0.5, "lock bolt engagement"
-    dog = SHOULDER_DESIGN_NMM / DOG_PCD_R / len(DOG_ANGLES) / (2 * DOG_R * DOG_H)
-    assert dog <= PRINTED_MPA, ("dog bearing", dog)
-    for x, z in [polar(DOG_PCD_R, a) for a in DOG_ANGLES]:
-        assert ray_len(ha, (x, HUB_Y[1] + 0.01, z), (0, -1, 0)) >= DOG_H + 0.2, "dog hole too shallow"
-    carrier_face = HUB_Y[1] + OUT_PLATE_T
-    for x, z in [polar(F.INSERT_PCD_R, a) for a in F.INSERT_ANGLES]:
-        assert ray_len(ha, (x, HUB_Y[1] + 0.01, z), (0, -1, 0)) is None or ray_len(ha, (x, HUB_Y[1] + 0.01, z), (0, -1, 0)) > HUB_FLOOR, "screw hole blocked"
-        floor = HUB_Y[1] - HUB_FLOOR - 1.0 + ray_len(ha, (x + 2.4, HUB_Y[1] - HUB_FLOOR - 1.0, z), (0, 1, 0))
-        reach = HUB_SCREW_L - (carrier_face - floor)
-        assert 3.0 <= reach <= 4.0, ("M3 x 12 into the carrier's inserts", reach)
-    assert overlap(op, ha) < 0.05 and touching(op, ha), "output plate's dogs don't sit in the hub"
-    check_jig(jig, pa, pb)
-    REPORT.update({"lock_r": LOCK_R, "lock_angles": LOCK_ANGLES, "lock_wall_mm": walls, "lock_shear_mpa": round(shear, 1),
-                   "lock_bearing_mpa": round(bearing, 1), "dog_bearing_mpa": round(dog, 1), "hub_y": HUB_Y,
-                   "bolts": {"plate lock (from inside the plate gap, into flange inserts)": LOCK_BOLT_L, "hub floor to compact carrier": HUB_SCREW_L}})
-    for o in (pa, pb, both):
+    # Screws: room round each head and a straight path to it, with every part in place at that step.
+    arm_parts = [pa, pb, hb, op, cp]
+    for a in LOCK_ANGLES:
+        x, z = polar(LOCK_R, a)
+        screw_access(("plate lock", a), (x, PLATE_FACES["B"][1], z), (0, 1, 0), 2.75, BOLT_HEAD_H, arm_parts)
+    for a in F.INSERT_ANGLES:
+        x, z = polar(F.INSERT_PCD_R, a)
+        head_seat = end + OUT_PLATE_T + 3.3 - HUB_SCREW_L
+        screw_access(("hub floor", a), (x, head_seat, z), (0, -1, 0), 2.75, BOLT_HEAD_H, arm_parts)
+    for a in STUB_SCREW_ANGLES:
+        x, z = polar(STUB_SCREW_R, a)
+        screw_access(("stub", a), (x, STUB["head_y"], z), (0, 1, 0), 2.75, BOLT_HEAD_H, arm_parts + [st, sp, PARTS["body-wall-A"]])
+    j180 = check_jig(jig, pb)
+    REPORT.update({"stub": {k: v for k, v in STUB.items()}, "rod_out_mm": round(ROD_OUT, 1), "shoulder_core_min_gap_mm": round(worst, 2),
+                   "shoulder_core_min_gap_psi": at, "jig_180_overlap_mm3": round(j180, 1),
+                   "link_mpa": {"dog bearing": round(dog, 1), "nose shear": round(nose, 2)}, "compact_y": COMPACT_Y, "hub_y": HUB_Y,
+                   "lock_r": LOCK_R, "lock_angles": LOCK_ANGLES, "lock_wall_mm": wall, "lock_shear_mpa": round(shear, 1),
+                   "lock_bearing_mpa": round(bearing, 1),
+                   "bolts": {"plate lock (from inside the plate gap, into flange inserts)": LOCK_BOLT_L, "hub floor to compact carrier": HUB_SCREW_L,
+                             "stub to the compact's housing (from the stub's outer end)": STUB["screw_l"]}})
+    for o in (pa, pb, cp, fixed, arm0):
         bpy.data.objects.remove(o)
 
 
-def check_jig(jig, pa, pb):
-    jb = copy(jig, "jig on B"); jb.data.transform(Matrix.Rotation(math.pi, 4, 'Z'))
-    for j, p, side in ((jig, pa, "A"), (jb, pb, "B")):
-        assert overlap(j, p) < 0.05, ("jig hits the plate", side)
-        assert touching(j, p), ("jig doesn't sit on the plate", side)
-        sgn = 1 if side == "A" else -1
-        y_out = PLATE_FACES[side][1] if side == "A" else PLATE_FACES[side][0]
-        for a in LOCK_ANGLES:
-            x, z = polar(LOCK_R, a)
-            x = x if side == "A" else -x
-            assert ray_len(j, (x, y_out + sgn * (JIG_T + 1.0), z), (0, -sgn, 0)) is None, ("guide hole blocked", side, a)
-        fence = [v.co for v in j.data.vertices if sgn * v.co.y < sgn * y_out - 1.0 and abs(v.co.x) > E.PLATE_R]
-        assert any(p.x > 0 for p in fence) and any(p.x < 0 for p in fence), ("no fences on the plate's sides", side)
-    s = radial_r(jig, PLATE_FACES["A"][1] - JIG_SPIGOT_DEPTH / 2, r0=35.0)   # inside the fences
+def check_jig(jig, pb):
+    """On plate B: seated, guides clear, fences on both sides; turned half round about the seat's axis it can't seat."""
+    assert overlap(jig, pb) < 0.05, "jig hits plate B"
+    assert touching(jig, pb), "jig doesn't sit on plate B"
+    y_out = PLATE_FACES["B"][0]
+    for a in LOCK_ANGLES:
+        x, z = polar(LOCK_R, a)
+        assert ray_len(jig, (-x, y_out - (JIG_T + 1.0), z), (0, 1, 0)) is None, ("guide hole blocked", a)
+    fence = [v.co for v in jig.data.vertices if v.co.y > y_out + 1.0 and abs(v.co.x) > E.PLATE_R]
+    assert any(p.x > 0 for p in fence) and any(p.x < 0 for p in fence), "no fences on plate B's sides"
+    s = radial_r(jig, y_out + JIG_SPIGOT_DEPTH / 2, r0=35.0)
     assert SEAT_R - 0.2 <= s <= SEAT_R - 0.02, ("jig spigot", s)
-    bpy.data.objects.remove(jb)
+    over = copy(jig, "jig turned over"); over.data.transform(Matrix.Rotation(math.pi, 4, 'Y'))
+    v = overlap(over, pb)
+    assert v >= 1.0, ("the jig seats on plate B turned half round", v)
+    bpy.data.objects.remove(over)
+    return v
 
 
 def concat(objs, name):
@@ -427,11 +554,7 @@ def wall(side):
 
 
 def wall_a():
-    w = wall("A")
-    for a in CAGE_SCREW_ANGLES:
-        x, z = polar(CAGE_SCREW_R, a)
-        L.cut(w, cyl_y("cage insert", x, z, M3_INSERT_R, WALL_Y["A"][1] - M3_INSERT_DEPTH - 1.5, WALL_Y["A"][1] + 1.0, n=32))
-    return w
+    return wall("A")
 
 
 def wall_b():
@@ -447,21 +570,6 @@ def wall_b():
                    mz - SENSOR[1] / 2 - 0.1, mz + SENSOR[1] / 2 + 0.1))
     L.cut(w, L.box("leads", -1.5, 1.5, y - 1.0, y + 1.0, -WALL_BOSS_R["B"] - 1.0, mz))
     return w
-
-
-def compact_cage():
-    """Under the compact's front face on wall A: inserts for its four R30 bolts, four M3s into inserts in wall A."""
-    y0, y1 = CAGE_Y
-    c = cyl_y("compact-cage", 0, 0, CAGE_R, y0, y1, n=192)
-    L.cut(c, cyl_y("round the hub's end", 0, 0, CAGE_BORE_R[0], y0 - 1.0, HUB_Y[1] + 0.5, n=192))
-    L.cut(c, cyl_y("bore", 0, 0, CAGE_BORE_R[1], y0 - 1.0, y1 + 1.0, n=128))
-    for x, z in [polar(F.BOLT_R, a) for a in F.BOLT_ANGLES]:
-        L.cut(c, cyl_y("insert", x, z, M3_INSERT_R, y1 - M3_INSERT_DEPTH, y1 + 1.0, n=32))
-        L.cut(c, cyl_y("bolt", x, z, M3_CLEAR_R, y0 - 1.0, y1, n=32))
-    for x, z in [polar(CAGE_SCREW_R, a) for a in CAGE_SCREW_ANGLES]:
-        L.cut(c, cyl_y("screw", x, z, M3_CLEAR_R, y0 - 1.0, y1 + 1.0, n=32))
-    PRINT_POSE["compact-cage"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, y1))
-    return c
 
 
 def stop_tab():
@@ -637,9 +745,9 @@ def sweep_gap(arm, tf, fixed_verts, fixed_box):
 
 
 def check_body():
-    names = ("body-wall-A", "body-wall-B", "compact-cage", "shoulder-stop-collar")
-    wa, wb, cage, col = (PARTS[n] for n in names)
-    ha, hb, op = PARTS["shoulder-hub-a"], PARTS["shoulder-hub-b"], PARTS["shoulder-output-plate"]
+    names = ("body-wall-A", "body-wall-B", "shoulder-stop-collar")
+    wa, wb, col = (PARTS[n] for n in names)
+    hb, st = PARTS["shoulder-hub-b"], PARTS["shoulder-stub"]
     for n in names:
         part_ok(n); on_bed(n)
     rounds = {}
@@ -658,59 +766,21 @@ def check_body():
         for x, y in WALL_FOOT[side]:
             assert ray_len(w, (x, y, -SHOULDER_AXIS_Z + FOOT_T + 1.0), (0, 0, -1)) is None, ("foot hole blocked", side, x)
             rs.append(material_round(w, (x, y, -SHOULDER_AXIS_Z + FOOT_T / 2), (0, 0, 1), M3_CLEAR_R))
-        if side == "A":
-            for a in CAGE_SCREW_ANGLES:
-                x, z = polar(CAGE_SCREW_R, a)
-                rs.append(material_round(w, (x, WALL_Y["A"][1] - M3_INSERT_DEPTH / 2, z), (0, 1, 0), M3_INSERT_R))
         rounds[side] = round(min(rs), 2)
         assert rounds[side] >= BODY_MIN, ("material round a wall's seat or holes", side, rs)
-    for h, w, side in ((ha, wa, "A"), (hb, wb, "B")):
-        assert overlap(h, w) < 0.05, ("hub hits its wall", side)
-    # The compact on its cage, the cage on wall A.
-    cp = compact_posed()
-    for o, n in ((wa, "wall A"), (ha, "hub A"), (op, "output plate"), (cage, "cage")):
-        assert overlap(cp, o) < 0.05, ("compact hits", n)
-    for o, n in ((wa, "wall A"), (ha, "hub A"), (op, "output plate")):
-        assert overlap(cage, o) < 0.05, ("cage hits", n)
-    assert touching(cage, wa), "cage not on wall A"
-    assert touching(cp, cage), "compact not on its cage"
-    assert abs(max(v.co.y for v in op.data.vertices) - COMPACT_Y) < 0.01, "output plate not on the compact's carrier"
-    assert abs(min(v.co.y for v in cp.data.vertices) - HOUSING_FRONT_Y) < 0.01, "compact's front face"
-    bore = radial_r(cp, HOUSING_FRONT_Y + 0.5, inward=False)
-    assert CAGE_BORE_R[1] >= bore + 0.3, ("cage bore under the carrier", bore)
-    tip = HOUSING_FRONT_Y - (COMPACT_BOLT_L - F.HOUSING_L)
-    assert COMPACT_BOLT_L - F.HOUSING_L >= M3_INSERT_DEPTH + 0.5 and tip >= CAGE_Y[0] + 0.3, ("compact bolts into the cage", tip)
-    cage_rs = []
-    for a in F.BOLT_ANGLES:
-        x, z = polar(F.BOLT_R, a)
-        assert ray_len(cage, (x, CAGE_Y[1] + 1.0, z), (0, -1, 0)) is None, ("compact bolt hole blocked", a)
-        d = ray_len(cage, (x + 1.85, CAGE_Y[1] + 1.0, z), (0, -1, 0))
-        assert d is not None and abs(d - 1.0 - M3_INSERT_DEPTH) < 0.06, ("compact bolt insert", a, d)
-        cage_rs.append(material_round(cage, (x, CAGE_Y[1] - M3_INSERT_DEPTH / 2, z), (0, 1, 0), M3_INSERT_R))
-    assert min(cage_rs) >= BODY_MIN, ("material round the cage's inserts", cage_rs)
-    cage_t = CAGE_Y[1] - CAGE_Y[0]
-    assert 3.0 <= CAGE_SCREW_L - cage_t <= M3_INSERT_DEPTH, ("cage screws into wall A", CAGE_SCREW_L - cage_t)
-    for a in CAGE_SCREW_ANGLES:
-        x, z = polar(CAGE_SCREW_R, a)
-        assert ray_len(cage, (x, CAGE_Y[1] + 1.0, z), (0, -1, 0)) is None, ("cage screw hole blocked", a)
-        d = ray_len(wa, (x, CAGE_Y[0] + 1.0, z), (0, -1, 0)) - 1.0
-        assert d >= CAGE_SCREW_L - cage_t + 0.5, ("cage screw bottoms in wall A", a, d)
-    gap80 = PULLEY80_Y - (COMPACT_REAR_Y + BOLT_HEAD_H)
-    assert gap80 >= 1.0 - 1e-6, ("80T on the compact's bolt heads", gap80)
-    assert max(v.co.y for v in cp.data.vertices) <= PULLEY80_Y - 1.0 + 0.01, "80T on the compact"
-    worst, low = sweep([copy(o, "f") for o in (wa, wb, cage, cp)] + [pulley80_envelope()] +
+    assert overlap(hb, wb) < 0.05, "hub B hits wall B"
+    assert overlap(st, wa) < 0.05 and touching(st, wa), "stub not on wall A"
+    gap80 = PULLEY80_Y - STUB["y"][1]
+    assert gap80 >= 1.0 - 1e-6, ("80T on the stub's end", gap80)
+    worst, low = sweep([copy(o, "f") for o in (wa, wb)] + [pulley80_envelope()] +
                        [shoulder_belt_envelope(s) for s in (-MOTOR_SLOT, MOTOR_SLOT)], "body")
     assert worst >= 2.0, ("upper arm within 2 of the body", worst)
     assert low >= 2.0, ("upper arm within 2 of the turntable", low)
     check_stops(col, wb, hb)
     assert SHOULDER_AXIS_Z >= B6810[1] + 3.0, "shoulder axis too low for the walls' seats"
     REPORT.update({"shoulder_min_gap_mm": round(worst, 2), "arm_above_turntable_mm": round(low, 1), "SHOULDER_AXIS_Z": SHOULDER_AXIS_Z,
-                   "rod_out_mm": round(ROD_OUT, 1), "pulley80_y": PULLEY80_Y, "shoulder_belt_plane_y": SHOULDER_BELT_PLANE_Y,
-                   "compact_y": COMPACT_Y, "wall_material_mm": rounds, "cage_material_mm": round(min(cage_rs), 2),
-                   "housing_bore_r": round(bore, 2)})
-    REPORT["bolts"].update({"compact to cage (R30, into inserts)": COMPACT_BOLT_L, "cage to wall A": CAGE_SCREW_L,
-                            "wall feet into the turntable": FOOT_BOLT_L, "stop collar to hub B": COLLAR_SCREW_L})
-    bpy.data.objects.remove(cp)
+                   "pulley80_y": PULLEY80_Y, "shoulder_belt_plane_y": SHOULDER_BELT_PLANE_Y, "wall_material_mm": rounds})
+    REPORT["bolts"].update({"wall feet into the turntable": FOOT_BOLT_L, "stop collar to hub B": COLLAR_SCREW_L})
 
 
 def sweep(objs, what):
@@ -748,7 +818,7 @@ def bore_r_at(o, cx, cz, y):
 def check_shoulder_drive():
     brk = PARTS["shoulder-motor-bracket"]
     plates = {k: PARTS[f"shoulder-motor-plate-{k}"] for k in MOTORS}
-    walls, hubs = [PARTS["body-wall-A"], PARTS["body-wall-B"]], [PARTS["shoulder-hub-a"], PARTS["shoulder-hub-b"]]
+    walls, hubs = [PARTS["body-wall-A"], PARTS["body-wall-B"]], [PARTS["shoulder-stub"], PARTS["shoulder-hub-b"]]
     for n in ["shoulder-motor-bracket"] + [f"shoulder-motor-plate-{k}" for k in MOTORS]:
         part_ok(n); on_bed(n)
     mx, mz = motor_at()
@@ -774,14 +844,14 @@ def check_shoulder_drive():
     cp = compact_posed()
     p80 = posed_stl(os.path.join(OUT, "shoulder-pulley-80T.stl"), "80T",
                     Matrix.Translation((0, PULLEY80_Y + E.PULLEY_H, 0)) @ Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1))))
-    gap80 = min(v.co.y for v in p80.data.vertices) - (COMPACT_REAR_Y + BOLT_HEAD_H)
-    assert 1.0 - 1e-6 <= gap80 <= 1.2, ("80T's inside face to the compact's bolt heads", gap80)
+    gap80 = min(v.co.y for v in p80.data.vertices) - STUB["y"][1]
+    assert gap80 >= 1.0 - 1e-6, ("80T's inside face to the stub's end", gap80)
     assert overlap(p80, cp) < 0.05, "80T hits the compact"
     lug_gaps, reach = {}, {}
     for s in (-MOTOR_SLOT, MOTOR_SLOT):
         for k in MOTORS:
             box, pl = shoulder_motor_box(k, s), moved(plates[k], s, "plate")
-            for o, n in zip(walls + hubs + [brk, cp], ("wall A", "wall B", "hub A", "hub B", "bracket", "compact")):
+            for o, n in zip(walls + hubs + [brk, cp], ("wall A", "wall B", "stub", "hub B", "bracket", "compact")):
                 assert overlap(box, o) < 0.05, ("motor box hits", n, k, s)
             assert min(v.co.z for v in box.data.vertices) >= -SHOULDER_AXIS_Z + 2.0, ("motor on the turntable", k, s)
             assert overlap(pl, brk) < 0.05 and touching(pl, brk), ("swap plate on the bracket", k, s)
@@ -1302,11 +1372,11 @@ def check_legs():
 
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-PARTS["shoulder-hub-a"], PARTS["shoulder-hub-b"] = hub()
+PARTS["shoulder-stub"], PARTS["shoulder-stub-spacer"] = stub(), stub_spacer()
+PARTS["shoulder-hub-b"] = hub_half("B")
 PARTS["shoulder-output-plate"] = output_plate()
 PARTS["plate-drill-jig"] = drill_jig()
 PARTS["body-wall-A"], PARTS["body-wall-B"] = wall_a(), wall_b()
-PARTS["compact-cage"] = compact_cage()
 PARTS["shoulder-stop-collar"] = stop_collar()
 for k in MOTORS:
     PARTS[f"shoulder-motor-plate-{k}"] = motor_plate(k)
@@ -1315,7 +1385,7 @@ PARTS["turntable"], PARTS["base-ring-130T"] = turntable(), base_ring()
 PARTS["spigot-spacer"], PARTS["spigot-cap"] = spigot_spacer(), spigot_cap()
 PARTS["fixed-base"], PARTS["base-motor-plate"] = fixed_base(), base_motor_plate()
 PARTS["foot"], PARTS["foot-pad"] = foot_part(), foot_pad()
-CHECKS += [check_hub, check_body, check_shoulder_drive, check_base, check_legs]
+CHECKS += [check_shoulder_core, check_body, check_shoulder_drive, check_base, check_legs]
 for check in CHECKS:
     check()
 print("SHOULDER", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, **REPORT}))
