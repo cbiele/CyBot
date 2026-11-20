@@ -144,29 +144,44 @@ BOX = {"u": (-SHOULDER_BELT_C + 45.0, PLATE_HALF + 4.0 + 8.0), "w": 60.0, "slab"
 PULL_SCREW_L, PULL_BORE = 20, 12.0          # the pull screw's insert, then a clearance bore on into the tab
 
 # The base (axis 1): the base axis is the shoulder frame's z axis. The turntable turns on two 6810s on a printed Ø50
-# spigot rising from the fixed base; a cap and a spacer clamp the inner rings onto the spigot's shoulder, the
-# turntable's top lip and the 130T ring (screwed under its hub) hold the outer rings. One piece each fits the bed.
+# spigot rising from the drum; a cap and a spacer clamp the inner rings onto the spigot's shoulder, the turntable's
+# top lip and the 130T ring (screwed under its hub) hold the outer rings. The base motor stands shaft-down on a shelf
+# of the drum beside the turntable, as on V1, its top 3 under the turntable so everything on the turntable passes over
+# it; that sets the 20T's band, so the ring's, so the bearings' spacing, from the top down.
 TURNTABLE_Z = -SHOULDER_AXIS_Z
 TURNTABLE_T = 8.0
-BASE_6810_Z = (TURNTABLE_Z - 7.0 - B6810[2], TURNTABLE_Z - 7.0 - B6810[2] - 45.0)   # each bearing's lower face; centres 45 apart
+BASE_MOTOR_L = 50.0                          # a 17HS19's 48 body, plus 2
+BASE_MOTOR_TOP = TURNTABLE_Z - TURNTABLE_T - 3.0
+BASE_PLATE_T = 5.0
+BASE_PLATE_Z = (BASE_MOTOR_TOP - BASE_MOTOR_L - BASE_PLATE_T, BASE_MOTOR_TOP - BASE_MOTOR_L)   # the motor's face on its top
+SHELF_T = 5.0
+SHELF_Z = (BASE_PLATE_Z[0] - SHELF_T, BASE_PLATE_Z[0])
+BASE20_HUB_Z = (SHELF_Z[0] - 1.0 - E.PULLEY_HUB, SHELF_Z[0] - 1.0)   # the 20T hangs under the shelf, hub up
+PITCH, GROOVE_R, GROOVE_DEPTH, FLANGE_LIP, FLANGE_T_P, TEETH_W = 3.0, 1.05, 1.30, 1.5, 1.5, 11.5
+RING_Z = (BASE20_HUB_Z[0] - FLANGE_T_P - TEETH_W, BASE20_HUB_Z[0] - FLANGE_T_P)   # the teeth band, the 20T's and the ring's
+TT_HUB_Z0 = RING_Z[1] + FLANGE_T_P           # the hub's lower face, on the lower 6810's
+BASE_6810_Z = (TURNTABLE_Z - 7.0 - B6810[2], TT_HUB_Z0)   # each bearing's lower face
+BASE_6810_SPACING = BASE_6810_Z[0] - BASE_6810_Z[1]
 TT_LIP_R, RING_LIP_R = 31.0, 31.0
-TT_HUB_R, TT_HUB_Z0 = 44.0, BASE_6810_Z[1]                       # the hub's lower face, on the lower 6810's
+TT_HUB_R = 40.0                              # slim, so the base push screw's driver has its 30
 SPIGOT = {"r": 25.0, "bore_r": 16.0, "shoulder_r": 27.0, "top": BASE_6810_Z[0] + B6810[2] - 0.3}
 SPACER_R, SPACER_Y = 27.0, (BASE_6810_Z[1] + B6810[2], BASE_6810_Z[0])
 CAP_R, CAP_T, CAP_SCREW_R, CAP_SCREW_ANGLES, CAP_SCREW_L = 27.0, 3.0, 20.5, (90.0, 210.0, 330.0), 8
-RING_TEETH, RING_SCREW_R, RING_SCREW_ANGLES, RING_SCREW_L = 130, 38.5, (45.0, 135.0, 225.0, 315.0), 20
+RING_TEETH, RING_SCREW_R, RING_SCREW_ANGLES, RING_SCREW_L = 130, 36.5, (45.0, 135.0, 225.0, 315.0), 20
 # The ring's teeth as tools/blender/htd3m_pulley.py cuts them (copied: importing it runs that script).
-PITCH, GROOVE_R, GROOVE_DEPTH, FLANGE_LIP, FLANGE_T_P, TEETH_W = 3.0, 1.05, 1.30, 1.5, 1.5, 11.5
 
 
 def od_r(teeth):
     return teeth * PITCH / math.pi / 2 - 0.381
 
 
-RING_Z = (TT_HUB_Z0 - FLANGE_T_P - TEETH_W, TT_HUB_Z0 - FLANGE_T_P)          # the teeth band
 RING_Z0 = RING_Z[0] - FLANGE_T_P                                              # its lower face
-BASE_TOP_Z = RING_Z[0] - 9.5 - 5.0                                            # the 20T's teeth on the band, over a 5 plate
-BASE_T, BASE_DISC_R, BASE_ARM_HALF, BASE_ARM_END = 8.0, 96.0, 42.0, -152.0
+BENCH_Z = None                               # set below, from the drum
+DRUM_TOP = RING_Z0 - BOLT_HEAD_H - 1.5       # under the ring's screw heads, which turn with it
+DRUM_R, DRUM_H = 96.0, 75.0
+BENCH_Z = DRUM_TOP - DRUM_H                  # the drum's underside: the bench
+DRUM = (DRUM_R, DRUM_TOP, BENCH_Z)
+BASE_TOP_Z, BASE_T, BASE_DISC_R = DRUM_TOP, DRUM_H, DRUM_R   # the legs' sockets (Task 5) still read these
 BASE_MOTOR_DEG = 270.0
 BASE_U = (math.cos(math.radians(BASE_MOTOR_DEG)), math.sin(math.radians(BASE_MOTOR_DEG)))
 
@@ -175,17 +190,21 @@ def base_motor_at(slot=0.0):
     return tuple((BASE_BELT_C + slot) * c for c in BASE_U)
 
 
-BASE_MOTOR_AT = (base_motor_at()[0], base_motor_at()[1], BASE_TOP_Z)
-BASE_PLATE_HALF, BASE_PLATE_T = 37.0, 5.0
-BASE_PLATE_INSERTS = [(-31.0, -31.0), (31.0, -31.0), (-31.0, 31.0), (31.0, 31.0)]   # in the fixed base, about the motor at slot 0
-BASE_PLATE_SCREW_L = 10
-BASE_LUG = (BASE_BELT_C - BASE_PLATE_HALF - MOTOR_SLOT - 1.0, 8.0, 7.0, 8.5)        # its face's radius, thickness, half width, height
-BASE_PUSH_L = 16
-BASE_MOTOR_L = 60.0
+BASE_MOTOR_AT = (base_motor_at()[0], base_motor_at()[1], BASE_PLATE_Z[1])
+# The plate: along the motor's radius (r) and across it (t), about the motor at slot 0. Two slotted M3s each side into
+# inserts through the shelf; a push screw from the inboard side, its head towards the axis, through a lug on the shelf.
+BASE_PLATE_HALF_R, BASE_PLATE_HALF_T = 25.0, 33.0
+BASE_PLATE_INSERTS = [(-15.0, -27.0), (15.0, -27.0), (-15.0, 27.0), (15.0, 27.0)]   # (r, t) about the motor at slot 0
+BASE_PLATE_SCREW_L = 8
+SHELF = {"r": (BASE_BELT_C - BASE_PLATE_HALF_R - 4.0 - 5.0, BASE_BELT_C + BASE_PLATE_HALF_R + MOTOR_SLOT + 1.0),
+         "half": 36.0, "wall": 6.0, "window": 23.0, "wall_r0": 90.0}
+BASE_LUG = {"r": (SHELF["r"][0], SHELF["r"][0] + 5.0), "half": 7.0}   # its insert fills it: the screw's head stays out towards the axis
+BASE_PUSH_L = 12
 BASE_DESIGN_NMM = 4.0e3                     # a 17HS19 stalled through 6.5:1
-# Stops: one tab under the turntable, one block on the fixed base opposite it at home; they meet at +-172.
-PHI_TAB_DEG, PHI_HALF, PHI_R = 180.0, 4.0, (66.0, 90.0)
-PHI_TAB_Z, PHI_BLOCK_TOP = (TURNTABLE_Z - TURNTABLE_T, TURNTABLE_Z - 56.0), TURNTABLE_Z - 49.0
+# Stops: one tab under the turntable, one block on the drum opposite it at home; they meet at +-172. Both between the
+# ring's flange and the base motor's plate.
+PHI_TAB_DEG, PHI_HALF, PHI_R = 180.0, 4.0, (65.0, 88.0)   # 4 degrees half: they meet at 172; r65 is 1.4 off the ring's flange, r88 short of the base motor
+PHI_TAB_Z, PHI_BLOCK_TOP = (TURNTABLE_Z - TURNTABLE_T, BASE_PLATE_Z[1] + 3.0), BASE_PLATE_Z[1] + 10.0
 BASE_HALL = {"magnet": (78.0, PHI_TAB_DEG, PHI_TAB_Z[1] + MAGNET_RECESS), "sensor_top": PHI_TAB_Z[1] - 0.5}
 HALL_POST_HALF = 5.0
 SHOULDER_HALL = {"magnet": (MAGNET_AT_R, TAB_PHI, TAB_Y[0] - MAGNET_RECESS), "sensor_face_y": WALL_Y["B"][1]}
