@@ -87,4 +87,30 @@ TAB_PHI, TAB_HALF, TAB_R, TAB_Y = 270.0, 12.0, (STOP_COLLAR_R - 0.1, 42.0), (WAL
 STOP_BLOCK_DEG, STOP_R = 30.0, (31.0, 42.0)
 MAGNET_R, MAGNET_D, MAGNET_AT_R, MAGNET_RECESS = 3.0, 3.0, 36.0, 0.7
 SENSOR = E.SENSOR
+
+# The shoulder motor: 48 degrees off straight down towards the rear, so a NEMA23 clears wall A's edge, body inboard
+# (towards wall A) behind a swap plate on an upright bracket on the turntable, slotted along the belt line.
+SHOULDER_MOTOR_DEG, MOTOR_SLOT = 48.0, 3.0
+BELT_U = (-math.sin(math.radians(SHOULDER_MOTOR_DEG)), -math.cos(math.radians(SHOULDER_MOTOR_DEG)))   # (x, z) from the 80T to the motor
+
+
+def motor_at(slot=0.0):
+    return tuple((SHOULDER_BELT_C + slot) * c for c in BELT_U)
+
+
+SHOULDER_MOTOR_AT = (motor_at()[0], SHOULDER_BELT_PLANE_Y, motor_at()[1])
+MOTORS = {"17": {"sq": 42.3, "hole": 31.0 / 2, "hole_r": M3_CLEAR_R, "pilot_r": 22.4 / 2 + 0.1, "length": 60.0, "shaft": 24.0},
+          "23": {"sq": 57.0, "hole": 47.14 / 2, "hole_r": M5_CLEAR_R, "pilot_r": 38.5 / 2 + 0.1, "length": 76.0, "shaft": 21.0}}
+BRACKET_Y = (PULLEY80_Y - 1.0 - 8.0, PULLEY80_Y - 1.0)          # the 20T's hub 1.0 off its face, as the elbow's
+SWAP_Y = (BRACKET_Y[0] - 5.0, BRACKET_Y[0])                      # the motor's face on the swap plate's far side
+SWAP_HALF = 43.0
+PLATE_MOUNT = [(36.0, 0.0), (0.0, 36.0), (-36.0, 0.0), (0.0, -36.0)]   # inserts in each swap plate, about the motor's axis
+SWAP_SCREW_L = 12
+CHAMFER_D = 52.0                                                 # the swap plate's corner towards the 80T, square to the belt line
+LUG_D, LUG_HALF_W = (CHAMFER_D + MOTOR_SLOT + 1.0, CHAMFER_D + MOTOR_SLOT + 11.0), 7.0
+PUSH_SCREW_L = 20
+BRACKET_BOX = (-50.0, 56.0, -52.0, 52.0)                          # x0, x1 about the motor; z1 about it (z0 is the turntable)
+BRACKET_WINDOW_R = 12.0
+BRACKET_FOOT_Y = (103.0, BRACKET_Y[0])
+BRACKET_FOOT = [(-37.0, 0.0), (0.0, 0.0), (37.0, 0.0)]           # x about the motor; y at the foot's middle
 SHOULDER_HALL = {"magnet": (MAGNET_AT_R, TAB_PHI, TAB_Y[0] - MAGNET_RECESS), "sensor_face_y": WALL_Y["B"][1]}

@@ -30,6 +30,7 @@ PULLEYS = [                                         # name, teeth, bore radius, 
     ("axis2-pulley-30T", 30, 3.275, 2.675, 7.0, True, "axis2"), # O6.35 D shaft, 5.85 across the flat
     ("axis3-pulley-20T", 20, 2.6, 1.6, 7.0, True, "elbow"),     # the elbow's 17HS8401B, the same D shaft as axis 1
     ("axis3-pulley-60T", 60, 2.6, 2.1, 7.0, True, "elbow"),     # the elbow compact's Ø5 rod, flat 2.1 off the axis as on the GT2 60Ts
+    ("shoulder-pulley-80T", 80, 2.6, 2.1, 7.0, True, "shoulder"),  # the shoulder compact's Ø5 rod, as the 60T
 ]
 
 z_teeth0 = FLANGE_T; z_teeth1 = z_teeth0 + TEETH_W
@@ -67,7 +68,7 @@ def radial(o, z, n=1440):
     bm = bmesh.new(); bm.from_mesh(o.data); tree = mathutils.bvhtree.BVHTree.FromBMesh(bm); out = []
     for k in range(n):
         a = 2 * math.pi * (k + 0.37) / n; d = Vector((math.cos(a), math.sin(a), 0)); c = Vector((0, 0, z))
-        h = tree.ray_cast(c + d * 30, -d); out.append((h[0] - c).length if h[0] is not None else None)
+        h = tree.ray_cast(c + d * 60, -d); out.append((h[0] - c).length if h[0] is not None else None)
     bm.free(); return out
 
 def bore_rays(o):

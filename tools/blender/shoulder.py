@@ -503,10 +503,90 @@ def pulley80_envelope():
     return e
 
 
-def shoulder_belt_envelope():
-    """The 80T-to-motor belt in any direction below the axis (Task 3 picks one)."""
-    reach = SHOULDER_BELT_C + R80_OD + E.BELT_T + 2.0
-    return L.box("shoulder belt", -reach, reach, PULLEY80_TEETH_Y[0] - 1.5, PULLEY80_TEETH_Y[1] + 1.5, -reach, R80_OD + E.BELT_T + 1.5)
+def hull(objs, name):
+    bm = bmesh.new()
+    for o in objs:
+        for v in o.data.vertices:
+            bm.verts.new(v.co)
+        bpy.data.objects.remove(o)
+    bmesh.ops.convex_hull(bm, input=bm.verts)
+    return L._obj(name, bm)
+
+
+def shoulder_belt_envelope(slot):
+    """Both pulleys and the belt between them, with the motor at slot (-3 to +3 along the belt line)."""
+    x, z = motor_at(slot)
+    y0, y1 = PULLEY80_TEETH_Y[0] - 1.5, PULLEY80_TEETH_Y[1] + 1.5
+    band = hull([cyl_y("a", 0, 0, R80_OD + E.BELT_T, y0, y1), cyl_y("b", x, z, E.R20_OD + E.BELT_T, y0, y1)], "shoulder belt")
+    L.union(band, pulley80_envelope())
+    L.union(band, cyl_y("20T hub", x, z, 9.5, PULLEY80_Y, PULLEY80_Y + E.PULLEY_HUB + 0.01))
+    L.union(band, cyl_y("20T teeth", x, z, E.R20_OD + 1.5, PULLEY80_Y + E.PULLEY_HUB, PULLEY80_Y + E.PULLEY_H))
+    return band
+
+
+def shoulder_motor_box(kind, slot):
+    m, (x, z) = MOTORS[kind], motor_at(slot)
+    h = m["sq"] / 2
+    return L.box(f"motor {kind}", x - h, x + h, SWAP_Y[0] - m["length"], SWAP_Y[0], z - h, z + h)
+
+
+def along(name, d0, d1, half_w, y0, y1):
+    """A box in the belt plane's sense: from d0 to d1 towards the 80T (from the motor's axis at slot 0), half_w across."""
+    mx, mz = motor_at()
+    n = (-BELT_U[0], -BELT_U[1]); t = (-n[1], n[0])
+    pts = [(mx + n[0] * d + t[0] * s, mz + n[1] * d + t[1] * s) for d, s in ((d0, -half_w), (d1, -half_w), (d1, half_w), (d0, half_w))]
+    return prism_y(name, pts, y0, y1)
+
+
+def push_lug():
+    return along("push lug", LUG_D[0], LUG_D[1], LUG_HALF_W, SWAP_Y[0], SWAP_Y[1] + 0.01)
+
+
+def motor_plate(kind):
+    """The swap plate: the motor's face on its far side, inserts in the common outer pattern, its corner towards the 80T square to the belt."""
+    m, (mx, mz) = MOTORS[kind], motor_at()
+    name = f"shoulder-motor-plate-{kind}"
+    p = L.box(name, mx - SWAP_HALF, mx + SWAP_HALF, *SWAP_Y, mz - SWAP_HALF, mz + SWAP_HALF)
+    L.cut(p, along("chamfer", CHAMFER_D, CHAMFER_D + 100.0, 100.0, SWAP_Y[0] - 1.0, SWAP_Y[1] + 1.0))
+    L.cut(p, cyl_y("pilot", mx, mz, m["pilot_r"], SWAP_Y[0] - 1.0, SWAP_Y[1] + 1.0))
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            L.cut(p, cyl_y("motor screw", mx + sx * m["hole"], mz + sz * m["hole"], m["hole_r"], SWAP_Y[0] - 1.0, SWAP_Y[1] + 1.0, n=32))
+    for dx, dz in PLATE_MOUNT:
+        L.cut(p, cyl_y("insert", mx + dx, mz + dz, M3_INSERT_R, SWAP_Y[0] - 1.0, SWAP_Y[1] + 1.0, n=32))
+    PRINT_POSE[name] = basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (-mx, mz, -SWAP_Y[0]))
+    return p
+
+
+def slot_y(name, x, z, r, y0, y1, n=16):
+    """A round-ended slot along the belt line, MOTOR_SLOT each way."""
+    pts = []
+    for e in (1, -1):
+        cx, cz = x + e * MOTOR_SLOT * BELT_U[0], z + e * MOTOR_SLOT * BELT_U[1]
+        base = math.degrees(math.atan2(BELT_U[1], BELT_U[0])) + (0 if e > 0 else 180)
+        pts += [(cx + r * math.cos(math.radians(base - 90 + 180 * k / n)), cz + r * math.sin(math.radians(base - 90 + 180 * k / n))) for k in range(n + 1)]
+    return prism_y(name, pts, y0, y1)
+
+
+def motor_bracket():
+    """Upright on the turntable behind the 80T's belt plane: the swap plate slides on its far face, the push screw's lug beside it."""
+    (mx, mz), h = motor_at(), SHOULDER_AXIS_Z
+    x0, x1 = mx + BRACKET_BOX[0], mx + BRACKET_BOX[1]
+    b = L.box("shoulder-motor-bracket", x0, x1, *BRACKET_Y, -h, mz + BRACKET_BOX[3])
+    L.union(b, L.box("foot", x0, x1, BRACKET_FOOT_Y[0], BRACKET_Y[0] + 0.01, -h, -h + FOOT_T))
+    L.union(b, push_lug())
+    L.finish(b)
+    L.cut(b, cyl_y("window", mx, mz, BRACKET_WINDOW_R, BRACKET_Y[0] - 1.0, BRACKET_Y[1] + 1.0))
+    for dx, dz in PLATE_MOUNT:
+        L.cut(b, slot_y("slot", mx + dx, mz + dz, M3_CLEAR_R, BRACKET_Y[0] - 1.0, BRACKET_Y[1] + 1.0))
+    n, yl = (-BELT_U[0], -BELT_U[1]), sum(SWAP_Y) / 2
+    at = lambda d: (mx + n[0] * d, yl, mz + n[1] * d)
+    L.cut(b, rod("push insert", at(LUG_D[1] - M3_INSERT_DEPTH), at(LUG_D[1] + 1.0), M3_INSERT_R, n=32))
+    L.cut(b, rod("push screw", at(LUG_D[0] - 1.0), at(LUG_D[1]), M3_CLEAR_R, n=32))
+    for dx, _ in BRACKET_FOOT:
+        L.cut(b, L.cyl_z("foot bolt", mx + dx, sum(BRACKET_FOOT_Y) / 2, M3_CLEAR_R, -h - 1.0, -h + FOOT_T + 1.0, n=32))
+    PRINT_POSE["shoulder-motor-bracket"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (-mx, 0, BRACKET_Y[1]))
+    return b
 
 
 _ARM = {}
@@ -616,19 +696,8 @@ def check_body():
     gap80 = PULLEY80_Y - (COMPACT_REAR_Y + BOLT_HEAD_H)
     assert gap80 >= 1.0 - 1e-6, ("80T on the compact's bolt heads", gap80)
     assert max(v.co.y for v in cp.data.vertices) <= PULLEY80_Y - 1.0 + 0.01, "80T on the compact"
-    # The upper arm's sweep past the body.
-    p80, belt = pulley80_envelope(), shoulder_belt_envelope()
-    fixed = concat([copy(o, "f") for o in (wa, wb, cage, cp)] + [p80, belt], "body")
-    fixed_verts = [v.co.copy() for v in fixed.data.vertices]
-    fixed_box, tf = bounds(fixed_verts, 10.0), tree(fixed)
-    worst, low = math.inf, math.inf
-    for psi in range(int(PSI_STOPS[0]), int(PSI_STOPS[1]) + 1):
-        arm = swept_upper_arm([psi])[0]
-        g = sweep_gap(arm, tf, fixed_verts, fixed_box)
-        assert g > 0.0, ("upper arm hits the body", psi)
-        worst = min(worst, g)
-        low = min(low, min(v.co.z for v in arm.data.vertices) + SHOULDER_AXIS_Z)
-        bpy.data.objects.remove(arm)
+    worst, low = sweep([copy(o, "f") for o in (wa, wb, cage, cp)] + [pulley80_envelope()] +
+                       [shoulder_belt_envelope(s) for s in (-MOTOR_SLOT, MOTOR_SLOT)], "body")
     assert worst >= 2.0, ("upper arm within 2 of the body", worst)
     assert low >= 2.0, ("upper arm within 2 of the turntable", low)
     check_stops(col, wb, hb)
@@ -639,7 +708,106 @@ def check_body():
                    "housing_bore_r": round(bore, 2)})
     REPORT["bolts"].update({"compact to cage (R30, into inserts)": COMPACT_BOLT_L, "cage to wall A": CAGE_SCREW_L,
                             "wall feet into the turntable": FOOT_BOLT_L, "stop collar to hub B": COLLAR_SCREW_L})
-    for o in (cp, fixed):
+    bpy.data.objects.remove(cp)
+
+
+def sweep(objs, what):
+    """The upper arm at every degree between the stops against objs (consumed): least gap, and least height above the turntable."""
+    fixed = concat(objs, what)
+    fixed_verts = [v.co.copy() for v in fixed.data.vertices]
+    fixed_box, tf = bounds(fixed_verts, 10.0), tree(fixed)
+    worst, low = math.inf, math.inf
+    for psi in range(int(PSI_STOPS[0]), int(PSI_STOPS[1]) + 1):
+        arm = swept_upper_arm([psi])[0]
+        g = sweep_gap(arm, tf, fixed_verts, fixed_box)
+        assert g > 0.0, ("upper arm hits the " + what, psi)
+        worst = min(worst, g)
+        low = min(low, min(v.co.z for v in arm.data.vertices) + SHOULDER_AXIS_Z)
+        bpy.data.objects.remove(arm)
+    bpy.data.objects.remove(fixed)
+    return worst, low
+
+
+def moved(o, slot, name):
+    """A copy of o (built at slot 0) slid along the belt line."""
+    c = copy(o, name)
+    c.data.transform(Matrix.Translation((slot * BELT_U[0], 0, slot * BELT_U[1])))
+    return c
+
+
+def bore_r_at(o, cx, cz, y):
+    rs = []
+    for k in range(24):
+        a = 2 * math.pi * (k + 0.37) / 24
+        rs.append(ray_len(o, (cx, y, cz), (math.cos(a), 0, math.sin(a))))
+    return sum(rs) / len(rs)
+
+
+def check_shoulder_drive():
+    brk = PARTS["shoulder-motor-bracket"]
+    plates = {k: PARTS[f"shoulder-motor-plate-{k}"] for k in MOTORS}
+    walls, hubs = [PARTS["body-wall-A"], PARTS["body-wall-B"]], [PARTS["shoulder-hub-a"], PARTS["shoulder-hub-b"]]
+    for n in ["shoulder-motor-bracket"] + [f"shoulder-motor-plate-{k}" for k in MOTORS]:
+        part_ok(n); on_bed(n)
+    mx, mz = motor_at()
+    ym = sum(SWAP_Y) / 2
+    for k, p in plates.items():
+        m = MOTORS[k]
+        for dx, dz in PLATE_MOUNT:
+            assert ray_len(p, (mx + dx, SWAP_Y[0] - 1.0, mz + dz), (0, 1, 0)) is None, ("outer pattern hole", k, dx, dz)
+            assert material_round(p, (mx + dx, ym, mz + dz), (0, 1, 0), M3_INSERT_R) >= 1.2, ("outer pattern insert wall", k)
+        for sx in (-1, 1):
+            for sz in (-1, 1):
+                x, z = mx + sx * m["hole"], mz + sz * m["hole"]
+                assert ray_len(p, (x, SWAP_Y[0] - 1.0, z), (0, 1, 0)) is None, ("motor hole", k)
+                assert bore_r_at(p, x, z, ym) >= m["hole_r"] - 0.05, ("motor hole size", k)
+        pilot = bore_r_at(p, mx, mz, ym)
+        assert pilot >= m["pilot_r"] - 0.05, ("pilot", k, pilot)
+        assert SWAP_Y[0] + m["shaft"] >= PULLEY80_Y + E.PULLEY_HUB / 2 + 1.5, ("shaft short of the 20T's set screw", k)
+    belts = {}
+    for s in (-MOTOR_SLOT, 0.0, MOTOR_SLOT):
+        x, z = motor_at(s)
+        belts[s] = round(math.hypot(x, z), 2)
+        assert abs(belts[s] - SHOULDER_BELT_C - s) <= 0.1, ("belt centres", s, belts[s])
+    cp = compact_posed()
+    p80 = posed_stl(os.path.join(OUT, "shoulder-pulley-80T.stl"), "80T",
+                    Matrix.Translation((0, PULLEY80_Y + E.PULLEY_H, 0)) @ Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1))))
+    gap80 = min(v.co.y for v in p80.data.vertices) - (COMPACT_REAR_Y + BOLT_HEAD_H)
+    assert 1.0 - 1e-6 <= gap80 <= 1.2, ("80T's inside face to the compact's bolt heads", gap80)
+    assert overlap(p80, cp) < 0.05, "80T hits the compact"
+    lug_gaps, reach = {}, {}
+    for s in (-MOTOR_SLOT, MOTOR_SLOT):
+        for k in MOTORS:
+            box, pl = shoulder_motor_box(k, s), moved(plates[k], s, "plate")
+            for o, n in zip(walls + hubs + [brk, cp], ("wall A", "wall B", "hub A", "hub B", "bracket", "compact")):
+                assert overlap(box, o) < 0.05, ("motor box hits", n, k, s)
+            assert min(v.co.z for v in box.data.vertices) >= -SHOULDER_AXIS_Z + 2.0, ("motor on the turntable", k, s)
+            assert overlap(pl, brk) < 0.05 and touching(pl, brk), ("swap plate on the bracket", k, s)
+            assert overlap(pl, box) < 0.05 and touching(pl, box), ("motor on its swap plate", k, s)
+            lug = push_lug()
+            lug_gaps[f"{k} {s:+.0f}"] = round(min_gap(pl, lug), 2)
+            for o in (box, pl, lug):
+                bpy.data.objects.remove(o)
+        belt = shoulder_belt_envelope(s)
+        for o, n in ((walls[0], "wall A"), (cp, "compact"), (brk, "bracket")):
+            assert overlap(belt, o) < 0.05, ("shoulder belt hits", n, s)
+        bpy.data.objects.remove(belt)
+        tip = LUG_D[0] - (PUSH_SCREW_L - (LUG_D[1] - LUG_D[0]))
+        reach[s] = round(CHAMFER_D - s - tip, 2)
+    assert min(lug_gaps.values()) >= 0.5, ("swap plate on the push-screw lug", lug_gaps)
+    assert min(reach.values()) >= 0.0, ("push screw can't reach the plate at full travel", reach)
+    engage = SWAP_SCREW_L - (BRACKET_Y[1] - BRACKET_Y[0])
+    assert 3.0 <= engage <= SWAP_Y[1] - SWAP_Y[0], ("swap plate screws", engage)
+    worst, low = sweep([shoulder_motor_box(k, s) for k in MOTORS for s in (-MOTOR_SLOT, MOTOR_SLOT)] +
+                       [shoulder_belt_envelope(s) for s in (-MOTOR_SLOT, MOTOR_SLOT)] + [copy(brk, "b")] +
+                       [moved(plates[k], s, "p") for k in MOTORS for s in (-MOTOR_SLOT, MOTOR_SLOT)], "shoulder drive")
+    assert worst >= 2.0, ("upper arm within 2 of the shoulder drive", worst)
+    REPORT.update({"shoulder_motor_at": [round(c_, 2) for c_ in SHOULDER_MOTOR_AT], "shoulder_motor_deg": SHOULDER_MOTOR_DEG,
+                   "shoulder_belt_centres": belts, "pulley80_gap_mm": round(gap80, 2), "push_lug_gap_mm": lug_gaps,
+                   "push_reach_mm": reach, "drive_min_gap_mm": round(worst, 2)})
+    REPORT["bolts"].update({"swap plate to bracket (into the plate's inserts)": SWAP_SCREW_L, "push screw": PUSH_SCREW_L,
+                            "bracket foot into the turntable": FOOT_BOLT_L})
+    for o in (cp, p80):
         bpy.data.objects.remove(o)
 
 
@@ -705,7 +873,10 @@ PARTS["plate-drill-jig"] = drill_jig()
 PARTS["body-wall-A"], PARTS["body-wall-B"] = wall_a(), wall_b()
 PARTS["compact-cage"] = compact_cage()
 PARTS["shoulder-stop-collar"] = stop_collar()
-CHECKS += [check_hub, check_body]
+for k in MOTORS:
+    PARTS[f"shoulder-motor-plate-{k}"] = motor_plate(k)
+PARTS["shoulder-motor-bracket"] = motor_bracket()
+CHECKS += [check_hub, check_body, check_shoulder_drive]
 for check in CHECKS:
     check()
 print("SHOULDER", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, **REPORT}))
