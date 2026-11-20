@@ -17,6 +17,11 @@ M3_STOCK = (40, 45, 50)
 SHOULDER_DESIGN_NMM = 13.5e3                 # 1.5x the spec's 9 N·m estimate; Task 6 replaces the estimate with the model's
 PRINTED_MPA = 10.0
 
+# The stub-mount compact (cycloid_poc.py -- --stub-mount): M3 inserts in the rear housing's face, between its R30
+# bolts. The stub's inner face must clear the rear carrier's hub, which turns and stands 1.0 proud of that face.
+STUB_SCREW_R, STUB_SCREW_ANGLES = 21.5, (0.0, 90.0, 180.0, 270.0)
+REAR_HUB_PROUD_R = 20.0 / 2 + 1.0            # the carrier hub's Ø20 (params.json hub_6804), plus 1.0
+
 SHOULDER_RATIO, BASE_RATIO = 80, 6.5
 SHOULDER_BELT_C = round(_C.belt_centre_distance(20, 80, 420, pitch=3.0), 2)
 BASE_BELT_C = round(_C.belt_centre_distance(20, 130, 477, pitch=3.0), 2)

@@ -18,6 +18,8 @@ HOLLOW_T8 = "--hollow-t8" in sys.argv        # T8 lead screw right through with 
 HOLLOW = "--hollow" in sys.argv or HOLLOW_T8 # axis 6: eccentric as a hollow sleeve, the gripper's shaft through it
 M25_ROLL = "--m25-roll" in sys.argv          # M2.5 x 20 roll pins: only the housing halves change, to 20-1-compact-m25/
 assert not (M25_ROLL and HOLLOW), "--m25-roll is a spin-off of the plain compact"
+STUB_MOUNT = "--stub-mount" in sys.argv      # shoulder: the rear housing bolts to a fixed stub, to 20-1-compact-stub/
+M25_ROLL = M25_ROLL or STUB_MOUNT
 if M25_ROLL:                                 # ring pin coupon, 2026-11-18: a 2.5 roll pin presses into a printed 2.80
     P.update(ring_pin_press=2.80, ring_pin_slip=2.90)
 RING_PIN_D = 2.5 if M25_ROLL else 2 * C.RP
@@ -251,6 +253,9 @@ def housing():
         x, y = polar(C.R, 360 * k / (C.N + 1))
         L.cut(rear, L.cyl_z("pin", x, y, P["ring_pin_press"] / 2, Z_MID - RING_HOLE_L / 2, Z_MID + 1, n=24))
         L.cut(front, L.cyl_z("pin", x, y, P["ring_pin_slip"] / 2, Z_MID - 1, Z_MID + RING_HOLE_L / 2 + SLIP_EXTRA, n=24))
+    if STUB_MOUNT:
+        for a in STUB_SCREW_ANGLES:
+            L.cut(rear, L.cyl_z("stub_insert", *polar(STUB_SCREW_R, a), INSERT_R, -1, STUB_INSERT_DEPTH, n=32))
     L.finish(rear); L.finish(front); return rear, front
 
 TUBE_STOP_R = 5.8                            # rear carrier for the tube: clears the Ø11 tube, stops the end sleeve (Ø11.95) from walking out towards the 40T
@@ -307,10 +312,40 @@ def check_housing_and_carriers():
             got = bore_diameter(PARTS[half], x, y, z)
             assert d * math.cos(math.pi / 24) - 0.01 <= got <= d + 0.01, (half, d, got)
 
+STUB_SCREW_R, STUB_SCREW_ANGLES, STUB_INSERT_DEPTH = 21.5, [0, 90, 180, 270], 5.0   # between the R30 bolts
+
+def wall_round(o, centre, r, n=16):
+    """Least material round a vertical hole of radius r, by horizontal rays out from its edge."""
+    tree, bm = L._tree(o); out = []
+    for k in range(n):
+        u = Vector((math.cos(2 * math.pi * (k + 0.37) / n), math.sin(2 * math.pi * (k + 0.37) / n), 0))
+        loc, nrm, _, d = tree.ray_cast(Vector(centre) + u * (r + 0.02), u)
+        assert loc is not None and nrm.dot(u) > 0, ("hole breaks into a void", centre, k)
+        out.append(d + 0.02)
+    bm.free(); return min(out)
+
+def check_stub_mount():
+    rear = PARTS["housing-rear"]
+    first_pin_z = Z_MID - RING_HOLE_L / 2
+    assert STUB_INSERT_DEPTH + 1.0 <= first_pin_z, "stub inserts reach the ring pins"
+    for a in STUB_SCREW_ANGLES:
+        x, y = polar(STUB_SCREW_R, a)
+        assert abs(bore_diameter(rear, x, y, STUB_INSERT_DEPTH / 2) - 2 * INSERT_R) < 0.1, ("no stub insert", a)
+        for z in (0.5, STUB_INSERT_DEPTH / 2, STUB_INSERT_DEPTH - 0.5):
+            w = wall_round(rear, (x, y, z), INSERT_R)
+            assert w >= 1.2, ("stub insert wall", a, z, w)
+        tree, bm = L._tree(rear)
+        floor = tree.ray_cast(Vector((x, y, 0.5)), Vector((0, 0, 1)))[0]
+        d = tree.ray_cast(Vector((x, y, STUB_INSERT_DEPTH + 0.02)), Vector((0, 0, 1)))[3]; bm.free()
+        assert abs(floor.z - STUB_INSERT_DEPTH) < 0.01, ("stub insert depth", a, floor.z)
+        assert d is not None and d + 0.02 >= 1.2, ("stub insert floor", a, d)
+
 PARTS["housing-rear"], PARTS["housing-front"] = housing()
 PARTS["carrier-rear"] = carrier(False)
 PARTS["carrier-front"] = carrier(True)
 CHECKS.append(check_housing_and_carriers)
+if STUB_MOUNT:
+    CHECKS.append(check_stub_mount)
 
 def check_tube_carrier():
     c = PARTS["carrier-rear-tube"]
@@ -550,7 +585,7 @@ for n, o in PARTS.items():
     if HOLLOW and n in TEST_PARTS or M25_ROLL and not n.startswith("housing"):
         continue
     folder = ("test-parts" if n in TEST_PARTS else "20-1-hollow-t8" if HOLLOW_T8 else "20-1-hollow" if HOLLOW else
-              "20-1-compact-m25" if M25_ROLL else "20-1-compact")
+              "20-1-compact-stub" if STUB_MOUNT else "20-1-compact-m25" if M25_ROLL else "20-1-compact")
     os.makedirs(os.path.join(BASE, folder), exist_ok=True)
     o.matrix_world = Matrix()
     if n in PRINT_FLIP:   # on the mesh: as an object rotation, float32 sin(pi) tilts the mating face enough to split it across a slicing plane
