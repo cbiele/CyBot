@@ -1393,7 +1393,7 @@ def leg_sockets(f):
     """Bosses on the fixed base's rim with a buttress down to the bed, then the sockets and the pinch inserts."""
     for phi in LEG_PHI:
         m, s, _ = (V(p) for p in leg(phi)); d = V(leg_dir(phi))
-        boss = rod("socket boss", s - d * SOCKET["floor"], m, SOCKET["boss_r"])
+        boss = rod("socket boss", s - d * SOCKET["floor"], m, SOCKET["boss_r"], n=47)   # odd: no vertex row on the pinch insert's axis
         foot = copy(boss, "buttress foot")
         bm = bmesh.new(); bm.from_mesh(foot.data)
         for v in bm.verts:
@@ -1405,8 +1405,8 @@ def leg_sockets(f):
         m, s, _ = (V(p) for p in leg(phi)); d = V(leg_dir(phi)); n = pinch_dir(d)
         L.cut(f, rod("socket", s, m + d * 30.0, SOCKET["r"], n=64))   # on through the buttress's foot, which reaches past the mouth
         c = m - d * PINCH_AT
-        L.cut(f, rod("pinch insert", c + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH), c + n * (SOCKET["boss_r"] + 1.0), M3_INSERT_R, n=32))
-        L.cut(f, rod("pinch screw", c, c + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH + 0.5), M3_CLEAR_R, n=32))
+        L.cut(f, rod("pinch insert", c + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH), c + n * (SOCKET["boss_r"] + 2.3), M3_INSERT_R, n=30))
+        L.cut(f, rod("pinch screw", c, c + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH + 0.5), M3_CLEAR_R, n=30))
 
 
 def foot_part():
@@ -1476,8 +1476,19 @@ def check_legs():
     assert max(level) <= 0.5, ("pad face not level", level)
     assert max(pads) - min(pads) <= 0.1, ("pads not on one plane", pads)
     assert abs(pads[0] - PAD_RECESS - FOOT_BOTTOM_Z) < 0.05, "pad recess depth"
-    lowest = min(min(v.co.z for v in fb.data.vertices), BASE_TOP_Z - BASE_MOTOR_L)
-    assert FOOT_PAD_Z + PAD_T / 2 <= lowest - 20.0, ("pads not 20 under the base and its motor", FOOT_PAD_Z, lowest)
+    # Five contacts: each pad's underside and the drum's underside on the bench.
+    contacts = {"drum": round(min(v.co.z for v in fb.data.vertices), 3)}
+    for phi in LEG_PHI:
+        pad = copy(pd, "pad"); pad.data.transform(Matrix.Rotation(math.radians(phi - LEG_PHI[0]), 4, 'Z'))
+        contacts[f"pad {phi:.0f}"] = round(min(v.co.z for v in pad.data.vertices), 3)
+        bpy.data.objects.remove(pad)
+    assert all(abs(z - BENCH_Z) <= 0.2 for z in contacts.values()), ("not five contacts on the bench", contacts)
+    for phi in LEG_PHI:
+        m, _, _ = (V(p) for p in leg(phi)); d = V(leg_dir(phi)); n = pinch_dir(d)
+        c = m - d * PINCH_AT
+        side = c + d * 2.5 + n * (SOCKET["boss_r"] + 5.0)          # beside the insert, on the boss's top line
+        seat = side - n * ray_len(fb, side, -n) - d * 2.5
+        screw_access(("leg pinch screw", phi), seat, n, 2.75, BOLT_HEAD_H, [fb, tt])
     assert CLAMP_TAB[0] >= 30 and CLAMP_TAB[1] >= 30 and CLAMP_TAB[2] >= 6, "clamp tab"
     pts = [(p[0], p[1]) for p in FOOT_PADS]
     edges = []
@@ -1486,7 +1497,8 @@ def check_legs():
         edges.append(abs(x0 * y1 - x1 * y0) / math.hypot(x1 - x0, y1 - y0))
     REPORT.update({"footprint_r_mm": round(min(edges), 1), "leg_deg": LEG_DEG, "foot_pads": [[round(c, 1) for c in p] for p in FOOT_PADS],
                    "socket_wall_mm": round(min(walls), 2), "pinch_insert_wall_mm": round(min(pinch), 2),
-                   "pad_level_deg": round(max(level), 3), "bench_below_lowest_mm": round(lowest - FOOT_PAD_Z, 1)})
+                   "pad_level_deg": round(max(level), 3), "contacts_z": contacts, "drum_h_mm": DRUM_H,
+                   "shoulder_axis_above_bench_mm": round(-BENCH_Z, 1)})
     REPORT["bolts"].update({"leg pinch screws": 6})
     for o in [tt] + others:
         bpy.data.objects.remove(o)

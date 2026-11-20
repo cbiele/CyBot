@@ -209,16 +209,19 @@ BASE_HALL = {"magnet": (78.0, PHI_TAB_DEG, PHI_TAB_Z[1] + MAGNET_RECESS), "senso
 HALL_POST_HALF = 5.0
 SHOULDER_HALL = {"magnet": (MAGNET_AT_R, TAB_PHI, TAB_Y[0] - MAGNET_RECESS), "sensor_face_y": WALL_Y["B"][1]}
 
-# Legs: four Ø9 aluminium tubes, 250 long, in sockets on the fixed base's rim. The sockets rise inwards from a mouth
-# at the bed's level, so the fixed base still prints flat on its underside.
-LEG_DEG = 45.0                               # the shallowest the spec allows: the widest footprint, the pads well under the motor
-LEG_PHI = (45.0, 135.0, 225.0, 315.0)
+# Legs (2026-11-20 spec): four Ø9 aluminium tubes, 250 long, about 15 degrees below level, in sockets on the drum's
+# side, so the drum's underside and the four pads all sit on the bench: five contacts. The sockets' mouths are set
+# from the bench so the pads land on it.
+LEG_DEG = 15.0
+LEG_PHI = (45.0, 135.0, 225.0, 315.0)        # clear of the base motor's shelf at 270
 TUBE_L, TUBE_LEG_R = 250.0, 4.5
 SOCKET = {"r": 4.6, "depth": 25.0, "boss_r": 10.0, "floor": 3.0, "mouth_r": BASE_DISC_R + 4.0}
-SOCKET_MOUTH_Z = BASE_TOP_Z - BASE_T + SOCKET["boss_r"] * math.cos(math.radians(LEG_DEG))   # the boss's lowest point on the bed
 PINCH_AT = 12.5                              # the M3 pinch insert, from the mouth along the socket
 FOOT = {"sleeve": 20.0, "boss_r": 8.0, "floor": 3.0, "pad_r": 18.0, "pad_t": 6.0}
 PAD_R, PAD_T, PAD_RECESS = 15.0, 4.0, 2.0    # Ø30 x 4 TPU, 2 proud of the foot
+_SIN, _COS = math.sin(math.radians(LEG_DEG)), math.cos(math.radians(LEG_DEG))
+SOCKET_MOUTH_Z = (BENCH_Z + (PAD_T - PAD_RECESS) + 2.0 + FOOT["boss_r"] * _COS + FOOT["floor"] * _SIN
+                  + (TUBE_L - SOCKET["depth"]) * _SIN)   # the pads then land on the bench
 CLAMP_TAB = (34.0, 34.0, 6.0)                # outwards from the pad, flat for a bench clamp
 
 
