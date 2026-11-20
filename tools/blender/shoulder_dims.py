@@ -163,3 +163,35 @@ HALL_POST_HALF = 5.0
 ELECTRONICS_AREA = (-51.0, 99.0, -50.0, 50.0, 25.0)              # x0, x1, y0, y1 on the turntable, and the parts' height
 ELECTRONICS_PILOTS = [(-46.0, -45.0), (94.0, -45.0), (-46.0, 45.0), (94.0, 45.0), (40.0, 0.0), (67.0, 0.0), (94.0, 0.0)]
 SHOULDER_HALL = {"magnet": (MAGNET_AT_R, TAB_PHI, TAB_Y[0] - MAGNET_RECESS), "sensor_face_y": WALL_Y["B"][1]}
+
+# Legs: four Ø9 aluminium tubes, 250 long, in sockets on the fixed base's rim. The sockets rise inwards from a mouth
+# at the bed's level, so the fixed base still prints flat on its underside.
+LEG_DEG = 45.0                               # the shallowest the spec allows: the widest footprint, the pads well under the motor
+LEG_PHI = (45.0, 135.0, 225.0, 315.0)
+TUBE_L, TUBE_LEG_R = 250.0, 4.5
+SOCKET = {"r": 4.6, "depth": 25.0, "boss_r": 10.0, "floor": 3.0, "mouth_r": BASE_DISC_R + 4.0}
+SOCKET_MOUTH_Z = BASE_TOP_Z - BASE_T + SOCKET["boss_r"] * math.cos(math.radians(LEG_DEG))   # the boss's lowest point on the bed
+PINCH_AT = 12.5                              # the M3 pinch insert, from the mouth along the socket
+FOOT = {"sleeve": 20.0, "boss_r": 8.0, "floor": 3.0, "pad_r": 18.0, "pad_t": 6.0}
+PAD_R, PAD_T, PAD_RECESS = 15.0, 4.0, 2.0    # Ø30 x 4 TPU, 2 proud of the foot
+CLAMP_TAB = (34.0, 34.0, 6.0)                # outwards from the pad, flat for a bench clamp
+
+
+def leg_dir(phi):
+    c = math.cos(math.radians(LEG_DEG))
+    return (c * math.cos(math.radians(phi)), c * math.sin(math.radians(phi)), -math.sin(math.radians(LEG_DEG)))
+
+
+def leg(phi):
+    """(socket mouth, socket bottom, foot point: the tube's lower end) for the leg at phi."""
+    d = leg_dir(phi)
+    m = (SOCKET["mouth_r"] * math.cos(math.radians(phi)), SOCKET["mouth_r"] * math.sin(math.radians(phi)), SOCKET_MOUTH_Z)
+    s = tuple(m[i] - SOCKET["depth"] * d[i] for i in range(3))
+    return m, s, tuple(s[i] + TUBE_L * d[i] for i in range(3))
+
+
+LEGS = [(leg(p)[0], leg(p)[2]) for p in LEG_PHI]
+FOOT_BOTTOM_Z = (leg(LEG_PHI[0])[2][2] - FOOT["floor"] * math.sin(math.radians(LEG_DEG))
+                 - FOOT["boss_r"] * math.cos(math.radians(LEG_DEG)) - 2.0)    # 2 of solid under the sleeve's lowest point
+FOOT_PAD_Z = FOOT_BOTTOM_Z - (PAD_T - PAD_RECESS)                           # the bench
+FOOT_PADS = [(f[0], f[1], FOOT_PAD_Z) for _, f in LEGS]

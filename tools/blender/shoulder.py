@@ -1026,6 +1026,7 @@ def fixed_base():
     L.cut(f, L.box("sensor pocket", hx - SENSOR[1] / 2 - 0.1, hx + SENSOR[1] / 2 + 0.1, hy - SENSOR[0] / 2 - 0.1, hy + SENSOR[0] / 2 + 0.1,
                    st - SENSOR[2] - 0.1, st + 1.0))
     L.cut(f, L.box("leads", hx - HALL_POST_HALF - 1.0, hx, hy - 1.0, hy + 1.0, st - 1.0, st + 1.0))
+    leg_sockets(f)
     PRINT_POSE["fixed-base"] = Matrix.Translation((0, 0, -zb))
     return f
 
@@ -1185,6 +1186,119 @@ def check_base():
         bpy.data.objects.remove(o)
 
 
+def V(t):
+    return Vector(t)
+
+
+def pinch_dir(d):
+    """Square to the leg, pointing up: the pinch screw goes in from above."""
+    up = Vector((0, 0, 1)); d = Vector(d)
+    return (up - d * up.dot(d)).normalized()
+
+
+def leg_sockets(f):
+    """Bosses on the fixed base's rim with a buttress down to the bed, then the sockets and the pinch inserts."""
+    for phi in LEG_PHI:
+        m, s, _ = (V(p) for p in leg(phi)); d = V(leg_dir(phi))
+        boss = rod("socket boss", s - d * SOCKET["floor"], m, SOCKET["boss_r"])
+        foot = copy(boss, "buttress foot")
+        bm = bmesh.new(); bm.from_mesh(foot.data)
+        for v in bm.verts:
+            v.co.z = BASE_TOP_Z - BASE_T
+        bm.to_mesh(foot.data); bm.free()
+        L.union(f, hull([boss, foot], "socket"))
+    L.finish(f)
+    for phi in LEG_PHI:
+        m, s, _ = (V(p) for p in leg(phi)); d = V(leg_dir(phi)); n = pinch_dir(d)
+        L.cut(f, rod("socket", s, m + d * 30.0, SOCKET["r"], n=64))   # on through the buttress's foot, which reaches past the mouth
+        c = m - d * PINCH_AT
+        L.cut(f, rod("pinch insert", c + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH), c + n * (SOCKET["boss_r"] + 1.0), M3_INSERT_R, n=32))
+        L.cut(f, rod("pinch screw", c, c + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH + 0.5), M3_CLEAR_R, n=32))
+
+
+def foot_part():
+    """Over the tube's lower end (built for the leg at LEG_PHI[0]): a sleeve, a level pad face with the TPU pad's recess, a clamp tab."""
+    _, _, f = (V(p) for p in leg(LEG_PHI[0])); d = V(leg_dir(LEG_PHI[0]))
+    boss = rod("sleeve boss", f - d * FOOT["sleeve"], f + d * FOOT["floor"], FOOT["boss_r"])
+    disc = L.cyl_z("pad disc", f.x, f.y, FOOT["pad_r"], FOOT_BOTTOM_Z, FOOT_BOTTOM_Z + FOOT["pad_t"], n=96)
+    o = hull([boss, disc], "foot")
+    h = Vector((d.x, d.y, 0)).normalized(); t = Vector((-h.y, h.x, 0))
+    a, b, tz = FOOT["pad_r"] - 4.0, FOOT["pad_r"] - 4.0 + CLAMP_TAB[0], CLAMP_TAB[2]
+    pts = [(f.x + h.x * u + t.x * w, f.y + h.y * u + t.y * w) for u, w in ((a, -CLAMP_TAB[1] / 2), (b, -CLAMP_TAB[1] / 2), (b, CLAMP_TAB[1] / 2), (a, CLAMP_TAB[1] / 2))]
+    L.union(o, prism_z("clamp tab", pts, FOOT_BOTTOM_Z, FOOT_BOTTOM_Z + tz))
+    L.finish(o)
+    L.cut(o, rod("sleeve", f, f - d * (FOOT["sleeve"] + 1.0), SOCKET["r"], n=64))
+    L.cut(o, L.cyl_z("pad recess", f.x, f.y, PAD_R + 0.2, FOOT_BOTTOM_Z - 1.0, FOOT_BOTTOM_Z + PAD_RECESS, n=96))
+    PRINT_POSE["foot"] = Matrix.Translation((0, 0, -FOOT_BOTTOM_Z)) @ Matrix.Rotation(-math.radians(LEG_PHI[0]), 4, 'Z') @ Matrix.Translation((-f.x, -f.y, 0))
+    return o
+
+
+def foot_pad():
+    _, _, f = leg(LEG_PHI[0])
+    p = L.cyl_z("foot-pad", f[0], f[1], PAD_R, FOOT_PAD_Z, FOOT_PAD_Z + PAD_T, n=96)
+    PRINT_POSE["foot-pad"] = Matrix.Translation((-f[0], -f[1], -FOOT_PAD_Z))
+    return p
+
+
+def check_legs():
+    fb, ft, pd = PARTS["fixed-base"], PARTS["foot"], PARTS["foot-pad"]
+    for n in ("foot", "foot-pad"):
+        part_ok(n); on_bed(n)
+    walls, pinch, pads, level = [], [], [], []
+    tt = join([PARTS["turntable"], PARTS["base-ring-130T"]], "turning")
+    others = [base_motor_box(s) for s in (-MOTOR_SLOT, MOTOR_SLOT)] + [base_belt_envelope(s) for s in (-MOTOR_SLOT, MOTOR_SLOT)]
+    for phi in LEG_PHI:
+        m, s, f = (V(p) for p in leg(phi)); d = V(leg_dir(phi)); n = pinch_dir(d)
+        depth = ray_len(fb, m + d * 1.0, -d) - 1.0
+        assert abs(depth - SOCKET["depth"]) <= 0.1, ("socket depth", phi, depth)
+        a = d.orthogonal().normalized(); b = d.cross(a); c = m - d * 6.0
+        r = sum(ray_len(fb, c, a * math.cos(2 * math.pi * (k + 0.37) / 24) + b * math.sin(2 * math.pi * (k + 0.37) / 24)) for k in range(24)) / 24
+        assert SOCKET["r"] - 0.01 <= r <= SOCKET["r"] + 0.1, ("socket radius", phi, r)
+        walls.append(min(material_round(fb, m - d * z, d, SOCKET["r"]) for z in (4.0, 20.0)))
+        ci = m - d * PINCH_AT
+        pinch.append(material_round(fb, ci + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH / 2), n, M3_INSERT_R))
+        through = ray_len(fb, ci + n * (SOCKET["boss_r"] + 1.0), -n)
+        assert through is not None and through >= 1.0 + SOCKET["boss_r"] + 2.0, ("pinch screw doesn't reach the socket", phi, through)
+        rot = Matrix.Rotation(math.radians(phi - LEG_PHI[0]), 4, 'Z')
+        fo = copy(ft, "foot"); fo.data.transform(rot)
+        tube = rod("tube", s, f, TUBE_LEG_R, n=32)
+        for o, nm in ((fo, "foot"), (tube, "tube")):
+            for x in others:
+                assert overlap(o, x) < 0.05, ("leg hits the base drive", phi, nm, x.name)
+            for ph in range(-170, 171, 10):
+                t = copy(tt, "t"); t.data.transform(rot_base(ph))
+                assert not tree(o).overlap(tree(t)), ("leg hits the turntable", phi, nm, ph)
+                bpy.data.objects.remove(t)
+        assert overlap(tube, fb) < 0.05 and overlap(tube, fo) < 0.05, ("tube in its socket and foot", phi)
+        zs = []
+        for k in range(4):
+            u = (f.x + 10.0 * math.cos(k * math.pi / 2), f.y + 10.0 * math.sin(k * math.pi / 2)) if k else (f.x, f.y)
+            zs.append(FOOT_BOTTOM_Z - 1.0 + ray_len(fo, (u[0], u[1], FOOT_BOTTOM_Z - 1.0), (0, 0, 1)))
+        level.append(math.degrees(math.atan((max(zs) - min(zs)) / 10.0)))
+        pads.append(zs[0])
+        for o in (fo, tube):
+            bpy.data.objects.remove(o)
+    assert min(walls) >= 2.0, ("socket wall", walls)
+    assert min(pinch) >= 2.0, ("pinch insert wall", pinch)
+    assert max(level) <= 0.5, ("pad face not level", level)
+    assert max(pads) - min(pads) <= 0.1, ("pads not on one plane", pads)
+    assert abs(pads[0] - PAD_RECESS - FOOT_BOTTOM_Z) < 0.05, "pad recess depth"
+    lowest = min(min(v.co.z for v in fb.data.vertices), BASE_TOP_Z - BASE_MOTOR_L)
+    assert FOOT_PAD_Z + PAD_T / 2 <= lowest - 20.0, ("pads not 20 under the base and its motor", FOOT_PAD_Z, lowest)
+    assert CLAMP_TAB[0] >= 30 and CLAMP_TAB[1] >= 30 and CLAMP_TAB[2] >= 6, "clamp tab"
+    pts = [(p[0], p[1]) for p in FOOT_PADS]
+    edges = []
+    for i in range(len(pts)):
+        (x0, y0), (x1, y1) = pts[i], pts[(i + 1) % len(pts)]
+        edges.append(abs(x0 * y1 - x1 * y0) / math.hypot(x1 - x0, y1 - y0))
+    REPORT.update({"footprint_r_mm": round(min(edges), 1), "leg_deg": LEG_DEG, "foot_pads": [[round(c, 1) for c in p] for p in FOOT_PADS],
+                   "socket_wall_mm": round(min(walls), 2), "pinch_insert_wall_mm": round(min(pinch), 2),
+                   "pad_level_deg": round(max(level), 3), "bench_below_lowest_mm": round(lowest - FOOT_PAD_Z, 1)})
+    REPORT["bolts"].update({"leg pinch screws": 6})
+    for o in [tt] + others:
+        bpy.data.objects.remove(o)
+
+
 bpy.ops.wm.read_factory_settings(use_empty=True)
 PARTS["shoulder-hub-a"], PARTS["shoulder-hub-b"] = hub()
 PARTS["shoulder-output-plate"] = output_plate()
@@ -1198,7 +1312,8 @@ PARTS["shoulder-motor-bracket"] = motor_bracket()
 PARTS["turntable"], PARTS["base-ring-130T"] = turntable(), base_ring()
 PARTS["spigot-spacer"], PARTS["spigot-cap"] = spigot_spacer(), spigot_cap()
 PARTS["fixed-base"], PARTS["base-motor-plate"] = fixed_base(), base_motor_plate()
-CHECKS += [check_hub, check_body, check_shoulder_drive, check_base]
+PARTS["foot"], PARTS["foot-pad"] = foot_part(), foot_pad()
+CHECKS += [check_hub, check_body, check_shoulder_drive, check_base, check_legs]
 for check in CHECKS:
     check()
 print("SHOULDER", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, **REPORT}))
