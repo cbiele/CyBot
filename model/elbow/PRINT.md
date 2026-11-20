@@ -4,7 +4,7 @@ For the P2S, 0.4 nozzle, Bambu PLA Basic. The STLs are exported in print orienta
 - **Spec:** `docs/superpowers/specs/2026-11-17-elbow-upper-arm-design.md`
 - **Generator:** `tools/blender/elbow.py`
 - **Layout and range check:** `tools/blender/head_concept.py -- --elbow`
-- **Shoulder:** the shoulder hub, drilling the plates for it, and the body that replaced the bench stand are on `model/shoulder/PRINT.md`.
+- **Shoulder:** the shoulder (plate A turns on a fixed stub; hub B locks to plate B), drilling plate B for it, and the body that replaced the bench stand are on `model/shoulder/PRINT.md`.
 
 ## Plates
 
@@ -36,7 +36,7 @@ All plates: 4 walls, 40% gyroid, Arachne walls, as on the wrist. There's no plat
 
 - **The elbow compact:** a fourth 20:1 compact, built like axis 5's, with the short eccentric and the lip between the disk bearings. Its Ø5 input rod must stand at least 31 mm out of the rear face (8.5 plate, 1 gap, 21.5 pulley).
 - **Motor:** a 17HS8401B (48 mm). Plate B has a window, so a NEMA17 up to 60 mm long drops in without reprinting.
-- **Bearings:** one 6810-2RS, in plate B at the elbow. The shoulder's 6810s are in the body walls (shoulder sheet).
+- **Bearings:** one 6810-2RS, in plate B at the elbow. The shoulder's are on the shoulder sheet: one goes in plate A's Ø65 shoulder seat, one in wall B.
 - **Belt:** a 420-3M-9.
 - **Aluminium tube, 9 × 7:** see the cut list.
 
@@ -88,7 +88,7 @@ Plate B slides on along the elbow axis onto both journals at once, so the order 
    - Feed the rear (78.1) tube in from outside the hub, through its lug's open socket, and 15 into the collar. It ends flush with the lug's outer face. It's 45° off the other two, so it can't go in with them. Glue both ends.
 4. **Plate B.**
    - Press the elbow 6810 into plate B from the inner face, against the lip.
-   - Leave the plates' Ø65 shoulder seats empty: the shoulder hub's halves go there (shoulder sheet).
+   - Leave the plates' Ø65 shoulder seats empty for now: plate A's takes a 6810 and plate B's takes hub B (shoulder sheet).
    - Slide plate B along the elbow axis onto the hub's journal, until the 6810's inner ring sits on the hub's land.
 5. **Stop collar.**
    - Slide it onto the journal end outside plate B, its tongue in the journal's slot.
@@ -97,7 +97,7 @@ Plate B slides on along the elbow axis onto both journals at once, so the order 
 6. **Cross members.** Push the four tubes through both plates and glue them, with the plates square and parallel.
 7. **Belt.** Fit the belt, tension it by sliding the motor along its slots, then set the idler.
 8. **Hall.** Fit the Hall sensor.
-9. **Shoulder.** Drill the plates' lock holes and fit the shoulder hub, as on `model/shoulder/PRINT.md`.
+9. **Shoulder.** Drill plate B's lock holes (plate A isn't drilled) and fit the shoulder, as on `model/shoulder/PRINT.md`.
 
 ## Range, stops and load
 
