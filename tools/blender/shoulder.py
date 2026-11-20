@@ -137,13 +137,13 @@ def part_ok(n):
 
 
 def on_bed(n):
-    """The print-pose footprint inside 220 x 250, turned up to 20 degrees off the diagonal if it must be."""
+    """The print-pose footprint inside 220 x 250, turned on the bed if it must be."""
     c = copy(PARTS[n], "fp"); c.data.transform(PRINT_POSE[n])
     vs = [v.co for v in c.data.vertices]
     assert abs(min(v.z for v in vs)) < 0.01, (n, "print pose not on the bed", min(v.z for v in vs))
     cx, cy = (max(v.x for v in vs) + min(v.x for v in vs)) / 2, (max(v.y for v in vs) + min(v.y for v in vs)) / 2
     bpy.data.objects.remove(c)
-    for k in [0] + list(range(-65, 66)):
+    for k in [0] + list(range(-90, 91)):
         a = math.radians(k)
         rx = [(v.x - cx) * math.cos(a) - (v.y - cy) * math.sin(a) for v in vs]
         ry = [(v.x - cx) * math.sin(a) + (v.y - cy) * math.cos(a) for v in vs]
@@ -866,6 +866,325 @@ def check_stops(col, wb, hb):
         bpy.data.objects.remove(o)
 
 
+def prism_z(name, pts, z0, z1):
+    """A prism through z on a polygon of (x, y) points."""
+    o = prism_y(name, [(x, y) for x, y in pts], -z1, -z0)
+    o.data.transform(basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, 0)))
+    bm = bmesh.new(); bm.from_mesh(o.data); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(o.data); bm.free()
+    return o
+
+
+def sector_z(name, r0, r1, a0, a1, z0, z1, n=24):
+    angs = [a0 + (a1 - a0) * k / n for k in range(n + 1)]
+    return prism_z(name, [polar(r1, t) for t in angs] + [polar(r0, t) for t in angs[::-1]], z0, z1)
+
+
+def bracket_feet():
+    mx = motor_at()[0]
+    return [(mx + dx, sum(BRACKET_FOOT_Y) / 2) for dx, _ in BRACKET_FOOT]
+
+
+def phi_tab():
+    return sector_z("phi tab", PHI_R[0], PHI_R[1], PHI_TAB_DEG - PHI_HALF, PHI_TAB_DEG + PHI_HALF, PHI_TAB_Z[1], PHI_TAB_Z[0] + 0.01)
+
+
+def phi_block():
+    return sector_z("phi block", PHI_R[0], PHI_R[1], -PHI_HALF, PHI_HALF, BASE_TOP_Z - 0.01, PHI_BLOCK_TOP)
+
+
+def hall_xy():
+    r, a, _ = BASE_HALL["magnet"]
+    return polar(r, a)
+
+
+def turntable():
+    """Plate under the walls, the bracket and the electronics; hub on the two 6810s; the base stop's tab and the Hall magnet under it."""
+    x0, x1, y0, y1 = TURNTABLE_XY
+    zt, zb = TURNTABLE_Z, TURNTABLE_Z - TURNTABLE_T
+    t = L.box("turntable", x0, x1, y0, y1, zb, zt)
+    L.union(t, L.cyl_z("hub", 0, 0, TT_HUB_R, TT_HUB_Z0, zb + 0.01, n=192))
+    L.union(t, phi_tab())
+    L.finish(t)
+    L.cut(t, L.cyl_z("seats", 0, 0, SEAT_R, TT_HUB_Z0 - 1.0, BASE_6810_Z[0] + B6810[2], n=192))
+    L.cut(t, L.cyl_z("lip", 0, 0, TT_LIP_R, TT_HUB_Z0 - 1.0, zt + 1.0, n=192))
+    for a in RING_SCREW_ANGLES:
+        x, y = polar(RING_SCREW_R, a)
+        L.cut(t, L.cyl_z("ring insert", x, y, M3_INSERT_R, TT_HUB_Z0 - 1.0, TT_HUB_Z0 + M3_INSERT_DEPTH + 2.0, n=32))
+    for x, y in WALL_FOOT["A"] + WALL_FOOT["B"] + bracket_feet() + ELECTRONICS_PILOTS:
+        L.cut(t, L.cyl_z("insert", x, y, M3_INSERT_R, zt - M3_INSERT_DEPTH, zt + 1.0, n=32))
+    mx, my = hall_xy()
+    L.cut(t, L.cyl_z("magnet", mx, my, MAGNET_R + 0.1, PHI_TAB_Z[1] - 1.0, PHI_TAB_Z[1] + MAGNET_RECESS + MAGNET_D, n=32))
+    PRINT_POSE["turntable"] = basis((1, 0, 0), (0, -1, 0), (0, 0, -1), (0, 0, zt))
+    return t
+
+
+def base_ring():
+    """The 130T under the turntable's hub, teeth as htd3m_pulley's; its lip holds the lower 6810's outer ring."""
+    r = od_r(RING_TEETH)
+    g = L.cyl_z("base-ring-130T", 0, 0, r, RING_Z[0] - 0.01, RING_Z[1] + 0.01, n=720)
+    for k in range(RING_TEETH):
+        a = 2 * math.pi * k / RING_TEETH; c = r - GROOVE_DEPTH + GROOVE_R
+        L.cut(g, L.cyl_z("groove", c * math.cos(a), c * math.sin(a), GROOVE_R, RING_Z[0] - 1.0, RING_Z[1] + 1.0, n=24))
+    L.union(g, L.cyl_z("flange", 0, 0, r + FLANGE_LIP, RING_Z[1], TT_HUB_Z0, n=720))
+    L.union(g, L.cyl_between("cone", (0, 0, RING_Z[0] + 0.01), (0, 0, RING_Z0), r - GROOVE_DEPTH, n=720, r_end=r + FLANGE_LIP))
+    L.finish(g)
+    L.cut(g, L.cyl_z("bore", 0, 0, RING_LIP_R, RING_Z0 - 1.0, TT_HUB_Z0 + 1.0, n=192))
+    for a in RING_SCREW_ANGLES:
+        x, y = polar(RING_SCREW_R, a)
+        L.cut(g, L.cyl_z("screw", x, y, M3_CLEAR_R, RING_Z0 - 1.0, TT_HUB_Z0 + 1.0, n=32))
+    PRINT_POSE["base-ring-130T"] = basis((1, 0, 0), (0, -1, 0), (0, 0, -1), (0, 0, TT_HUB_Z0))
+    return g
+
+
+def spigot_spacer():
+    s = L.cyl_z("spigot-spacer", 0, 0, SPACER_R, *SPACER_Y, n=192)
+    L.cut(s, L.cyl_z("bore", 0, 0, SPIGOT["r"] + 0.1, SPACER_Y[0] - 1.0, SPACER_Y[1] + 1.0, n=192))
+    PRINT_POSE["spigot-spacer"] = Matrix.Translation((0, 0, -SPACER_Y[0]))
+    return s
+
+
+def spigot_cap():
+    z0 = BASE_6810_Z[0] + B6810[2]
+    c = L.cyl_z("spigot-cap", 0, 0, CAP_R, z0, z0 + CAP_T, n=192)
+    L.cut(c, L.cyl_z("bore", 0, 0, 12.0, z0 - 1.0, z0 + CAP_T + 1.0, n=96))
+    for a in CAP_SCREW_ANGLES:
+        x, y = polar(CAP_SCREW_R, a)
+        L.cut(c, L.cyl_z("screw", x, y, M3_CLEAR_R, z0 - 1.0, z0 + CAP_T + 1.0, n=32))
+    PRINT_POSE["spigot-cap"] = Matrix.Translation((0, 0, -z0))
+    return c
+
+
+def base_lug():
+    r0, t, hw, h = BASE_LUG
+    ux, uy = BASE_U
+    return prism_z("base lug", [((r0 - t) * ux + s * hw * -uy, (r0 - t) * uy + s * hw * ux) for s in (-1, 1)] +
+                   [(r0 * ux + s * hw * -uy, r0 * uy + s * hw * ux) for s in (1, -1)], BASE_TOP_Z - 0.01, BASE_TOP_Z + h)
+
+
+def base_motor_box(slot):
+    x, y = base_motor_at(slot)
+    h = MOTORS["17"]["sq"] / 2
+    return L.box("base motor", x - h, x + h, y - h, y + h, BASE_TOP_Z - BASE_MOTOR_L, BASE_TOP_Z)
+
+
+def base_belt_envelope(slot):
+    """The belt between the 130T and the 20T (not the ring's inside), and the 20T, with the motor at slot."""
+    x, y = base_motor_at(slot)
+    z0, z1 = RING_Z[0] - 1.5, RING_Z[1] + 1.5
+    band = hull([L.cyl_z("a", 0, 0, od_r(RING_TEETH) + E.BELT_T, z0, z1, n=192), L.cyl_z("b", x, y, E.R20_OD + E.BELT_T, z0, z1)], "base belt")
+    L.cut(band, L.cyl_z("ring", 0, 0, od_r(RING_TEETH) - GROOVE_DEPTH - 0.5, z0 - 1.0, z1 + 1.0, n=192))
+    zp = BASE_TOP_Z + BASE_PLATE_T
+    L.union(band, L.cyl_z("20T hub", x, y, 9.5, zp + 1.0, zp + 1.0 + E.PULLEY_HUB + 0.01))
+    L.union(band, L.cyl_z("20T teeth", x, y, E.R20_OD + 1.5, zp + 1.0 + E.PULLEY_HUB, zp + 1.0 + E.PULLEY_H))
+    return band
+
+
+def slot_z(name, x, y, r, z0, z1, n=16):
+    pts = []
+    for e in (1, -1):
+        cx, cy = x + e * MOTOR_SLOT * BASE_U[0], y + e * MOTOR_SLOT * BASE_U[1]
+        base = math.degrees(math.atan2(BASE_U[1], BASE_U[0])) + (0 if e > 0 else 180)
+        pts += [(cx + r * math.cos(math.radians(base - 90 + 180 * k / n)), cy + r * math.sin(math.radians(base - 90 + 180 * k / n))) for k in range(n + 1)]
+    return prism_z(name, pts, z0, z1)
+
+
+def moved_base(o, slot):
+    c = copy(o, "plate")
+    c.data.transform(Matrix.Translation((slot * BASE_U[0], slot * BASE_U[1], 0)))
+    return c
+
+
+def fixed_base():
+    """Disc and motor arm, the spigot with its shoulder, the stop block, the Hall post and the base motor's push lug."""
+    zt, zb = BASE_TOP_Z, BASE_TOP_Z - BASE_T
+    f = L.cyl_z("fixed-base", 0, 0, BASE_DISC_R, zb, zt, n=192)
+    L.union(f, L.box("arm", -BASE_ARM_HALF, BASE_ARM_HALF, BASE_ARM_END, 0.0, zb, zt))
+    L.union(f, L.cyl_z("shoulder", 0, 0, SPIGOT["shoulder_r"], zt - 0.01, TT_HUB_Z0, n=192))
+    L.union(f, L.cyl_z("spigot", 0, 0, SPIGOT["r"], TT_HUB_Z0 - 0.01, SPIGOT["top"], n=192))
+    L.union(f, phi_block())
+    hx, hy = hall_xy()
+    L.union(f, L.box("hall post", hx - HALL_POST_HALF, hx + HALL_POST_HALF, hy - HALL_POST_HALF, hy + HALL_POST_HALF, zt - 0.01, BASE_HALL["sensor_top"]))
+    L.union(f, base_lug())
+    L.finish(f)
+    L.cut(f, L.cyl_z("bore", 0, 0, SPIGOT["bore_r"], zb - 1.0, SPIGOT["top"] + 1.0, n=128))
+    for a in CAP_SCREW_ANGLES:
+        x, y = polar(CAP_SCREW_R, a)
+        L.cut(f, L.cyl_z("cap insert", x, y, M3_INSERT_R, SPIGOT["top"] - M3_INSERT_DEPTH - 1.0, SPIGOT["top"] + 1.0, n=32))
+    mx, my = base_motor_at()
+    h = MOTORS["17"]["sq"] / 2 + 1.0
+    L.cut(f, L.box("motor window", mx - h - abs(BASE_U[0]) * (MOTOR_SLOT + 1), mx + h + abs(BASE_U[0]) * (MOTOR_SLOT + 1),
+                   my - h - abs(BASE_U[1]) * (MOTOR_SLOT + 1), my + h + abs(BASE_U[1]) * (MOTOR_SLOT + 1), zb - 1.0, zt + 1.0))
+    for dx, dy in BASE_PLATE_INSERTS:
+        L.cut(f, L.cyl_z("plate insert", mx + dx, my + dy, M3_INSERT_R, zt - M3_INSERT_DEPTH - 1.0, zt + 1.0, n=32))
+    r0, t, hw, lh = BASE_LUG
+    zs = zt + BASE_PLATE_T / 2
+    a, b = (BASE_U[0] * (r0 - t), BASE_U[1] * (r0 - t), zs), (BASE_U[0] * r0, BASE_U[1] * r0, zs)
+    ins = (BASE_U[0] * (r0 - t + M3_INSERT_DEPTH), BASE_U[1] * (r0 - t + M3_INSERT_DEPTH), zs)
+    L.cut(f, rod("push insert", (BASE_U[0] * (r0 - t - 1.0), BASE_U[1] * (r0 - t - 1.0), zs), ins, M3_INSERT_R, n=32))
+    L.cut(f, rod("push screw", a, (BASE_U[0] * (r0 + 1.0), BASE_U[1] * (r0 + 1.0), zs), M3_CLEAR_R, n=32))
+    st = BASE_HALL["sensor_top"]
+    L.cut(f, L.box("sensor pocket", hx - SENSOR[1] / 2 - 0.1, hx + SENSOR[1] / 2 + 0.1, hy - SENSOR[0] / 2 - 0.1, hy + SENSOR[0] / 2 + 0.1,
+                   st - SENSOR[2] - 0.1, st + 1.0))
+    L.cut(f, L.box("leads", hx - HALL_POST_HALF - 1.0, hx, hy - 1.0, hy + 1.0, st - 1.0, st + 1.0))
+    PRINT_POSE["fixed-base"] = Matrix.Translation((0, 0, -zb))
+    return f
+
+
+def base_motor_plate():
+    """The base motor hangs under it through the fixed base's window; slotted along the belt, pushed by the lug's screw."""
+    mx, my = base_motor_at()
+    zt = BASE_TOP_Z + BASE_PLATE_T
+    m = MOTORS["17"]
+    p = L.box("base-motor-plate", mx - BASE_PLATE_HALF, mx + BASE_PLATE_HALF, my - BASE_PLATE_HALF, my + BASE_PLATE_HALF, BASE_TOP_Z, zt)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            L.cut(p, L.cyl_z("motor screw", mx + sx * m["hole"], my + sy * m["hole"], m["hole_r"], BASE_TOP_Z - 1.0, zt + 1.0, n=32))
+    for dx, dy in BASE_PLATE_INSERTS:
+        L.cut(p, slot_z("slot", mx + dx, my + dy, M3_CLEAR_R, BASE_TOP_Z - 1.0, zt + 1.0))
+    L.cut(p, L.cyl_z("pilot", mx, my, m["pilot_r"], BASE_TOP_Z - 1.0, zt + 1.0, n=96))   # last: off the origin, the exact solver left the screw holes open after it
+    PRINT_POSE["base-motor-plate"] = Matrix.Translation((-mx, -my, -BASE_TOP_Z))
+    return p
+
+
+def radial_z(o, z, inward=True, r0=120.0, n=24):
+    """Mean radius of o's surface at height z about the base axis, inward from r0 or out from the axis."""
+    rs = []
+    for k in range(n):
+        a = 2 * math.pi * (k + 0.37) / n
+        u = Vector((math.cos(a), math.sin(a), 0))
+        rs.append(r0 - ray_len(o, u * r0 + Vector((0, 0, z)), -u) if inward else ray_len(o, (0, 0, z), u))
+    return sum(rs) / len(rs)
+
+
+def grooves_at(o, z, r_od, n=2880):
+    t, deep = tree(o), []
+    for k in range(n):
+        a = 2 * math.pi * (k + 0.37) / n
+        u = Vector((math.cos(a), math.sin(a), 0))
+        h = t.ray_cast(u * (r_od + 20.0) + Vector((0, 0, z)), -u)[0]
+        deep.append((h - Vector((0, 0, z))).length < r_od - GROOVE_DEPTH / 2)
+    return sum(1 for i in range(n) if deep[i] and not deep[i - 1])
+
+
+def rot_base(phi):
+    return Matrix.Rotation(math.radians(phi), 4, 'Z')
+
+
+def check_base():
+    names = ("turntable", "base-ring-130T", "spigot-spacer", "spigot-cap", "fixed-base", "base-motor-plate")
+    tt, ring, spacer, cap, fb, bp = (PARTS[n] for n in names)
+    for n in names:
+        part_ok(n); on_bed(n)
+    for z0 in BASE_6810_Z:
+        zm = z0 + B6810[2] / 2
+        s = radial_z(fb, zm)
+        assert SPIGOT["r"] - 0.01 <= s <= SPIGOT["r"] + 0.1, ("spigot", zm, s)   # -0.01: the polygon's chords
+        seat = radial_z(tt, zm, inward=False)
+        assert B6810[1] <= seat <= B6810[1] + 0.1, ("turntable seat", zm, seat)
+    for o, z, n in ((tt, BASE_6810_Z[0] + B6810[2] + 1.0, "turntable's top lip"), (ring, TT_HUB_Z0 - 0.5, "ring's lip")):
+        lip = radial_z(o, z, inward=False)
+        assert HUB_SHOULDER_R + 0.5 <= lip <= WALL_LIP_R + 0.01, (n, lip)
+    for o, z, n in ((cap, BASE_6810_Z[0] + B6810[2] + 0.5, "cap"), (spacer, sum(SPACER_Y) / 2, "spacer"), (fb, TT_HUB_Z0 - 0.5, "spigot shoulder")):
+        r = radial_z(o, z)
+        assert r <= HUB_SHOULDER_R - 0.45, ("bears past the inner ring", n, r)
+    assert abs(min(v.co.z for v in cap.data.vertices) - (BASE_6810_Z[0] + B6810[2])) < 0.01, "cap not on the upper inner ring"
+    assert max(v.co.z for v in cap.data.vertices) <= TURNTABLE_Z - 0.5, "cap stands above the turntable"
+    sp = [v.co.z for v in spacer.data.vertices]
+    assert abs(min(sp) - SPACER_Y[0]) < 0.01 and abs(max(sp) - SPACER_Y[1]) < 0.01, "spacer between the inner rings"
+    for o, other, n in ((tt, fb, "turntable on the fixed base"), (ring, fb, "ring on the fixed base"), (cap, tt, "cap on the turntable"),
+                        (spacer, tt, "spacer on the turntable"), (ring, tt, "ring in the turntable"), (spacer, fb, "spacer on the spigot"),
+                        (cap, fb, "cap in the spigot")):
+        assert overlap(o, other) < 0.05, n
+    hub_face = ray_len(tt, (41.0 * math.cos(0.3), 41.0 * math.sin(0.3), TT_HUB_Z0 - 1.0), (0, 0, 1))
+    assert abs(max(v.co.z for v in ring.data.vertices) - TT_HUB_Z0) < 0.01 and abs(hub_face - 1.0) < 0.01, "ring not on the turntable's hub"
+    g_cap = ray_len(fb, (23.5, 0, BASE_6810_Z[0] + B6810[2]), (0, 0, -1))
+    assert abs(g_cap - 0.3) < 0.01, ("cap should stand 0.3 off the spigot top, on the inner ring", g_cap)
+    g = grooves_at(ring, sum(RING_Z) / 2, od_r(RING_TEETH))
+    od = 2 * radial_z(ring, sum(RING_Z) / 2, r0=od_r(RING_TEETH) + 20.0)
+    assert g == RING_TEETH, ("ring grooves", g)
+    peak = 2 * max(od_r(RING_TEETH) + 20.0 - ray_len(ring, (math.cos(a) * (od_r(RING_TEETH) + 20.0), math.sin(a) * (od_r(RING_TEETH) + 20.0), sum(RING_Z) / 2),
+                                                       (-math.cos(a), -math.sin(a), 0)) for a in [2 * math.pi * k / 2880 for k in range(2880)])
+    assert abs(peak - 2 * od_r(RING_TEETH)) <= 0.05, ("ring OD", peak)
+    belts = {}
+    for s in (-MOTOR_SLOT, 0.0, MOTOR_SLOT):
+        belts[s] = round(math.hypot(*base_motor_at(s)), 2)
+        assert abs(belts[s] - BASE_BELT_C - s) <= 0.1, ("base belt centres", s, belts[s])
+    turning = join([tt, ring], "turning")
+    for s in (-MOTOR_SLOT, MOTOR_SLOT):
+        box, belt, plate = base_motor_box(s), base_belt_envelope(s), moved_base(bp, s)
+        assert overlap(box, fb) < 0.05, ("base motor hits the fixed base", s)
+        assert overlap(plate, fb) < 0.05 and touching(plate, fb) and touching(plate, box), ("base motor plate", s)
+        assert overlap(belt, fb) < 0.05, ("base belt hits the fixed base", s)
+        for phi in range(-170, 171, 10):
+            t = copy(turning, "t"); t.data.transform(rot_base(phi))
+            assert overlap(box, t) < 0.05, ("base motor hits the turntable", s, phi)
+            tb = copy(tt, "tb"); tb.data.transform(rot_base(phi))
+            assert overlap(belt, tb) < 0.05, ("base belt hits the turntable", s, phi)
+            for o in (t, tb):
+                bpy.data.objects.remove(o)
+        lug = base_lug()
+        assert min_gap(plate, lug) >= 0.5, ("base plate on its push lug", s)
+        for o in (box, belt, plate, lug):
+            bpy.data.objects.remove(o)
+    reach = {s: round(BASE_LUG[0] - BASE_LUG[1] + BASE_PUSH_L - (BASE_BELT_C + s - BASE_PLATE_HALF), 2) for s in (-MOTOR_SLOT, MOTOR_SLOT)}
+    assert min(reach.values()) >= 0.0, ("base push screw short", reach)
+    tab, block = phi_tab(), phi_block()
+    gaps = {}
+    for phi in (PHI_RANGE[0], PHI_RANGE[1], PHI_STOPS[0], PHI_STOPS[1], PHI_STOPS[0] + 0.3, PHI_STOPS[1] - 0.3, 0.0, 90.0, -90.0):
+        t = copy(tab, "t"); t.data.transform(rot_base(phi))
+        gaps[phi] = round(min_gap(t, block), 2)
+        bpy.data.objects.remove(t)
+    assert gaps[PHI_STOPS[0]] <= 0.05 and gaps[PHI_STOPS[1]] <= 0.05, ("base stops don't meet", gaps)
+    assert gaps[PHI_STOPS[0] + 0.3] > 0.0 and gaps[PHI_STOPS[1] - 0.3] > 0.0, ("base stop more than 0.3 early", gaps)
+    assert min(gaps[PHI_RANGE[0]], gaps[PHI_RANGE[1]]) >= 1.0, ("base stops within 1 inside the range", gaps)
+    for phi in range(int(PHI_RANGE[0]), int(PHI_RANGE[1]) + 1, 5):
+        t = copy(tab, "t"); t.data.transform(rot_base(phi))
+        assert not tree(t).overlap(tree(fb)), ("tab hits the fixed base", phi)
+        bpy.data.objects.remove(t)
+    f = BASE_DESIGN_NMM / (sum(PHI_R) / 2)
+    w = 2 * math.radians(PHI_HALF) * PHI_R[0]
+    mpa = {"tab": f * (PHI_TAB_Z[0] - PHI_TAB_Z[1]) / ((PHI_R[1] - PHI_R[0]) * w * w / 6),
+           "block": f * (PHI_BLOCK_TOP - BASE_TOP_Z) / ((PHI_R[1] - PHI_R[0]) * w * w / 6)}
+    assert max(mpa.values()) <= PRINTED_MPA, ("base stop bending", mpa)
+    mr, ma, _ = BASE_HALL["magnet"]
+    mx, my = mr * math.cos(math.radians(ma)), mr * math.sin(math.radians(ma))
+    floor = ray_len(tt, (mx, my, PHI_TAB_Z[1] - 1.0), (0, 0, 1)) - 1.0
+    magnet_face = PHI_TAB_Z[1] + floor - MAGNET_D
+    sensor = PHI_TAB_Z[1] + 1.0 - ray_len(fb, (mx, my + SENSOR[0] / 2 + 1.5, PHI_TAB_Z[1] + 1.0), (0, 0, -1))   # the post's top, beside the pocket
+    hall = magnet_face - sensor
+    assert 1.0 <= hall <= 2.0, ("base Hall gap", hall)
+    assert ray_len(fb, (mx, my, sensor + 1.0), (0, 0, -1)) >= 1.0 + SENSOR[2], "base sensor pocket missing"
+    feet = []
+    for x, y in WALL_FOOT["A"] + WALL_FOOT["B"] + bracket_feet():
+        d = ray_len(tt, (x + 1.85, y, TURNTABLE_Z + 1.0), (0, 0, -1))
+        assert d is not None and abs(d - 1.0 - M3_INSERT_DEPTH) < 0.06, ("foot insert", x, y, d)
+        feet.append(material_round(tt, (x, y, TURNTABLE_Z - M3_INSERT_DEPTH / 2), (0, 0, 1), M3_INSERT_R))
+    assert min(feet) >= 2.0, ("foot insert wall", feet)
+    x0, x1, y0, y1, hgt = ELECTRONICS_AREA
+    area = L.box("electronics", x0, x1, y0, y1, TURNTABLE_Z, TURNTABLE_Z + hgt)
+    near = [PARTS["body-wall-A"], PARTS["body-wall-B"], PARTS["shoulder-motor-bracket"]]
+    near += [shoulder_motor_box(k, s) for k in MOTORS for s in (-MOTOR_SLOT, MOTOR_SLOT)]
+    near += [moved(PARTS[f"shoulder-motor-plate-{k}"], s, "p") for k in MOTORS for s in (-MOTOR_SLOT, MOTOR_SLOT)]
+    near += [shoulder_belt_envelope(s) for s in (-MOTOR_SLOT, MOTOR_SLOT)]
+    for o in near:
+        assert overlap(area, o) < 0.05, ("electronics area hits", o.name)
+    assert all(x0 <= x <= x1 and y0 <= y <= y1 for x, y in ELECTRONICS_PILOTS), "electronics pilot outside the area"
+    for x, y in ELECTRONICS_PILOTS:
+        d = ray_len(tt, (x + 1.85, y, TURNTABLE_Z + 1.0), (0, 0, -1))
+        assert d is not None and abs(d - 1.0 - M3_INSERT_DEPTH) < 0.06, ("electronics pilot", x, y, d)
+        feet.append(material_round(tt, (x, y, TURNTABLE_Z - M3_INSERT_DEPTH / 2), (0, 0, 1), M3_INSERT_R))
+    assert min(feet) >= 2.0, ("insert wall", feet)
+    REPORT.update({"base_belt_centres": belts, "base_push_reach_mm": reach, "phi_stop_gaps_mm": gaps,
+                   "phi_stop_mpa": {k: round(v, 1) for k, v in mpa.items()}, "base_hall_gap_mm": round(hall, 2),
+                   "turntable_insert_wall_mm": round(min(feet), 2), "ring_grooves": g, "ring_od": round(peak, 2),
+                   "base_motor_at": [round(c, 2) for c in BASE_MOTOR_AT], "turntable_z": TURNTABLE_Z, "base_top_z": BASE_TOP_Z,
+                   "fixed_base_lowest_z": round(min(v.co.z for v in fb.data.vertices), 2)})
+    REPORT["bolts"].update({"spigot cap": CAP_SCREW_L, "ring to turntable hub": RING_SCREW_L, "base motor plate": BASE_PLATE_SCREW_L,
+                            "base push screw": BASE_PUSH_L})
+    for o in [turning, tab, block, area] + near[3:]:
+        bpy.data.objects.remove(o)
+
+
 bpy.ops.wm.read_factory_settings(use_empty=True)
 PARTS["shoulder-hub-a"], PARTS["shoulder-hub-b"] = hub()
 PARTS["shoulder-output-plate"] = output_plate()
@@ -876,7 +1195,10 @@ PARTS["shoulder-stop-collar"] = stop_collar()
 for k in MOTORS:
     PARTS[f"shoulder-motor-plate-{k}"] = motor_plate(k)
 PARTS["shoulder-motor-bracket"] = motor_bracket()
-CHECKS += [check_hub, check_body, check_shoulder_drive]
+PARTS["turntable"], PARTS["base-ring-130T"] = turntable(), base_ring()
+PARTS["spigot-spacer"], PARTS["spigot-cap"] = spigot_spacer(), spigot_cap()
+PARTS["fixed-base"], PARTS["base-motor-plate"] = fixed_base(), base_motor_plate()
+CHECKS += [check_hub, check_body, check_shoulder_drive, check_base]
 for check in CHECKS:
     check()
 print("SHOULDER", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, **REPORT}))

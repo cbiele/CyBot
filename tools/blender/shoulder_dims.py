@@ -113,4 +113,53 @@ BRACKET_BOX = (-50.0, 56.0, -52.0, 52.0)                          # x0, x1 about
 BRACKET_WINDOW_R = 12.0
 BRACKET_FOOT_Y = (103.0, BRACKET_Y[0])
 BRACKET_FOOT = [(-37.0, 0.0), (0.0, 0.0), (37.0, 0.0)]           # x about the motor; y at the foot's middle
+
+# The base (axis 1): the base axis is the shoulder frame's z axis. The turntable turns on two 6810s on a printed Ø50
+# spigot rising from the fixed base; a cap and a spacer clamp the inner rings onto the spigot's shoulder, the
+# turntable's top lip and the 130T ring (screwed under its hub) hold the outer rings. One piece each fits the bed.
+TURNTABLE_Z = -SHOULDER_AXIS_Z
+TURNTABLE_T = 8.0
+TURNTABLE_XY = (-149.0, 99.0, -93.0, 122.0)                     # the walls' and bracket's feet, the electronics area
+BASE_6810_Z = (TURNTABLE_Z - 7.0 - B6810[2], TURNTABLE_Z - 7.0 - B6810[2] - 45.0)   # each bearing's lower face; centres 45 apart
+TT_LIP_R, RING_LIP_R = 31.0, 31.0
+TT_HUB_R, TT_HUB_Z0 = 44.0, BASE_6810_Z[1]                       # the hub's lower face, on the lower 6810's
+SPIGOT = {"r": 25.0, "bore_r": 16.0, "shoulder_r": 27.0, "top": BASE_6810_Z[0] + B6810[2] - 0.3}
+SPACER_R, SPACER_Y = 27.0, (BASE_6810_Z[1] + B6810[2], BASE_6810_Z[0])
+CAP_R, CAP_T, CAP_SCREW_R, CAP_SCREW_ANGLES, CAP_SCREW_L = 27.0, 3.0, 20.5, (90.0, 210.0, 330.0), 8
+RING_TEETH, RING_SCREW_R, RING_SCREW_ANGLES, RING_SCREW_L = 130, 38.5, (45.0, 135.0, 225.0, 315.0), 20
+# The ring's teeth as tools/blender/htd3m_pulley.py cuts them (copied: importing it runs that script).
+PITCH, GROOVE_R, GROOVE_DEPTH, FLANGE_LIP, FLANGE_T_P, TEETH_W = 3.0, 1.05, 1.30, 1.5, 1.5, 11.5
+
+
+def od_r(teeth):
+    return teeth * PITCH / math.pi / 2 - 0.381
+
+
+RING_Z = (TT_HUB_Z0 - FLANGE_T_P - TEETH_W, TT_HUB_Z0 - FLANGE_T_P)          # the teeth band
+RING_Z0 = RING_Z[0] - FLANGE_T_P                                              # its lower face
+BASE_TOP_Z = RING_Z[0] - 9.5 - 5.0                                            # the 20T's teeth on the band, over a 5 plate
+BASE_T, BASE_DISC_R, BASE_ARM_HALF, BASE_ARM_END = 8.0, 96.0, 42.0, -152.0
+BASE_MOTOR_DEG = 270.0
+BASE_U = (math.cos(math.radians(BASE_MOTOR_DEG)), math.sin(math.radians(BASE_MOTOR_DEG)))
+
+
+def base_motor_at(slot=0.0):
+    return tuple((BASE_BELT_C + slot) * c for c in BASE_U)
+
+
+BASE_MOTOR_AT = (base_motor_at()[0], base_motor_at()[1], BASE_TOP_Z)
+BASE_PLATE_HALF, BASE_PLATE_T = 37.0, 5.0
+BASE_PLATE_INSERTS = [(-31.0, -31.0), (31.0, -31.0), (-31.0, 31.0), (31.0, 31.0)]   # in the fixed base, about the motor at slot 0
+BASE_PLATE_SCREW_L = 10
+BASE_LUG = (BASE_BELT_C - BASE_PLATE_HALF - MOTOR_SLOT - 1.0, 8.0, 7.0, 8.5)        # its face's radius, thickness, half width, height
+BASE_PUSH_L = 16
+BASE_MOTOR_L = 60.0
+BASE_DESIGN_NMM = 4.0e3                     # a 17HS19 stalled through 6.5:1
+# Stops: one tab under the turntable, one block on the fixed base opposite it at home; they meet at +-172.
+PHI_TAB_DEG, PHI_HALF, PHI_R = 180.0, 4.0, (66.0, 90.0)
+PHI_TAB_Z, PHI_BLOCK_TOP = (TURNTABLE_Z - TURNTABLE_T, -214.0), -207.0
+BASE_HALL = {"magnet": (78.0, PHI_TAB_DEG, PHI_TAB_Z[1] + MAGNET_RECESS), "sensor_top": PHI_TAB_Z[1] - 0.5}
+HALL_POST_HALF = 5.0
+ELECTRONICS_AREA = (-51.0, 99.0, -50.0, 50.0, 25.0)              # x0, x1, y0, y1 on the turntable, and the parts' height
+ELECTRONICS_PILOTS = [(-46.0, -45.0), (94.0, -45.0), (-46.0, 45.0), (94.0, 45.0), (40.0, 0.0), (67.0, 0.0), (94.0, 0.0)]
 SHOULDER_HALL = {"magnet": (MAGNET_AT_R, TAB_PHI, TAB_Y[0] - MAGNET_RECESS), "sensor_face_y": WALL_Y["B"][1]}
