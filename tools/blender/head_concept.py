@@ -15,16 +15,18 @@ import cycloid_math as C
 import forearm_dims as F
 import wrist_dims as W
 import elbow_dims as E
+import shoulder_dims as S
 
 ROOT = "/Users/claytonbiele/dev/Claude/Projects/cybot"
 MODEL = os.path.join(ROOT, "model")
 COMPACT_DRIVE = "--compact-drive" in sys.argv
-ELBOW = "--elbow" in sys.argv                 # the V2 elbow and upper arm (model/elbow/) under the offset wrist
+SHOULDER = "--shoulder" in sys.argv           # the V2 shoulder, body, turning base and legs (model/shoulder/) under the elbow
+ELBOW = "--elbow" in sys.argv or SHOULDER     # the V2 elbow and upper arm (model/elbow/) under the offset wrist
 OFFSET_WRIST = "--offset-wrist" in sys.argv or ELBOW   # UR-style wrist on the tube forearm's flange (model/wrist/), axis 6 the hollow T8
 T8_THROUGH = "--t8-through" in sys.argv or OFFSET_WRIST
 TUBE_FOREARM = "--tube-forearm" in sys.argv or OFFSET_WRIST   # axis 4 compact at the elbow end turns the 190 aluminium tube out to a wrist flange
-OUT = os.path.join(MODEL, "head-concept", *(["elbow"] if ELBOW else ["offset-wrist"] if OFFSET_WRIST else ["tube-forearm"] if TUBE_FOREARM else ["compact-drive"] if COMPACT_DRIVE else ["t8-through"] if T8_THROUGH else []))
-BLEND = os.path.join(MODEL, "head-concept-elbow.blend" if ELBOW else "head-concept-wrist.blend" if OFFSET_WRIST else "head-concept-tube.blend" if TUBE_FOREARM else "head-concept-compact.blend" if COMPACT_DRIVE else "head-concept-t8.blend" if T8_THROUGH else "head-concept.blend")
+OUT = os.path.join(MODEL, "head-concept", *(["shoulder"] if SHOULDER else ["elbow"] if ELBOW else ["offset-wrist"] if OFFSET_WRIST else ["tube-forearm"] if TUBE_FOREARM else ["compact-drive"] if COMPACT_DRIVE else ["t8-through"] if T8_THROUGH else []))
+BLEND = os.path.join(MODEL, "head-concept-shoulder.blend" if SHOULDER else "head-concept-elbow.blend" if ELBOW else "head-concept-wrist.blend" if OFFSET_WRIST else "head-concept-tube.blend" if TUBE_FOREARM else "head-concept-compact.blend" if COMPACT_DRIVE else "head-concept-t8.blend" if T8_THROUGH else "head-concept.blend")
 PLACE = json.load(open(os.path.join(MODEL, "placements.json")))
 
 ROLL_Z, PITCH_X = 555.0, 250.0                 # both V1's, so the reach stays comparable
@@ -536,7 +538,7 @@ def elbow_rot(theta):
 def past_elbow():
     """Everything the elbow carries, split into what pitches with axis 5 and what doesn't."""
     body = set(pitch_body())
-    rest = [o for n in COLS if n not in (ELBOW_COL, ELBOW_COMPACT_COL, "V1 arm kept", "V1 head (for comparison)") for o in COLS[n].objects if o not in body]
+    rest = [o for n in COLS if n not in (ELBOW_COL, ELBOW_COMPACT_COL, SH_COL, BASE_COL, "V1 arm kept", "V1 head (for comparison)") for o in COLS[n].objects if o not in body]
     rest += [o for o in COLS[ELBOW_COL].objects if any(o.name == "elbow " + k for k in ELBOW_MOVING_STL) or o.name.startswith("elbow tube")]
     return list(body), rest
 
@@ -714,6 +716,247 @@ def offset_wrist_report(report):
     assert report["axis4_roll_torque_worst_nm"] <= report["axis4_roll_capacity_nm"], "axis 4 can't hold the head pitched sideways"
 
 
+SH_COL, BASE_COL = "Shoulder and body", "Base and legs"
+SH_MOVING_STL = ("shoulder-hub-a", "shoulder-hub-b", "shoulder-output-plate", "shoulder-stop-collar")
+SH_SKIP_STL = ("plate-drill-jig", "shoulder-motor-plate-23")      # a drilling tool, and the NEMA23's spare plate
+BASE_STL = ("turntable", "base-ring-130T", "spigot-spacer", "spigot-cap", "fixed-base", "base-motor-plate", "foot", "foot-pad")
+SH_AT = ELBOW_AT - Vector((0, 0, E.UPPER_L))   # the shoulder axis; the shoulder frame maps in by translation
+PRINTED_G_MM3 = 1.24e-3 * 0.4                  # PLA at 40% infill
+MOTOR_G, COMPACT_G, PAYLOAD_G, LEG_TUBE_G = 350, 120, 500, 17   # each; the tube is Ø9 x 1 aluminium, 250 long
+USER_HEAD_G = 1346                             # the user's scale with the pancakes and T8 on, no hand (2026-11-19)
+WRIST_TEST_G = 500                             # at the wrist pitch axis: lifted cleanly at 800 mA (2026-11-19)
+
+
+def shoulder_frame():
+    return Matrix.Translation(SH_AT)
+
+
+def shoulder_rot(psi):
+    """Shoulder pitch psi about the shoulder axis: +psi tips the upper arm forwards (+x)."""
+    return Matrix.Translation(SH_AT) @ Matrix.Rotation(math.radians(psi), 4, 'Y') @ Matrix.Translation(-SH_AT)
+
+
+def base_rot(phi):
+    c = Vector((SH_AT.x, SH_AT.y, 0))
+    return Matrix.Translation(c) @ Matrix.Rotation(math.radians(phi), 4, 'Z') @ Matrix.Translation(-c)
+
+
+def shoulder_body():
+    """model/shoulder/ posed back from print orientation, the compact, the motors and pulleys, and the legs, at phi 0."""
+    folder = os.path.join(MODEL, "shoulder")
+    poses = json.load(open(os.path.join(folder, "poses.json")))
+    m = shoulder_frame()
+    for name, rows in poses.items():
+        if name in SH_SKIP_STL:
+            continue
+        col, mat = (BASE_COL, "fixed") if name in BASE_STL else (SH_COL, "moving" if name in SH_MOVING_STL else "fixed")
+        if name in ("foot", "foot-pad"):
+            for phi in S.LEG_PHI:
+                place(stl(os.path.join(folder, name + ".stl"), f"{name} {phi:.0f}"), col, mat,
+                      m @ Matrix.Rotation(math.radians(phi - S.LEG_PHI[0]), 4, 'Z') @ Matrix(rows))
+            continue
+        place(stl(os.path.join(folder, name + ".stl"), "shoulder " + name), col, mat, m @ Matrix(rows))
+    cycloid("20-1-compact", "ax2", SH_COL, m @ basis_frame((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, S.COMPACT_REAR_Y, 0)))
+    up = Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))   # a pulley's z onto -y, hub towards the compact
+    top = S.PULLEY80_Y + E.PULLEY_H
+    mx, mz = S.motor_at()
+    place(stl(os.path.join(folder, "shoulder-pulley-80T.stl"), "shoulder 80T"), SH_COL, "pulley", m @ Matrix.Translation((0, top, 0)) @ up)
+    place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "shoulder 20T"), SH_COL, "pulley", m @ Matrix.Translation((mx, top, mz)) @ up)
+    h = S.MOTORS["17"]["sq"] / 2
+    place(L.box("shoulder motor 17HS19", mx - h, mx + h, S.SWAP_Y[0] - S.MOTORS["17"]["length"], S.SWAP_Y[0], mz - h, mz + h), SH_COL, "motor", m)
+    bx, by = S.base_motor_at()
+    place(L.box("base motor 17HS19", bx - h, bx + h, by - h, by + h, S.BASE_TOP_Z - S.BASE_MOTOR_L, S.BASE_TOP_Z), BASE_COL, "motor", m)
+    zp = S.BASE_TOP_Z + S.BASE_PLATE_T + 1.0
+    place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "base 20T"), BASE_COL, "pulley", m @ Matrix.Translation((bx, by, zp + E.PULLEY_H)) @ flip())
+    for phi in S.LEG_PHI:
+        _, s, f = S.leg(phi)
+        t = L.cyl_between(f"leg tube {phi:.0f}", s, f, S.TUBE_LEG_R, n=24)
+        t.data.transform(t.matrix_world); t.matrix_world = Matrix()
+        place(t, BASE_COL, "steel", m)
+
+
+def shoulder_moving():
+    """Everything the shoulder carries: the upper arm, everything past the elbow, and the hub's parts."""
+    out = [o for n in COLS if n not in (SH_COL, BASE_COL, "V1 arm kept", "V1 head (for comparison)") for o in COLS[n].objects]
+    return out + [o for o in COLS[SH_COL].objects if any(o.name == "shoulder " + k for k in SH_MOVING_STL)]
+
+
+def shoulder_fixed():
+    """The body, the base and the legs (both shoulder plates' motor: the 17 is drawn; the 23's box is no bigger where it matters)."""
+    body = [o for o in COLS[SH_COL].objects if not any(o.name == "shoulder " + k for k in SH_MOVING_STL)]
+    body = [o for o in body if not (o.name.startswith("ax2 ") and "housing" not in o.name)]   # the compact's insides turn with its output
+    return body + list(COLS[BASE_COL].objects)
+
+
+def printed_g(objs):
+    g = 0.0
+    for o in objs:
+        bm = bmesh.new(); bm.from_mesh(o.data); g += abs(bm.calc_volume()) * PRINTED_G_MM3; bm.free()
+    return g
+
+
+def obj(name):
+    return bpy.data.objects[name]
+
+
+def named_elbow_masses():
+    """elbow_masses(), with each group's name."""
+    names = list(PITCH_MASSES) + list(FIXED_HEAD_MASSES) + ["forearm rest", "elbow bracket"]
+    return list(zip(names, elbow_masses()))
+
+
+def upper_arm_masses():
+    plates = [obj("elbow upper-plate-A"), obj("elbow upper-plate-B")]
+    compact = [o for o in COLS[ELBOW_COMPACT_COL].objects if "housing" in o.name]
+    return [(centre(plates), printed_g(plates)), (centre([obj("elbow motor 17HS8401B")]), MOTOR_G), (centre(compact), COMPACT_G)]
+
+
+def arm_points(psi, theta, pitch, groups, upper, tip, payload):
+    """(world point, grams) for the moving masses at the pose: the upper arm turns by psi, the rest by theta and the pitch as well."""
+    sm, em, pm = shoulder_rot(psi), elbow_rot(theta), pitch_matrix(pitch)
+    out = [(sm @ c, g) for c, g in upper]
+    out += [(sm @ em @ (pm @ c if pitches else c), g) for c, g, pitches in groups]
+    return out + [(sm @ em @ pm @ tip, payload)]
+
+
+def shoulder_torque(psi, theta, pitch, groups, upper, tip):
+    return 9.81 * abs(sum(g * (p.x - SH_AT.x) for p, g in arm_points(psi, theta, pitch, groups, upper, tip, PAYLOAD_G))) * 1e-6
+
+
+def upper_arm_objs():
+    """What turns with the shoulder but not the elbow: the upper arm, the elbow compact, the shoulder hub's parts."""
+    _, rest = past_elbow()
+    out = [o for n in (ELBOW_COL, ELBOW_COMPACT_COL) for o in COLS[n].objects if o not in rest]
+    return out + [o for o in COLS[SH_COL].objects if any(o.name == "shoulder " + k for k in SH_MOVING_STL)]
+
+
+def np_verts(objs, m=None):
+    import numpy as np
+    parts = []
+    for o in objs:
+        a = np.empty(len(o.data.vertices) * 3); o.data.vertices.foreach_get("co", a); parts.append(a.reshape(-1, 3))
+    pts = np.vstack(parts)
+    if m is not None:
+        r = np.array([[m[i][j] for j in range(3)] for i in range(3)]); t = np.array([m[i][3] for i in range(3)])
+        pts = pts @ r.T + t
+    return pts
+
+
+def soft_limits(fixed, bench_z):
+    """(psi, theta) pairs, 5 degree steps, where the arm meets the body, the base, the legs or the bench; pitch 0."""
+    import numpy as np
+    upper = upper_arm_objs()
+    body, rest = past_elbow()
+    fixed_trees = {psi: merged_tree(fixed, shoulder_rot(-psi)) for psi in range(int(S.PSI_RANGE[0]), int(S.PSI_RANGE[1]) + 1, 5)}
+    hits = []
+    up_tree = merged_tree(upper)
+    up_v = np_verts(upper)
+    for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 5):
+        em = elbow_rot(th)
+        tree = merged_tree(body + rest, em)
+        pts = np.vstack([np_verts(body + rest, em), up_v]) - np.array(tuple(SH_AT))
+        for psi, ft in fixed_trees.items():
+            a = math.radians(psi)
+            z = -pts[:, 0] * math.sin(a) + pts[:, 2] * math.cos(a) + SH_AT.z
+            if z.min() < bench_z or ft.overlap(tree) or ft.overlap(up_tree):
+                hits.append([psi, th])
+    return hits
+
+
+def tip_margin(groups, upper, tip, sweep):
+    """Least distance from the whole arm's centre of mass, projected, to the pad square's edges, at the longest reaches."""
+    turning = [o for o in shoulder_fixed() if not o.name.startswith(("shoulder fixed-base", "shoulder base-motor-plate", "base ", "foot", "leg tube",
+                                                                        "shoulder spigot"))]
+    still = [o for o in shoulder_fixed() if o not in turning]
+    turn_g = [(centre([o]), printed_g([o])) for o in turning if o.name.startswith("shoulder ") and "motor 17HS19" not in o.name and "80T" not in o.name]
+    turn_g += [(centre([obj("shoulder motor 17HS19")]), MOTOR_G), (centre([o for o in COLS[SH_COL].objects if o.name.startswith("ax2 housing")]), COMPACT_G)]
+    turn_g += [(centre([obj("shoulder 80T")]), printed_g([obj("shoulder 80T")]))]
+    still_g = [(centre([o]), printed_g([o])) for o in still if not o.name.startswith(("base motor", "leg tube"))]
+    still_g += [(centre([obj("base motor 17HS19")]), MOTOR_G)] + [(centre([o]), LEG_TUBE_G) for o in still if o.name.startswith("leg tube")]
+    pads = [Vector((p[0], p[1], 0)) + Vector((SH_AT.x, SH_AT.y, 0)) for p in S.FOOT_PADS]
+    worst, at = math.inf, None
+    for psi in (S.PSI_RANGE[0], S.PSI_RANGE[1]):
+        th, pitch = max(sweep, key=lambda tp: abs((shoulder_rot(psi) @ elbow_rot(tp[0]) @ pitch_matrix(tp[1]) @ tip).x - SH_AT.x))
+        arm = arm_points(psi, th, pitch, groups, upper, tip, PAYLOAD_G)
+        arm += [(shoulder_rot(psi) @ centre([o]), printed_g([o])) for o in COLS[SH_COL].objects if any(o.name == "shoulder " + k for k in SH_MOVING_STL)]
+        for phi in range(0, 360, 45):
+            bm = base_rot(phi)
+            pts = [(bm @ p, g) for p, g in arm + turn_g] + still_g
+            total = sum(g for _, g in pts)
+            com = sum((p * g for p, g in pts), Vector()) / total
+            d = min(((b - a).cross(Vector((com.x, com.y, 0)) - a)).z / (b - a).length for a, b in zip(pads, pads[1:] + pads[:1]))
+            if d < worst:
+                worst, at = d, {"psi": psi, "theta": th, "pitch": pitch, "phi": phi, "com": [round(c, 1) for c in com], "mass_g": round(total)}
+    return worst, at
+
+
+def shoulder_report(report):
+    fixed = shoulder_fixed()
+    body, rest = past_elbow()
+    ft = merged_tree(fixed)
+    home = []
+    for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 2):
+        em = elbow_rot(th)
+        rest_hit = bool(ft.overlap(merged_tree(rest, em)))
+        for pitch in (-90, 0, 90):
+            if rest_hit or ft.overlap(merged_tree(body, em @ pitch_matrix(pitch))):
+                home.append((th, pitch))
+    upper_hit = ft.overlap(merged_tree(upper_arm_objs()))
+    grip = world_verts(col="Three-finger hand")
+    tip = Vector((max(p.x for p in grip), AX6_Y, ROLL_Z))
+    named = named_elbow_masses()
+    groups = [grp for _, grp in named]
+    upper = upper_arm_masses()
+    sweep = [(th, p) for p in (-90, 0, 90) for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 5)]
+    poses = [(psi, th, p) for psi in range(int(S.PSI_RANGE[0]), int(S.PSI_RANGE[1]) + 1, 5) for th, p in sweep]
+    worst = max(poses, key=lambda q: shoulder_torque(*q, groups, upper, tip))
+    t = shoulder_torque(*worst, groups, upper, tip)
+    head = [(c, g, pitches) for n, (c, g, pitches) in named if n != "Three-finger hand"]
+    scale = USER_HEAD_G / sum(g for _, g, _ in head)
+    demo = 9.81 * (sum(g * scale * (c.x - ELBOW_AT.x) for c, g, _ in head) + WRIST_TEST_G * (PITCH_X - ELBOW_AT.x)) * 1e-6
+    capacity = demo * S.SHOULDER_RATIO / 60
+    margin = capacity / t
+    bench = SH_AT.z + S.FOOT_PAD_Z
+    limits = soft_limits(fixed, bench)
+    tip_mm, tip_at = tip_margin(groups, upper, tip, sweep)
+    report.update({"shoulder_at": [round(c, 1) for c in SH_AT], "shoulder_home_sweep_clash": home, "upper_arm_hits_body": bool(upper_hit),
+                   "plate_mass_g": round(upper[0][1]), "shoulder_torque_worst_nm": round(t, 2), "shoulder_worst_pose_psi_theta_pitch": list(worst),
+                   "elbow_demo_nm": round(demo, 2), "shoulder_capacity_nm": round(capacity, 2), "shoulder_margin": round(margin, 2),
+                   "shoulder_soft_limits": limits, "tip_margin_mm": round(tip_mm, 1), "tip_worst": tip_at,
+                   "shoulder_design_check": round(t * 1.5, 2) <= S.SHOULDER_DESIGN_NMM / 1000})
+    if margin < 1.2:
+        report["shoulder_note"] = "shoulder: bench test at higher current, NEMA23 plate ready"
+    if tip_mm < 15:
+        # The user accepted clamped feet as the stability answer (2026-11-20), so tipping unclamped is reported, not asserted.
+        report["tip_note"] = "clamp the feet"
+    if home:
+        th, pitch = home[0]
+        em = elbow_rot(th)
+        pairs = [(o.name, f.name) for f in fixed for o in body + rest
+                 if merged_tree([f]).overlap(merged_tree([o], em @ (pitch_matrix(pitch) if o in body else Matrix())))]
+        low = min(min((em @ (pitch_matrix(pitch) if o in body else Matrix()) @ v.co).z for v in o.data.vertices) for o in body + rest)
+        assert False, ("the forearm or head hits the body with the upper arm straight up", home, pairs[:8],
+                       "lowest above the turntable", round(low - (SH_AT.z + S.TURNTABLE_Z), 1))
+    if upper_hit:
+        pairs = [(o.name, f.name) for o in upper_arm_objs() for f in fixed if merged_tree([o]).overlap(merged_tree([f]))]
+        assert False, ("the upper arm hits the body at home", pairs[:12])
+
+
+def shoulder_renders():
+    shown = set(COLS) - {"V1 arm kept", "V1 head (for comparison)"}
+    movers, at = shoulder_moving(), 0.0
+    target = tuple(SH_AT + Vector((80, 0, -40)))
+    for psi, name in ((0, "shoulder-side"), (90, "shoulder-forward"), (-90, "shoulder-back")):
+        for o in movers:
+            o.data.transform(shoulder_rot(psi) @ shoulder_rot(at).inverted())
+        at = psi
+        render(name, (0, -1, 0), shown, target=target, scale=1300)
+    for o in movers:
+        o.data.transform(shoulder_rot(at).inverted())
+    render("shoulder-iso", (1, -1.1, 0.6), shown, target=target, scale=1300)
+    render("shoulder-top", (0, 0, 1), shown, target=target, scale=1300)
+
+
 def check(z_motor):
     pitch_pts = world_verts(col="Axis 6 hollow, gripper motor behind")
     swing = max(math.hypot(p.x - PITCH_X, p.z - ROLL_Z) for p in pitch_pts)
@@ -754,6 +997,8 @@ def check(z_motor):
         offset_wrist_report(report)
     if ELBOW:
         elbow_report(report)
+    if SHOULDER:
+        shoulder_report(report)
     print("HEAD", json.dumps(report))
 
 
@@ -786,6 +1031,8 @@ def main():
     structure()
     if ELBOW:
         elbow_arm()
+    if SHOULDER:
+        shoulder_body()
     check(z_motor)
     COLS["V1 head (for comparison)"].hide_viewport = True
     cam = bpy.data.cameras.new("Concept camera"); cam.type = 'ORTHO'; cam.clip_end = 5000
@@ -801,40 +1048,43 @@ def main():
                   "Structure placeholders", "Wrist fixed", "Wrist pitch body"}
     inner = new - {"Structure placeholders"}
     head = (max(PITCH_X, 250.0), 0, 555)
-    render("concept-iso", (1, -1.1, 0.7), new, target=(120, 0, 450), scale=900)
-    render("head-side", (0, -1, 0), new, target=head, scale=560)
-    render("head-top", (0, 0, 1), new, target=head, scale=560)
-    render("head-iso", (1, -1.1, 0.7), new, target=head, scale=560)
-    render("head-parts-only-side", (0, -1, 0), inner, target=head, scale=560)
-    render("head-parts-only-iso", (1, -1.1, 0.7), inner, target=head, scale=560)
-    render("compare-v1-side", (0, -1, 0), {"V1 arm kept", "V1 head (for comparison)"}, target=head, scale=560)
-    render("compare-v1-top", (0, 0, 1), {"V1 arm kept", "V1 head (for comparison)"}, target=head, scale=560)
-    if not TUBE_FOREARM:
-        holder = bpy.data.objects["axis4/axis4_axis5_holder"]
-        holder.hide_render = True
-        render("axis4-without-holder", (0, -1, 0.35), new - {"Structure placeholders"}, target=(40, 0, 530), scale=320)
-        holder.hide_render = False
-    if OFFSET_WRIST:
-        body = pitch_body()
-        for deg, name in ((90, "head-side-pitch-down"), (-180, "head-side-pitch-up")):   # +90 about +y turns +x to -z
+    if SHOULDER:
+        shoulder_renders()
+    else:
+        render("concept-iso", (1, -1.1, 0.7), new, target=(120, 0, 450), scale=900)
+        render("head-side", (0, -1, 0), new, target=head, scale=560)
+        render("head-top", (0, 0, 1), new, target=head, scale=560)
+        render("head-iso", (1, -1.1, 0.7), new, target=head, scale=560)
+        render("head-parts-only-side", (0, -1, 0), inner, target=head, scale=560)
+        render("head-parts-only-iso", (1, -1.1, 0.7), inner, target=head, scale=560)
+        render("compare-v1-side", (0, -1, 0), {"V1 arm kept", "V1 head (for comparison)"}, target=head, scale=560)
+        render("compare-v1-top", (0, 0, 1), {"V1 arm kept", "V1 head (for comparison)"}, target=head, scale=560)
+        if not TUBE_FOREARM:
+            holder = bpy.data.objects["axis4/axis4_axis5_holder"]
+            holder.hide_render = True
+            render("axis4-without-holder", (0, -1, 0.35), new - {"Structure placeholders"}, target=(40, 0, 530), scale=320)
+            holder.hide_render = False
+        if OFFSET_WRIST:
+            body = pitch_body()
+            for deg, name in ((90, "head-side-pitch-down"), (-180, "head-side-pitch-up")):   # +90 about +y turns +x to -z
+                for o in body:
+                    o.data.transform(pitch_matrix(deg))
+                render(name, (0, -1, 0), new, target=head, scale=560)
             for o in body:
-                o.data.transform(pitch_matrix(deg))
-            render(name, (0, -1, 0), new, target=head, scale=560)
-        for o in body:
-            o.data.transform(pitch_matrix(90))
-    if ELBOW:
-        arm = new - {"V1 arm kept"} | {ELBOW_COL, ELBOW_COMPACT_COL}
-        body, rest = past_elbow()
-        movers = body + rest
-        at = 90.0
-        for theta, name in ((90, "elbow-side"), (0, "elbow-side-up"), (-20, "elbow-side-back"), (150, "elbow-side-down")):
+                o.data.transform(pitch_matrix(90))
+        if ELBOW:
+            arm = new - {"V1 arm kept"} | {ELBOW_COL, ELBOW_COMPACT_COL}
+            body, rest = past_elbow()
+            movers = body + rest
+            at = 90.0
+            for theta, name in ((90, "elbow-side"), (0, "elbow-side-up"), (-20, "elbow-side-back"), (150, "elbow-side-down")):
+                for o in movers:
+                    o.data.transform(elbow_rot(theta) @ elbow_rot(at).inverted())
+                at = theta
+                render(name, (0, -1, 0), arm, target=tuple(ELBOW_AT + Vector((80, 0, 0))), scale=820)
             for o in movers:
-                o.data.transform(elbow_rot(theta) @ elbow_rot(at).inverted())
-            at = theta
-            render(name, (0, -1, 0), arm, target=tuple(ELBOW_AT + Vector((80, 0, 0))), scale=820)
-        for o in movers:
-            o.data.transform(elbow_rot(90) @ elbow_rot(at).inverted())
-        render("elbow-iso", (1, -1.1, 0.6), arm, target=tuple(ELBOW_AT + Vector((80, 0, -40))), scale=820)
+                o.data.transform(elbow_rot(90) @ elbow_rot(at).inverted())
+            render("elbow-iso", (1, -1.1, 0.6), arm, target=tuple(ELBOW_AT + Vector((80, 0, -40))), scale=820)
     show(new)
     frame_viewports()
     bpy.ops.wm.save_as_mainfile(filepath=BLEND)

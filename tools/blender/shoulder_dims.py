@@ -59,6 +59,7 @@ JIG_T, JIG_SPIGOT_DEPTH, JIG_R, JIG_FENCE = 10.0, 6.0, 44.0, (E.PLATE_R + 0.1, 4
 SHOULDER_AXIS_Z = 158.0
 WALL_BOSS_R = {"A": 50.0, "B": 48.0}
 WALL_BOTTOM_HALF_W, FOOT_T, FOOT_W, WINDOW_BORDER, WINDOW_RIB = 66.0, 8.0, 22.0, 9.0, 6.0
+WALL_B_FRONT = (44.0, -52.0)                 # wall B stops at x 44 above z -52: the palm passes at elbow 150, wrist pitch 90 (head_concept)
 WALL_FOOT = {s: [(x, WALL_Y[s][1] + (FOOT_W / 2 if s == "A" else -FOOT_W / 2)) for x in (-52.0, -22.0, 22.0, 52.0)] for s in "AB"}
 FOOT_BOLT_L = 12
 BODY_MIN = 6.0

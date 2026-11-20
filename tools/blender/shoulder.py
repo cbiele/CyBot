@@ -436,6 +436,8 @@ def wall_a():
 
 def wall_b():
     w = wall("B")
+    x0, z0 = WALL_B_FRONT
+    L.cut(w, L.box("palm's path", x0, x0 + 100.0, WALL_Y["B"][1] - FOOT_W - 1.0, WALL_Y["B"][0] + 1.0, z0, WALL_BOSS_R["B"] + 1.0))
     for b in stop_blocks():
         L.union(w, b)
     L.finish(w)
