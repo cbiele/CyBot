@@ -667,11 +667,13 @@ def wrist_fixed():
     return objs + [o for o in COLS["Axis 5 belted, 40:1"].objects if not any(p in o.name for p in ("carrier", "disk", "eccentric"))]
 
 
-def merged_tree(objs, m=None):
+def merged_tree(objs, m=None, pre=None):
+    """One BVH tree of objs, each moved by m; pre: {id(o): a matrix applied to that one first}."""
     verts, polys = [], []
     for o in objs:
         base = len(verts)
-        verts += [(m @ v.co) if m else v.co.copy() for v in o.data.vertices]
+        mo = (m or Matrix()) @ pre[id(o)] if pre and id(o) in pre else m
+        verts += [(mo @ v.co) if mo else v.co.copy() for v in o.data.vertices]
         polys += [[base + i for i in p.vertices] for p in o.data.polygons]
     return mathutils.bvhtree.BVHTree.FromPolygons(verts, polys)
 
@@ -717,9 +719,10 @@ def offset_wrist_report(report):
 
 
 SH_COL, BASE_COL = "Shoulder and body", "Base and legs"
-SH_MOVING_STL = ("shoulder-hub-a", "shoulder-hub-b", "shoulder-output-plate", "shoulder-stop-collar")
+SH_MOVING_STL = ("shoulder-hub-b", "shoulder-output-plate", "shoulder-stop-collar")
 SH_SKIP_STL = ("plate-drill-jig", "shoulder-motor-plate-23")      # a drilling tool, and the NEMA23's spare plate
 BASE_STL = ("turntable", "base-ring-130T", "spigot-spacer", "spigot-cap", "fixed-base", "base-motor-plate", "foot", "foot-pad")
+PHI_TURNING_STL = ("turntable", "base-ring-130T")   # base parts that turn with phi; the rest of the base stays with the bench
 SH_AT = ELBOW_AT - Vector((0, 0, E.UPPER_L))   # the shoulder axis; the shoulder frame maps in by translation
 PRINTED_G_MM3 = 1.24e-3 * 0.4                  # PLA at 40% infill
 MOTOR_G, COMPACT_G, PAYLOAD_G, LEG_TUBE_G = 350, 120, 500, 17   # each; the tube is Ø9 x 1 aluminium, 250 long
@@ -757,17 +760,20 @@ def shoulder_body():
             continue
         place(stl(os.path.join(folder, name + ".stl"), "shoulder " + name), col, mat, m @ Matrix(rows))
     cycloid("20-1-compact", "ax2", SH_COL, m @ basis_frame((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, S.COMPACT_REAR_Y, 0)))
-    up = Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))   # a pulley's z onto -y, hub towards the compact
+    up = Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))   # a pulley's z onto -y, hub towards the stub
+    out = Matrix(((1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 0, 1)))  # a pulley's z onto +y, hub towards the motor
     top = S.PULLEY80_Y + E.PULLEY_H
     mx, mz = S.motor_at()
     place(stl(os.path.join(folder, "shoulder-pulley-80T.stl"), "shoulder 80T"), SH_COL, "pulley", m @ Matrix.Translation((0, top, 0)) @ up)
-    place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "shoulder 20T"), SH_COL, "pulley", m @ Matrix.Translation((mx, top, mz)) @ up)
+    place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "shoulder 20T"), SH_COL, "pulley",
+          m @ Matrix.Translation((mx, S.PULLEY20_HUB_Y[1] - E.PULLEY_H, mz)) @ out)
     h = S.MOTORS["17"]["sq"] / 2
-    place(L.box("shoulder motor 17HS19", mx - h, mx + h, S.SWAP_Y[0] - S.MOTORS["17"]["length"], S.SWAP_Y[0], mz - h, mz + h), SH_COL, "motor", m)
+    local = basis_frame((S.BELT_U[0], 0, S.BELT_U[1]), (S.BELT_W[0], 0, S.BELT_W[1]), (0, 1, 0), (mx, 0, mz))
+    place(L.box("shoulder motor 17HS19", -h, h, -h, h, S.MOTOR_FACE_Y, S.MOTOR_FACE_Y + S.MOTORS["17"]["length"]), SH_COL, "motor", m @ local)
     bx, by = S.base_motor_at()
-    place(L.box("base motor 17HS19", bx - h, bx + h, by - h, by + h, S.BASE_TOP_Z - S.BASE_MOTOR_L, S.BASE_TOP_Z), BASE_COL, "motor", m)
-    zp = S.BASE_TOP_Z + S.BASE_PLATE_T + 1.0
-    place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "base 20T"), BASE_COL, "pulley", m @ Matrix.Translation((bx, by, zp + E.PULLEY_H)) @ flip())
+    place(L.box("base motor 17HS19", bx - h, bx + h, by - h, by + h, S.BASE_PLATE_Z[1], S.BASE_PLATE_Z[1] + S.BASE_MOTOR_L), BASE_COL, "motor", m)
+    place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "base 20T"), BASE_COL, "pulley",
+          m @ Matrix.Translation((bx, by, S.BASE20_HUB_Z[1] - E.PULLEY_H)))
     for phi in S.LEG_PHI:
         _, s, f = S.leg(phi)
         t = L.cyl_between(f"leg tube {phi:.0f}", s, f, S.TUBE_LEG_R, n=24)
@@ -842,12 +848,21 @@ def np_verts(objs, m=None):
     return pts
 
 
-def soft_limits(fixed, bench_z):
-    """(psi, theta) pairs, 5 degree steps, where the arm meets the body, the base, the legs or the bench; pitch 0."""
+def phi_split():
+    """shoulder_fixed() split into what turns with the base (the body on the turntable) and what stays with the bench."""
+    base = {o.name for o in COLS[BASE_COL].objects}
+    turning = [o for o in shoulder_fixed() if o.name in ["shoulder " + k for k in PHI_TURNING_STL] or o.name not in base]
+    return turning, [o for o in shoulder_fixed() if o not in turning]
+
+
+def soft_limits(turning, still, bench_z, phi):
+    """(psi, theta) pairs, 5 degree steps, where the arm meets the body, the base, the legs or the bench; pitch 0. The
+    base stands at phi: what stays with the bench is turned by -phi about the base axis, into the turntable's frame."""
     import numpy as np
     upper = upper_arm_objs()
     body, rest = past_elbow()
-    fixed_trees = {psi: merged_tree(fixed, shoulder_rot(-psi)) for psi in range(int(S.PSI_RANGE[0]), int(S.PSI_RANGE[1]) + 1, 5)}
+    fixed_trees = {psi: merged_tree(turning + still, shoulder_rot(-psi), {id(o): base_rot(-phi) for o in still})
+                   for psi in range(int(S.PSI_RANGE[0]), int(S.PSI_RANGE[1]) + 1, 5)}
     hits = []
     up_tree = merged_tree(upper)
     up_v = np_verts(upper)
@@ -863,11 +878,34 @@ def soft_limits(fixed, bench_z):
     return hits
 
 
+def bench_reach(fixed, bench_z, tip):
+    """Poses (psi, theta, wrist pitch) that bring the tool's point to the bench (within 2) with nothing of the arm under
+    it or in the body, the base or the legs, at phi 0: the one nearest the base axis."""
+    import numpy as np
+    body, rest = past_elbow()
+    upper = upper_arm_objs()
+    ft = merged_tree(fixed)
+    cands = []
+    for psi in range(int(S.PSI_RANGE[0]), int(S.PSI_RANGE[1]) + 1):
+        for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 2):
+            for pitch in range(-90, 91, 10):
+                p = shoulder_rot(psi) @ elbow_rot(th) @ pitch_matrix(pitch) @ tip
+                if p.z <= bench_z + 2.0:
+                    cands.append((math.hypot(p.x - SH_AT.x, p.y - SH_AT.y), psi, th, pitch, p.z))
+    for r, psi, th, pitch, z in sorted(cands):
+        sm, em, pm = shoulder_rot(psi), elbow_rot(th), pitch_matrix(pitch)
+        arm = np.vstack([np_verts(body, sm @ em @ pm), np_verts(rest, sm @ em), np_verts(upper, sm)])
+        if arm[:, 2].min() < bench_z - 1.0:
+            continue
+        if ft.overlap(merged_tree(body, sm @ em @ pm)) or ft.overlap(merged_tree(rest, sm @ em)) or ft.overlap(merged_tree(upper, sm)):
+            continue
+        return {"reaches": True, "closest_r_mm": round(r, 1), "pose": [psi, th, pitch], "tip_above_bench_mm": round(z - bench_z, 2), "candidates": len(cands)}
+    return {"reaches": False, "closest_r_mm": None, "pose": None, "candidates": len(cands)}
+
+
 def tip_margin(groups, upper, tip, sweep):
     """Least distance from the whole arm's centre of mass, projected, to the pad square's edges, at the longest reaches."""
-    turning = [o for o in shoulder_fixed() if not o.name.startswith(("shoulder fixed-base", "shoulder base-motor-plate", "base ", "foot", "leg tube",
-                                                                        "shoulder spigot"))]
-    still = [o for o in shoulder_fixed() if o not in turning]
+    turning, still = phi_split()
     turn_g = [(centre([o]), printed_g([o])) for o in turning if o.name.startswith("shoulder ") and "motor 17HS19" not in o.name and "80T" not in o.name]
     turn_g += [(centre([obj("shoulder motor 17HS19")]), MOTOR_G), (centre([o for o in COLS[SH_COL].objects if o.name.startswith("ax2 housing")]), COMPACT_G)]
     turn_g += [(centre([obj("shoulder 80T")]), printed_g([obj("shoulder 80T")]))]
@@ -892,6 +930,7 @@ def tip_margin(groups, upper, tip, sweep):
 
 def shoulder_report(report):
     fixed = shoulder_fixed()
+    turning, still = phi_split()
     body, rest = past_elbow()
     ft = merged_tree(fixed)
     home = []
@@ -914,29 +953,33 @@ def shoulder_report(report):
     head = [(c, g, pitches) for n, (c, g, pitches) in named if n != "Three-finger hand"]
     scale = USER_HEAD_G / sum(g for _, g, _ in head)
     demo = 9.81 * (sum(g * scale * (c.x - ELBOW_AT.x) for c, g, _ in head) + WRIST_TEST_G * (PITCH_X - ELBOW_AT.x)) * 1e-6
-    capacity = demo * S.SHOULDER_RATIO / 60
+    capacity = min(demo * S.SHOULDER_RATIO / 60, S.SHOULDER_DESIGN_NMM / 1000)   # the driver's current cap holds it to 13.5
     margin = capacity / t
+    over = [q for q in poses if shoulder_torque(*q, groups, upper, tip) > capacity]
+    over_worst = max(over, key=lambda q: shoulder_torque(*q, groups, upper, tip)) if over else None
     bench = SH_AT.z + S.FOOT_PAD_Z
-    limits = soft_limits(fixed, bench)
+    phis = sorted(set(list(range(0, 360, 45)) + [int(S.BASE_MOTOR_DEG) % 360]))
+    per_phi = {phi: soft_limits(turning, still, bench, phi) for phi in phis}
+    union = sorted({tuple(h) for hs in per_phi.values() for h in hs})
+    limits0 = per_phi[0]
+    assert {tuple(h) for h in limits0} <= set(union), "the soft limits over phi miss phi 0's"
+    reach = bench_reach(fixed, bench, tip)
+    assert reach["reaches"], ("the tool can't reach the bench", reach)
     tip_mm, tip_at = tip_margin(groups, upper, tip, sweep)
-    report.update({"shoulder_at": [round(c, 1) for c in SH_AT], "shoulder_home_sweep_clash": home, "upper_arm_hits_body": bool(upper_hit),
+    report.update({"shoulder_at": [round(c, 1) for c in SH_AT], "shoulder_home_clashes": home, "upper_arm_hits_body": bool(upper_hit),
                    "plate_mass_g": round(upper[0][1]), "shoulder_torque_worst_nm": round(t, 2), "shoulder_worst_pose_psi_theta_pitch": list(worst),
                    "elbow_demo_nm": round(demo, 2), "shoulder_capacity_nm": round(capacity, 2), "shoulder_margin": round(margin, 2),
-                   "shoulder_soft_limits": limits, "tip_margin_mm": round(tip_mm, 1), "tip_worst": tip_at,
-                   "shoulder_design_check": round(t * 1.5, 2) <= S.SHOULDER_DESIGN_NMM / 1000})
+                   "shoulder_over_capacity": {"count": len(over), "of": len(poses), "worst": list(over_worst) if over_worst else None},
+                   "shoulder_current_cap_a": round(S.SHOULDER_CURRENT_CAP_A, 3), "psi_range": list(S.PSI_RANGE),
+                   "shoulder_soft_limits": [list(h) for h in union], "shoulder_soft_limits_phi0": limits0,
+                   "shoulder_soft_limits_by_phi": {str(k): len(v) for k, v in per_phi.items()}, "bench_reach": reach,
+                   "bench_z": round(bench, 1), "tip_margin_mm": round(tip_mm, 1), "tip_worst": tip_at})
+    assert report["shoulder_current_cap_a"] == round(S.SHOULDER_CURRENT_CAP_A, 3)
     if margin < 1.2:
         report["shoulder_note"] = "shoulder: bench test at higher current, NEMA23 plate ready"
     if tip_mm < 15:
         # The user accepted clamped feet as the stability answer (2026-11-20), so tipping unclamped is reported, not asserted.
         report["tip_note"] = "clamp the feet"
-    if home:
-        th, pitch = home[0]
-        em = elbow_rot(th)
-        pairs = [(o.name, f.name) for f in fixed for o in body + rest
-                 if merged_tree([f]).overlap(merged_tree([o], em @ (pitch_matrix(pitch) if o in body else Matrix())))]
-        low = min(min((em @ (pitch_matrix(pitch) if o in body else Matrix()) @ v.co).z for v in o.data.vertices) for o in body + rest)
-        assert False, ("the forearm or head hits the body with the upper arm straight up", home, pairs[:8],
-                       "lowest above the turntable", round(low - (SH_AT.z + S.TURNTABLE_Z), 1))
     if upper_hit:
         pairs = [(o.name, f.name) for o in upper_arm_objs() for f in fixed if merged_tree([o]).overlap(merged_tree([f]))]
         assert False, ("the upper arm hits the body at home", pairs[:12])

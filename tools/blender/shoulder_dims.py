@@ -15,7 +15,8 @@ B6810 = E.B6810
 M3_CLEAR_R, M3_INSERT_R, M3_INSERT_DEPTH, M5_CLEAR_R = 1.7, 2.0, 5.0, 2.75
 NUT_AF, NUT_T = 5.8, 2.6
 M3_STOCK = (40, 45, 50)
-SHOULDER_DESIGN_NMM = 13.5e3                 # 1.5x the spec's 9 N·m estimate; Task 6 replaces the estimate with the model's
+SHOULDER_DESIGN_NMM = 13.5e3                 # 1.5x the spec's 9 N·m estimate; the hub lock, the output link and the stops
+SHOULDER_CURRENT_CAP_A = 2.0 * 13.5 / (0.59 * 80)   # the driver's cap so a stall can't pass 13.5 N·m (17HS19: 0.59 N·m at 2.0 A, 80:1)
 PRINTED_MPA = 10.0
 
 # The stub-mount compact (cycloid_poc.py -- --stub-mount): M3 inserts in the rear housing's face, between its R30
