@@ -68,6 +68,10 @@ def overlap(a, b):
     bpy.data.objects.remove(ca); return v
 
 
+def volume(o):
+    bm = bmesh.new(); bm.from_mesh(o.data); v = abs(bm.calc_volume()); bm.free(); return v
+
+
 def tree(o):
     bm = bmesh.new(); bm.from_mesh(o.data)
     t = mathutils.bvhtree.BVHTree.FromBMesh(bm); bm.free(); return t
@@ -1210,12 +1214,44 @@ def moved_base(o, slot):
     return c
 
 
-def fixed_base():
-    """The drum on the bench, the spigot with its shoulder, the stop block, the Hall post, and the base motor's shelf:
-    side walls under it with 45-degree undersides past the drum, so the drum prints on its underside."""
+def drum_rib(phi):
+    """In the leg's vertical plane: from the hub's top out under the socket's boss to the wall, its underside a 45-degree diagonal
+    down to the wall's foot, so the hub's moment reaches the bench and the boss prints on it."""
     zt, zb = DRUM_TOP, BENCH_Z
+    t, n = math.tan(math.radians(LEG_DEG)), (math.sin(math.radians(LEG_DEG)), math.cos(math.radians(LEG_DEG)))
+    mr, mz, h = SOCKET["mouth_r"], SOCKET_MOUTH_Z, SOCKET["boss_r"] * TEARDROP
+    rw = DRUM_R - DRUM_WALL / 2
+    tip = (mr - h * n[0], mz - h * n[1] + 0.5)          # the teardrop's point on the boss's end face
+    pts = [(HUB_TUBE_R - 0.5, zt), (mr + (zt - mz) * t, zt), tip, (rw, tip[1] - (tip[0] - rw)), (rw, zb), (rw - 1.0, zb - 1.0)]
+    r = prism_y("rib", pts, -DRUM_RIB / 2, DRUM_RIB / 2)
+    r.data.transform(Matrix.Rotation(math.radians(phi), 4, 'Z'))
+    return r
+
+
+def drum_bracket(name, r0, r_post, half, deg):
+    """Under a post on the open drum's top: a web out to the wall with a 45-degree underside, up into the post and 0.3 inside it."""
+    r1, a, top = DRUM_R - DRUM_WALL / 2, r0 + 0.3, DRUM_TOP + 0.5
+    pts = [(a, top), (r_post - 0.3, top), (r_post - 0.3, DRUM_TOP - 0.3), (r1, DRUM_TOP - 0.3), (r1, top - (r1 - a))]
+    b = prism_y(name, pts, -half + 0.3, half - 0.3)
+    b.data.transform(Matrix.Rotation(math.radians(deg), 4, 'Z'))
+    return b
+
+
+def fixed_base():
+    """The drum on the bench: a thin shell open top and bottom, the spigot's hub tube on the bench, ribs out to the legs' sockets,
+    brackets under the stop block and the Hall post, and the base motor's shelf on side walls with 45-degree undersides."""
+    zt, zb = DRUM_TOP, BENCH_Z - 1.0                               # zb: trimmed back to the bench at the end, one flat underside
     f = L.cyl_z("fixed-base", 0, 0, DRUM_R, zb, zt, n=192)
-    L.union(f, L.cyl_z("shoulder", 0, 0, SPIGOT["shoulder_r"], zt - 0.01, TT_HUB_Z0, n=192))
+    L.cut(f, L.cyl_z("hollow", 0, 0, DRUM_R - DRUM_WALL, zb - 1.0, zt + 1.0, n=192))
+    flare = SPIGOT["shoulder_r"] - HUB_TUBE_R
+    L.union(f, L.cyl_z("hub", 0, 0, HUB_TUBE_R, zb, zt - flare + 0.3, n=192))
+    L.union(f, hull([L.cyl_z("flare", 0, 0, HUB_TUBE_R - 0.1, zt - flare - 0.5, zt - flare, n=192),
+                     L.cyl_z("shoulder", 0, 0, SPIGOT["shoulder_r"], zt, TT_HUB_Z0, n=192)], "shoulder"))
+    for phi in LEG_PHI:
+        L.union(f, drum_rib(phi))
+    L.union(f, drum_bracket("block bracket", PHI_R[0], PHI_R[1], PHI_R[0] * math.sin(math.radians(PHI_HALF)), 0.0))
+    hr = BASE_HALL["magnet"][0]
+    L.union(f, drum_bracket("hall bracket", hr - HALL_POST_HALF, hr + HALL_POST_HALF, HALL_POST_HALF, BASE_HALL["magnet"][1]))
     L.union(f, L.cyl_z("spigot", 0, 0, SPIGOT["r"], TT_HUB_Z0 - 0.01, SPIGOT["top"], n=192))
     L.union(f, phi_block())
     hx, hy = hall_xy()
@@ -1223,7 +1259,9 @@ def fixed_base():
     r0, r1 = SHELF["r"]
     rin = math.sqrt(DRUM_R ** 2 - SHELF["half"] ** 2) - 1.0       # where the walls' outer corners leave the drum
     rw = SHELF["wall_r0"]                                          # the walls start clear of the belt's sweep in to the ring
-    side = [(rw, zt - 1.0), (rin, zt - 1.0), (rin, zb), (r1, zb + (r1 - rin)), (r1, SHELF_Z[1]), (rw, SHELF_Z[1])]
+    xo = math.sqrt(DRUM_R ** 2 - (SHELF["half"] - SHELF["wall"]) ** 2) - 0.5   # just inside where the walls' inner faces leave the drum
+    z0 = SHELF_Z[0] - SHELF_UNDER - (r1 - xo)
+    side = [(rw, zt - 1.0), (rin, zt - 1.0), (rin, zb), (xo, zb), (xo, z0), (r1, z0 + (r1 - xo)), (r1, SHELF_Z[1]), (rw, SHELF_Z[1])]
     arm = L.box("shelf", r0, r1, -SHELF["half"], SHELF["half"], *SHELF_Z)
     for sg in (1, -1):
         L.union(arm, prism_y("wall", side, *sorted((sg * (SHELF["half"] - SHELF["wall"]), sg * SHELF["half"]))))
@@ -1237,7 +1275,9 @@ def fixed_base():
     arm.data.transform(base_frame())
     L.union(f, arm)
     L.finish(f)
-    L.cut(f, L.cyl_z("bore", 0, 0, SPIGOT["bore_r"], zb - 1.0, SPIGOT["top"] + 1.0, n=128))
+    cb = SPIGOT["top"] - M3_INSERT_DEPTH - 2.0                     # the cap's inserts keep the narrow bore
+    L.cut(f, hull([L.cyl_z("bore", 0, 0, SPIGOT["bore_r"], zb - 1.0, cb - (SPIGOT["bore_r"] - SPIGOT["cap_bore_r"]), n=128),
+                   L.cyl_z("cap bore", 0, 0, SPIGOT["cap_bore_r"], cb, SPIGOT["top"] + 1.0, n=128)], "bore"))
     for a in CAP_SCREW_ANGLES:
         x, y = polar(CAP_SCREW_R, a)
         L.cut(f, L.cyl_z("cap insert", x, y, M3_INSERT_R, SPIGOT["top"] - M3_INSERT_DEPTH - 1.0, SPIGOT["top"] + 1.0, n=32))
@@ -1246,7 +1286,8 @@ def fixed_base():
                    st - SENSOR[2] - 0.1, st + 1.0))
     L.cut(f, L.box("leads", hx - HALL_POST_HALF - 1.0, hx, hy - 1.0, hy + 1.0, st - 1.0, st + 1.0))
     leg_sockets(f)
-    PRINT_POSE["fixed-base"] = Matrix.Translation((0, 0, -zb))
+    L.cut(f, L.box("under the bench", -200.0, 200.0, -200.0, 200.0, BENCH_Z - 5.0, BENCH_Z))
+    PRINT_POSE["fixed-base"] = Matrix.Translation((0, 0, -BENCH_Z))
     return f
 
 
@@ -1380,6 +1421,8 @@ def check_base():
     under = [v.co.z for v in fb.data.vertices if v.co.z <= BENCH_Z + 0.01]
     assert under and max(under) - min(under) <= 0.02 and abs(min(under) - BENCH_Z) <= 0.02, ("drum's underside not flat on the bench", min(under), max(under))
     bpy.data.objects.remove(above)
+    cm3 = volume(fb) / 1000.0
+    assert cm3 <= FIXED_BASE_MAX_CM3, ("fixed base too heavy", round(cm3, 1))
     tab, block = phi_tab(), phi_block()
     gaps = {}
     for phi in (PHI_RANGE[0], PHI_RANGE[1], PHI_STOPS[0], PHI_STOPS[1], PHI_STOPS[0] + 0.3, PHI_STOPS[1] - 0.3, 0.0, 90.0, -90.0):
@@ -1419,7 +1462,7 @@ def check_base():
                    "phi_stop_mpa": {k: round(v, 1) for k, v in mpa.items()}, "base_hall_gap_mm": round(hall, 2),
                    "turntable_r": TURNTABLE_R, "ring_grooves": g, "ring_od": round(peak, 2),
                    "base_motor_at": [round(c, 2) for c in BASE_MOTOR_AT], "turntable_z": TURNTABLE_Z,
-                   "fixed_base_lowest_z": round(min(v.co.z for v in fb.data.vertices), 2)})
+                   "fixed_base_lowest_z": round(min(v.co.z for v in fb.data.vertices), 2), "fixed_base_cm3": round(cm3, 1)})
     REPORT["bolts"].update({"spigot cap": CAP_SCREW_L, "ring to turntable hub": RING_SCREW_L, "base motor plate": BASE_PLATE_SCREW_L,
                             "base push screw": BASE_PUSH_L})
     for o in (turning, tab, block):
@@ -1437,20 +1480,17 @@ def pinch_dir(d):
 
 
 def leg_sockets(f):
-    """Bosses on the fixed base's rim with a buttress down to the bed, then the sockets and the pinch inserts."""
+    """Bosses on the drum's rim, their undersides a 45-degree teardrop down onto the leg's rib, then the sockets and the pinch inserts."""
+    h = SOCKET["boss_r"] * TEARDROP
     for phi in LEG_PHI:
-        m, s, _ = (V(p) for p in leg(phi)); d = V(leg_dir(phi))
-        boss = rod("socket boss", s - d * SOCKET["floor"], m, SOCKET["boss_r"], n=47)   # odd: no vertex row on the pinch insert's axis
-        foot = copy(boss, "buttress foot")
-        bm = bmesh.new(); bm.from_mesh(foot.data)
-        for v in bm.verts:
-            v.co.z = BASE_TOP_Z - BASE_T
-        bm.to_mesh(foot.data); bm.free()
-        L.union(f, hull([boss, foot], "socket"))
+        m, s, _ = (V(p) for p in leg(phi)); d = V(leg_dir(phi)); n = pinch_dir(d)
+        a = s - d * SOCKET["floor"]
+        boss = rod("socket boss", a, m, SOCKET["boss_r"], n=47)   # odd: no vertex row on the pinch insert's axis
+        L.union(f, hull([boss, rod("teardrop", a - n * h, m - n * h, 0.5, n=8)], "socket"))
     L.finish(f)
     for phi in LEG_PHI:
         m, s, _ = (V(p) for p in leg(phi)); d = V(leg_dir(phi)); n = pinch_dir(d)
-        L.cut(f, rod("socket", s, m + d * 30.0, SOCKET["r"], n=64))   # on through the buttress's foot, which reaches past the mouth
+        L.cut(f, rod("socket", s, m + d * 30.0, SOCKET["r"], n=64))   # on out past the mouth
         c = m - d * PINCH_AT
         L.cut(f, rod("pinch insert", c + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH), c + n * (SOCKET["boss_r"] + 2.3), M3_INSERT_R, n=30))
         L.cut(f, rod("pinch screw", c, c + n * (SOCKET["boss_r"] - M3_INSERT_DEPTH + 0.5), M3_CLEAR_R, n=30))

@@ -16,18 +16,18 @@ The project files in `print/` hold the plates below, arranged and set up. Open, 
 | 2 | `print/plate-2-wall-B-collar-stub-0.16.3mf` | `body-wall-B`, `shoulder-stop-collar`, `shoulder-stub`, `shoulder-stub-spacer` | 0.16 | none | 5 h 46, 152 g |
 | 3 | `print/plate-3-hub-B-jig-0.16-supports.3mf` | `shoulder-hub-b`, `plate-drill-jig` | 0.16 | tree | 5 h 57, 152 g |
 | 4 | `print/plate-4-turntable-0.16.3mf` | `turntable` | 0.16 | none | 7 h 44, 235 g |
-| 5 | `print/plate-5-fixed-base-0.16-supports-15pc.3mf` | `fixed-base` (the drum) | 0.16 | tree, 15% infill | 20 h 22, 695 g |
+| 5 | `print/plate-5-fixed-base-0.16-supports-15pc.3mf` | `fixed-base` (the drum) | 0.16 | tree, 15% infill | 8 h 13, 296 g |
 | 6 | `print/plate-6-shoulder-drive-0.12.3mf` | `shoulder-motor-plate-17`, `shoulder-motor-plate-23`, `shoulder-pulley-80T`, `shoulder-output-plate`, 2 × `elbow/axis3-pulley-20T` (one for each new motor) | 0.12 | none | 9 h 43, 133 g |
 | 7 | `print/plate-7-base-drive-0.12.3mf` | `base-ring-130T`, `base-motor-plate`, `spigot-spacer`, `spigot-cap` | 0.12 | none | 8 h 52, 124 g |
 | 8 | `print/plate-8-feet-0.16.3mf` | 4 × `foot` | 0.16 | none | 2 h 16, 62 g |
 | 9 | `print/plate-9-pads-tpu-0.16.3mf` | 4 × `foot-pad`, in TPU (Generic TPU profile; swap in yours) | 0.16 | none | 0 h 49, 11 g |
 
-All plates: 4 walls, 40% gyroid, Arachne walls, as on the elbow, except the drum at 15%. In all, about 79 h and 1.97 kg of PLA.
+All plates: 4 walls, 40% gyroid, Arachne walls, as on the elbow, except the drum at 15%. In all, about 67 h and 1.57 kg of PLA.
 
 - **Three plates need supports:**
   - **Wall A:** it prints standing on its bottom face (its inward foot rules out face down), and the motor box's end and seat overhang. It fills most of the bed (245 × 78), so it's placed by hand with a 2 mm brim. Don't let arrange move it.
   - **Hub B:** the floor under the nose bridges its bore. The supports come out of the bore's open end.
-  - **The drum:** the base motor's shelf bridges over the motor's window. 15% infill keeps the drum to 20 h. It's heavy anyway, which helps it stand.
+  - **The drum:** a 1.8 mm shell open top and bottom, like V1's ring; the turntable covers it. Ribs run from the spigot's tube down to the wall's foot under each leg's socket, and the stop block and Hall post stand on brackets off the wall, all at 45°, so the only supports are under the base motor's shelf, which bridges over the motor's window. It's light now (296 g), so clamp the feet.
 - **The stub prints flange down,** so its bearing land is a clean vertical wall.
 - **Hub B prints journal end down,** with a 45° cone under its flange.
 - **The motor plates print seat face down,** their pull-screw tabs up.
@@ -180,5 +180,5 @@ The order matters. **The upper arm is built round the compact:** plate B, hub B 
   - Under the current cap above, the most it can apply is 13.5 N·m, which the hub lock, link and stops are sized for.
 - **Stability:**
   - The pads sit on a square whose edges are 224 mm from the base axis.
-  - At full reach, base turned 90°, with 500 g at the wrist, the arm's centre of mass (5.6 kg) falls 17 mm past that edge.
+  - At full reach, base turned 90°, with 500 g at the wrist, the arm's centre of mass (4.6 kg, with the drum now a light shell) falls 66 mm past that edge.
   - **Clamp the feet.**
