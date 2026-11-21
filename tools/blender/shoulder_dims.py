@@ -69,7 +69,15 @@ SHOULDER_AXIS_Z = 46.5
 WALL_BOSS_R = {"A": 46.0, "B": 48.0}
 WALL_BOTTOM_HALF_W = {"A": 35.0, "B": 40.0}
 WALL_B_FRONT = (44.0, -52.0)                 # wall B stops at x 44 above z -52: the palm passes at elbow 150, wrist pitch 90 (head_concept)
-WALL_INSERTS = {s: [(x, sum(WALL_Y[s]) / 2) for x in ((-25.0, 0.0, 25.0) if s == "A" else (-25.0, 10.0, 25.0))] for s in "AB"}   # B's middle one beside the Hall's leads
+# An inward foot on each wall's bottom (inside the elbow belt's sweep, outside hub B's cone) gives the joint a second
+# row of inserts, for the arm's weight off the wall's plane.
+# Wall B's bearing sits over its own inserts, so one row does there.
+WALL_FOOT_IN = {"A": (WALL_Y["A"][0] - 11.0, WALL_Y["A"][0])}
+WALL_FOOT_T, WALL_FOOT_HALF = 6.0, 30.0
+WALL_INSERTS = {"A": [(x, sum(WALL_Y["A"]) / 2) for x in (-25.0, 0.0, 25.0)] + [(x, sum(WALL_FOOT_IN["A"]) / 2) for x in (-24.0, 24.0)],
+                "B": [(x, sum(WALL_Y["B"]) / 2) for x in (-25.0, 10.0, 25.0)]}   # B's middle one beside the Hall's leads
+WALL_A_SLOT = 1.5                            # wall A's holes in the turntable, slotted along y: it finds its place on the stub
+ARM_LOAD_N, WALL_INSERT_N = 60.0, 400.0      # the arm's weight (about 3 kg) doubled for knocks; a third of an M3 insert's pull-out in PLA
 WALL_SCREW_L = 12
 WALL_A_BORE_R = 30.1                         # the stub's r30 body, a slip fit
 BODY_MIN, INSERT_WALL_MIN = 6.0, 2.0
@@ -112,11 +120,11 @@ MAGNET_R, MAGNET_D, MAGNET_AT_R, MAGNET_RECESS = 3.0, 3.0, 36.0, 0.7
 SENSOR = E.SENSOR
 
 # The shoulder motor (2026-11-20 spec): behind the arm, its body outwards (+y) so it never enters the arm's swing,
-# the belt 10 degrees above level towards the rear, so the motor's plate clears the turntable's rim. The motor goes
-# on its drop-in plate at the bench; the plate slides into a box-section bracket that's part of wall A, from the 80T's
-# side, against the bracket's roof. Four M3s from outside through slots in the roof, and a pull screw through the box's
-# end into a tab on the plate, which sets the belt's tension. Local frame about the motor at slot 0: u along the belt
-# away from the 80T, w square to it in the belt's plane (upwards), y as the shoulder frame's.
+# the belt 10 degrees above level towards the rear, so the motor's plate clears the turntable's rim. The motor and its
+# 20T go on the drop-in plate at the bench; the plate drops into a box that's part of wall A, from outside, onto the
+# box's seat, the 20T through the seat's window. Four M3s from outside through slots in the plate into the seat, and a
+# pull screw through the box's end into a tab on the plate set the belt's tension. Local frame about the motor at
+# slot 0: u along the belt away from the 80T, w square to it in the belt's plane (upwards), y as the shoulder frame's.
 SHOULDER_MOTOR_DEG, MOTOR_SLOT, MOTOR_WALL = 10.0, 3.0, "A"
 BELT_U = (-math.cos(math.radians(SHOULDER_MOTOR_DEG)), math.sin(math.radians(SHOULDER_MOTOR_DEG)))   # (x, z) from the 80T to the motor
 BELT_W = (BELT_U[1], -BELT_U[0])
@@ -130,18 +138,17 @@ SHOULDER_MOTOR_AT = (motor_at()[0], SHOULDER_BELT_PLANE_Y, motor_at()[1])
 MOTORS = {"17": {"sq": 42.3, "hole": 31.0 / 2, "hole_r": M3_CLEAR_R, "pilot_r": 22.4 / 2 + 0.1, "length": 60.0, "shaft": 24.0, "head": (2.75, 3.0)},
           "23": {"sq": 57.0, "hole": 47.14 / 2, "hole_r": M5_CLEAR_R, "pilot_r": 38.5 / 2 + 0.1, "length": 76.0, "shaft": 21.0, "head": (4.25, 5.0)}}
 PULLEY20_HUB_Y = (PULLEY80_TEETH_Y[1] + 1.5, PULLEY80_TEETH_Y[1] + 1.5 + E.PULLEY_HUB)   # its hub towards the motor
-MOTOR_FACE_Y = PULLEY20_HUB_Y[1] + 2.5          # the motor screws' heads then stand 0.5 off the belt's envelope
-MOTOR_PLATE_Y = (MOTOR_FACE_Y - 6.0, MOTOR_FACE_Y)
-BRACKET_Y = (MOTOR_FACE_Y, MOTOR_FACE_Y + 8.0)                    # the roof: the plate's face on its underside
+SEAT_Y = (PULLEY20_HUB_Y[1] + 1.0, PULLEY20_HUB_Y[1] + 9.0)       # the seat in wall A's box, under the plate
+MOTOR_PLATE_Y = (SEAT_Y[1], SEAT_Y[1] + 6.0)
+MOTOR_FACE_Y = MOTOR_PLATE_Y[1]                                   # the motor's face on the plate's outer face
 PLATE_HALF = 48.0
-PLATE_MOUNT = [(40.0, 40.0), (40.0, -40.0), (-40.0, 40.0), (-40.0, -40.0)]   # inserts in each plate, about the motor's axis
-PLATE_SCREW_L = 12
-MOTOR_SLOT_U = 29.5 + MOTOR_SLOT             # the roof's slot round the motor's body: open towards the 80T, closed here
-MOTOR_SLOT_W = 29.5
-TAB = {"u": (PLATE_HALF - 14.0, PLATE_HALF), "w": 7.0, "y": (MOTOR_PLATE_Y[0] - 6.0, MOTOR_PLATE_Y[1])}
+PLATE_MOUNT = [(40.0, 40.0), (40.0, -40.0), (-40.0, 40.0), (-40.0, -40.0)]   # inserts in the seat, about the motor at slot 0
+PLATE_SCREW_L = 10
+SEAT_WINDOW = (29.0 + MOTOR_SLOT, 29.5)      # u, w half: the 23's M5 heads (23.6 + 4.25 + 0.5) at either end of the slot
+TAB = {"u": (PLATE_HALF - 14.0, PLATE_HALF), "w": 7.0, "y": (MOTOR_PLATE_Y[0], MOTOR_PLATE_Y[1] + 6.0)}
 PULL_Y = sum(TAB["y"]) / 2
 BOX = {"u": (-SHOULDER_BELT_C + 45.0, PLATE_HALF + 4.0 + 8.0), "w": 60.0, "slab": 8.0, "end": PLATE_HALF + 4.0,
-       "back_u0": -SHOULDER_BELT_C}          # the box starts 45 along the belt from the axis, clear of the stub's screws
+       "back_u0": -SHOULDER_BELT_C, "slab_top": MOTOR_PLATE_Y[1], "end_top": TAB["y"][1] + 1.0}
 PULL_SCREW_L, PULL_BORE = 20, 12.0          # the pull screw's insert, then a clearance bore on into the tab
 
 # The base (axis 1): the base axis is the shoulder frame's z axis. The turntable turns on two 6810s on a printed Ø50

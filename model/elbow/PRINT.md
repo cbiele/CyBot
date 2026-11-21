@@ -94,7 +94,7 @@ Plate B slides on along the elbow axis onto both journals at once, so the order 
    - Slide it onto the journal end outside plate B, its tongue in the journal's slot.
    - Screw it down with the two M3 × 8s. That clamps the 6810's inner ring against the hub.
    - Push the wedge in from outside through the collar's and the journal's wire windows, its curved faces matching theirs. Fix it with a drop of CA. The wires leave through the open Ø36 bore at the journal's end, not the window.
-6. **Cross members.** Push the four tubes through both plates and glue them, with the plates square and parallel.
+6. **Cross members.** Push the four tubes through both plates and glue them, with the plates square and parallel. **Not yet if the shoulder's going on:** the shoulder's compact goes between the plates first, so leave the tubes dry until the shoulder sheet's step 4.
 7. **Belt.** Fit the belt, tension it by sliding the motor along its slots, then set the idler.
 8. **Hall.** Fit the Hall sensor.
 9. **Shoulder.** Drill plate B's lock holes (plate A isn't drilled) and fit the shoulder, as on `model/shoulder/PRINT.md`.

@@ -312,7 +312,8 @@ _TREES = {}
 
 def ctree(o):
     """A BVH tree of o, kept while o lives (the screw checks cast many rays at the same parts)."""
-    k = o.as_pointer()
+    vs = o.data.vertices   # Blender reuses a removed object's pointer: key on the mesh too, or a new part gets an old tree
+    k = (o.as_pointer(), o.name, len(vs), tuple(vs[0].co) if len(vs) else None, tuple(vs[len(vs) // 2].co) if len(vs) else None)
     if k not in _TREES:
         _TREES[k] = tree(o)
     return _TREES[k]
@@ -342,9 +343,16 @@ def cross_members():
                    for x, z in E.CROSS_MEMBERS], "cross members")
 
 
+def housing_clamp_heads():
+    """The M3 x 25s that clamp the compact's halves, their heads on the housing's front face (towards hub B's nose)."""
+    y = COMPACT_REAR_Y - F.HOUSING_L
+    return [cyl_y("clamp head", *polar(F.BOLT_R, a), 2.75, y - BOLT_HEAD_H, y + 0.01, n=24) for a in F.BOLT_ANGLES]
+
+
 def fixed_shoulder():
-    """What stays with the body inside and beside the arm: the stub, its spacer and the compact's housing."""
-    return [copy(PARTS["shoulder-stub"], "stub"), copy(PARTS["shoulder-stub-spacer"], "spacer"), compact_posed()]
+    """What stays with the body inside and beside the arm: the stub, its spacer, the compact's housing and the heads
+    of the bolts that clamp its halves."""
+    return [copy(PARTS["shoulder-stub"], "stub"), copy(PARTS["shoulder-stub-spacer"], "spacer"), compact_posed()] + housing_clamp_heads()
 
 
 def ring_zone():
@@ -543,6 +551,9 @@ def wall(side):
     xt = math.sqrt(r * r - zt * zt) - 0.5
     w = prism_y(f"body-wall-{side}", [(-xt, zt), (xt, zt), (hw, -h), (-hw, -h)], *Y)
     L.union(w, cyl_y("boss", 0, 0, r, *Y, n=192))
+    if side in WALL_FOOT_IN:
+        f0, f1 = WALL_FOOT_IN[side]
+        L.union(w, L.box("inward foot", -WALL_FOOT_HALF, WALL_FOOT_HALF, f0, f1 + 0.01, -h, -h + WALL_FOOT_T))
     return w
 
 
@@ -563,19 +574,20 @@ def wall_bottom_inserts(w, side):
 
 def bracket():
     """Wall A's box for the shoulder motor's drop-in plate, built in the motor's local frame: its back on wall A's
-    plane, slabs either side of the belt, the end (the pull screw's), and the roof the plate seats under, slotted
-    round the motor's body and open towards the 80T, so the plate with its motor slides in."""
+    plane, slabs either side of the belt, the end (the pull screw's), and the seat the plate drops onto from outside,
+    with a window for the 20T and the motor screws' heads, and inserts for the plate's four screws."""
     u0, u1 = BOX["u"]
     W, t, yi, yo = BOX["w"], BOX["slab"], WALL_Y["A"][0], WALL_Y["A"][1]
     b = L.box("bracket", BOX["back_u0"], u1, -W, W, yi, yo)
     for s in (1, -1):
-        L.union(b, L.box("slab", u0, u1, *sorted((s * (W - t), s * W)), yo - 0.01, BRACKET_Y[0] + 0.01))
-    L.union(b, L.box("end", BOX["end"], u1, -W, W, yo - 0.01, BRACKET_Y[1]))
-    L.union(b, L.box("roof", u0, u1, -W, W, *BRACKET_Y))
+        L.union(b, L.box("slab", u0, u1, *sorted((s * (W - t), s * W)), yo - 0.01, BOX["slab_top"]))
+    L.union(b, L.box("end", BOX["end"], u1, -W, W, yo - 0.01, BOX["end_top"]))
+    L.union(b, L.box("seat", u0, u1, -W, W, *SEAT_Y))
     L.finish(b)
-    L.cut(b, L.box("motor slot", u0 - 1.0, MOTOR_SLOT_U, -MOTOR_SLOT_W, MOTOR_SLOT_W, BRACKET_Y[0] - 1.0, BRACKET_Y[1] + 1.0))
+    wu, ww = SEAT_WINDOW
+    L.cut(b, L.box("window", -wu, wu, -ww, ww, SEAT_Y[0] - 1.0, SEAT_Y[1] + 1.0))
     for du, dw in PLATE_MOUNT:
-        L.cut(b, slot_u("mount slot", du, dw, M3_CLEAR_R, BRACKET_Y[0] - 1.0, BRACKET_Y[1] + 1.0))
+        L.cut(b, L.cyl_z("plate insert", du, dw, M3_INSERT_R, SEAT_Y[1] - M3_INSERT_DEPTH, SEAT_Y[1] + 1.0, n=31))   # odd: 30 left an open edge
     L.cut(b, rod("pull screw", (BOX["end"] - 1.0, 0, PULL_Y), (u1 + 1.0, 0, PULL_Y), M3_CLEAR_R, n=32))
     b.data.transform(local_frame())
     return b
@@ -599,7 +611,7 @@ def wall_a():
         x, z = polar(STUB_FIX_R, a)
         L.cut(w, cyl_y("stub fix insert", x, z, M3_INSERT_R, WALL_Y["A"][1] - M3_INSERT_DEPTH, WALL_Y["A"][1] + 1.0, n=32))
     wall_bottom_inserts(w, "A")
-    PRINT_POSE[w.name] = basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, 0, -WALL_Y["A"][0]))
+    PRINT_POSE[w.name] = Matrix.Translation((0, 0, SHOULDER_AXIS_Z))   # standing on its bottom face: the inward foot rules out face down
     return w
 
 
@@ -679,8 +691,7 @@ def shoulder_belt_envelope(slot):
     y0, y1 = PULLEY80_TEETH_Y[0] - 1.5, PULLEY80_TEETH_Y[1] + 1.5
     band = hull([cyl_y("a", 0, 0, R80_OD + E.BELT_T, y0, y1), cyl_y("b", x, z, E.R20_OD + E.BELT_T, y0, y1)], "shoulder belt")
     L.union(band, pulley80_envelope())
-    L.union(band, cyl_y("20T teeth", x, z, E.R20_OD + 1.5, y0, y1 + 0.01))
-    L.union(band, cyl_y("20T hub", x, z, 9.5, y1, PULLEY20_HUB_Y[1]))
+    L.union(band, pulley20_envelope(slot))
     return band
 
 
@@ -691,24 +702,32 @@ def shoulder_motor_box(kind, slot):
     return b
 
 
+def pulley20_envelope(slot):
+    x, z = motor_at(slot)
+    y0, y1 = PULLEY80_TEETH_Y[0] - 1.5, PULLEY80_TEETH_Y[1] + 1.5
+    e = cyl_y("20T teeth", x, z, E.R20_OD + 1.5, y0, y1 + 0.01)
+    L.union(e, cyl_y("20T hub", x, z, 9.5, y1, PULLEY20_HUB_Y[1]))
+    return e
+
+
 def motor_plate(kind):
-    """The drop-in plate: the motor's face on its outer face, inserts for the roof's four screws, a tab on its far
+    """The drop-in plate: the motor's face on its outer face, slots for the four screws into the seat, a tab on its far
     end for the pull screw, the 20T's hub through its pilot."""
     m, name = MOTORS[kind], f"shoulder-motor-plate-{kind}"
     y0, y1 = MOTOR_PLATE_Y
     p = L.box(name, -PLATE_HALF, PLATE_HALF, -PLATE_HALF, PLATE_HALF, y0, y1)
-    L.union(p, L.box("tab", TAB["u"][0], TAB["u"][1], -TAB["w"], TAB["w"], TAB["y"][0], y0 + 0.01))
+    L.union(p, L.box("tab", TAB["u"][0], TAB["u"][1], -TAB["w"], TAB["w"], y1 - 0.01, TAB["y"][1]))
     L.finish(p)
     for su in (-1, 1):
         for sw in (-1, 1):
             L.cut(p, L.cyl_z("motor screw", su * m["hole"], sw * m["hole"], m["hole_r"], y0 - 1.0, y1 + 1.0, n=30))
     for du, dw in PLATE_MOUNT:
-        L.cut(p, L.cyl_z("insert", du, dw, M3_INSERT_R, y1 - M3_INSERT_DEPTH, y1 + 1.0, n=30))
+        L.cut(p, slot_u("slot", du, dw, M3_CLEAR_R, y0 - 1.0, y1 + 1.0))
     L.cut(p, rod("pull insert", (PLATE_HALF - M3_INSERT_DEPTH, 0, PULL_Y), (PLATE_HALF + 1.0, 0, PULL_Y), M3_INSERT_R, n=32))
     L.cut(p, rod("pull bore", (PLATE_HALF - PULL_BORE, 0, PULL_Y), (PLATE_HALF, 0, PULL_Y), M3_CLEAR_R, n=32))
     L.cut(p, L.cyl_z("pilot", 0, 0, m["pilot_r"], y0 - 1.0, y1 + 1.0, n=96))
     p.data.transform(local_frame())
-    PRINT_POSE[name] = Matrix(((1, 0, 0, 0), (0, -1, 0, 0), (0, 0, -1, y1), (0, 0, 0, 1))) @ local_frame().inverted()
+    PRINT_POSE[name] = Matrix.Translation((0, 0, -y0)) @ local_frame().inverted()   # seat face down, the tab up
     return p
 
 
@@ -782,6 +801,15 @@ def check_body():
             rounds[f"{side} bottom {x:+.0f}"] = material_round(w, (x, y, -SHOULDER_AXIS_Z + M3_INSERT_DEPTH / 2), (0, 0, 1), M3_INSERT_R)
     assert min(v for k, v in rounds.items() if "bottom" in k) >= INSERT_WALL_MIN, ("wall bottom insert wall", rounds)
     assert 3.0 <= WALL_SCREW_L - TURNTABLE_T <= M3_INSERT_DEPTH - 0.5, "wall screws from under the turntable"
+    loads = {}
+    for side, y_brg in (("A", (LIP_FACE_Y["A"] + PLATE_FACES["A"][1]) / 2), ("B", sum(WALL_6810_Y["B"]) / 2)):
+        xs, ys = [x for x, _ in WALL_INSERTS[side]], [y for _, y in WALL_INSERTS[side]]
+        f_in = SHOULDER_DESIGN_NMM / (max(xs) - min(xs))               # the design torque, in the wall's plane
+        m_out = ARM_LOAD_N / 2 * abs(y_brg - sum(ys) / len(ys))          # the arm's weight, off the inserts' line
+        f_out = m_out / ((max(ys) - min(ys)) or WALL_T / 2)            # one row: only the wall's own half thickness
+        loads[side] = round(f_in + f_out, 1)
+    assert max(loads.values()) <= WALL_INSERT_N, ("wall insert load", loads)
+    REPORT["wall_insert_load_n"] = loads
     # The stub's fixing: its flange on wall A's outer face, M3 x 10 through it into wall A's inserts.
     assert overlap(st, wa) < 0.05 and touching(st, wa), "stub not on wall A"
     for a in STUB_FIX_ANGLES:
@@ -902,13 +930,15 @@ def check_shoulder_drive():
     for n in plates.values():
         part_ok(n.name); on_bed(n.name)
     y0, y1 = MOTOR_PLATE_Y
+    for du, dw in PLATE_MOUNT:
+        d = ray_len(wa, at_local(du + 1.85, dw, SEAT_Y[1] + 1.0), (0, -1, 0))
+        assert d is not None and abs(d - 1.0 - M3_INSERT_DEPTH) < 0.06, ("seat insert", du, dw, d)
+        assert material_round(wa, at_local(du, dw, SEAT_Y[1] - M3_INSERT_DEPTH / 2), (0, 1, 0), M3_INSERT_R) >= WALL_MIN, ("seat insert wall", du, dw)
     for k, p in plates.items():
         m = MOTORS[k]
         for du, dw in PLATE_MOUNT:
-            c = at_local(du, dw, y1 + 1.0)
-            d = ray_len(p, at_local(du + 1.85, dw, y1 + 1.0), (0, -1, 0))
-            assert d is not None and abs(d - 1.0 - M3_INSERT_DEPTH) < 0.06, ("plate insert", k, du, dw, d)
-            assert material_round(p, at_local(du, dw, y1 - M3_INSERT_DEPTH / 2), (0, 1, 0), M3_INSERT_R) >= WALL_MIN, ("plate insert wall", k)
+            for e in (-MOTOR_SLOT, 0.0, MOTOR_SLOT):
+                assert ray_len(p, at_local(du + e, dw, y1 + 1.0), (0, -1, 0)) is None, ("plate's slot", k, du, dw, e)
         for su in (-1, 1):
             for sw in (-1, 1):
                 c = at_local(su * m["hole"], sw * m["hole"], 0)
@@ -939,7 +969,7 @@ def check_shoulder_drive():
             box, pl = shoulder_motor_box(k, s), moved(plates[k], s, "plate")
             for o, n in ((wa, "wall A"), (wb, "wall B"), (st, "stub"), (hb, "hub B"), (cp, "compact")):
                 assert overlap(box, o) < 0.05, ("motor box hits", n, k, s)
-            assert overlap(pl, wa) < 0.05 and touching(pl, wa), ("plate under the roof", k, s)
+            assert overlap(pl, wa) < 0.05 and touching(pl, wa), ("plate on the seat", k, s)
             assert overlap(pl, box) < 0.05 and touching(pl, box), ("motor on its plate", k, s)
             assert overlap(pl, belt) < 0.05, ("plate on the belt", k, s)
             hr, hh = MOTORS[k]["head"]
@@ -948,7 +978,7 @@ def check_shoulder_drive():
                     seat = at_local(s + su * MOTORS[k]["hole"], sw * MOTORS[k]["hole"], MOTOR_PLATE_Y[0])
                     screw_access(("motor screw", k, s, su, sw), seat, (0, -1, 0), hr, hh, [wa, belt, st], path_objs=[pl])
             for du, dw in PLATE_MOUNT:
-                screw_access(("plate screw", k, s, du, dw), at_local(s + du, dw, BRACKET_Y[1]), (0, 1, 0), 2.75, BOLT_HEAD_H, [wa, box])
+                screw_access(("plate screw", k, s, du, dw), at_local(s + du, dw, MOTOR_PLATE_Y[1]), (0, 1, 0), 2.75, BOLT_HEAD_H, [wa, box])
             screw_access(("pull screw", k, s), at_local(BOX["u"][1], 0, PULL_Y), (BELT_U[0], 0, BELT_U[1]), 2.75, BOLT_HEAD_H, [wa, pl, box])
             for o in (box, pl):
                 bpy.data.objects.remove(o)
@@ -958,7 +988,17 @@ def check_shoulder_drive():
         assert gap >= 0.5 and M3_INSERT_DEPTH <= depth <= PULL_BORE - 0.5, ("pull screw", s, gap, depth)
         pulls[f"{s:+.0f}"] = {"gap": round(gap, 2), "depth": round(depth, 2)}
     assert BOX["w"] - BOX["slab"] - PLATE_HALF >= 0.5, "plate on the box's slabs"
-    engage = PLATE_SCREW_L - (BRACKET_Y[1] - BRACKET_Y[0])
+    p80e = pulley80_envelope()
+    for k in MOTORS:
+        unit = concat([copy(plates[k], "p"), shoulder_motor_box(k, 0.0), pulley20_envelope(0.0)], "plate, motor and 20T")
+        for dy in range(2, 101, 2):
+            c = copy(unit, "lifted"); c.data.transform(Matrix.Translation((0, dy, 0)))
+            for o, n in ((wa, "wall A's box"), (st, "stub"), (p80e, "80T")):
+                assert not tree(c).overlap(ctree(o)), ("the motor's plate can't drop in from outside", k, dy, n)
+            bpy.data.objects.remove(c)
+        bpy.data.objects.remove(unit)
+    bpy.data.objects.remove(p80e)
+    engage = PLATE_SCREW_L - (MOTOR_PLATE_Y[1] - MOTOR_PLATE_Y[0])
     assert 3.0 <= engage <= M3_INSERT_DEPTH - 0.5, ("plate screws", engage)
     worst, _ = sweep([shoulder_motor_box(k, s) for k in MOTORS for s in (-MOTOR_SLOT, MOTOR_SLOT)] +
                      [shoulder_belt_envelope(s) for s in (-MOTOR_SLOT, MOTOR_SLOT)] +
@@ -967,7 +1007,7 @@ def check_shoulder_drive():
     REPORT.update({"motor_wall": MOTOR_WALL, "shoulder_motor_at": [round(c_, 2) for c_ in SHOULDER_MOTOR_AT],
                    "shoulder_motor_deg": SHOULDER_MOTOR_DEG, "shoulder_motor_direction": "rear (-x), 10 degrees above level, body outwards (+y)",
                    "shoulder_belt_centres": belts, "pulley80_gap_mm": round(gap80, 2), "pull_screw": pulls, "drive_min_gap_mm": round(worst, 2)})
-    REPORT["bolts"].update({"motor plate into the roof (into the plate's inserts)": PLATE_SCREW_L, "pull screw": PULL_SCREW_L})
+    REPORT["bolts"].update({"motor plate onto the seat (through its slots into the seat's inserts)": PLATE_SCREW_L, "pull screw": PULL_SCREW_L})
     for o in (cp, p80):
         bpy.data.objects.remove(o)
 
@@ -1070,7 +1110,11 @@ def turntable():
     for a in RING_SCREW_ANGLES:
         x, y = polar(RING_SCREW_R, a)
         L.cut(t, L.cyl_z("ring insert", x, y, M3_INSERT_R, TT_HUB_Z0 - 1.0, TT_HUB_Z0 + M3_INSERT_DEPTH + 2.0, n=32))
-    for x, y in WALL_INSERTS["A"] + WALL_INSERTS["B"]:
+    for x, y in WALL_INSERTS["A"]:
+        L.cut(t, L.box("wall A slot", x - M3_CLEAR_R, x + M3_CLEAR_R, y - WALL_A_SLOT, y + WALL_A_SLOT, zb - 1.0, zt + 1.0))
+        for e in (-1, 1):
+            L.cut(t, L.cyl_z("wall A slot end", x, y + e * WALL_A_SLOT, M3_CLEAR_R, zb - 1.0, zt + 1.0, n=30))
+    for x, y in WALL_INSERTS["B"]:
         L.cut(t, L.cyl_z("wall screw", x, y, M3_CLEAR_R, zb - 1.0, zt + 1.0, n=30))
     mx, my = hall_xy()
     L.cut(t, L.cyl_z("magnet", mx, my, MAGNET_R + 0.1, PHI_TAB_Z[1] - 1.0, PHI_TAB_Z[1] + MAGNET_RECESS + MAGNET_D, n=32))
@@ -1363,6 +1407,9 @@ def check_base():
     assert 1.0 <= hall <= 2.0, ("base Hall gap", hall)
     assert ray_len(fb, (mx, my, sensor + 1.0), (0, 0, -1)) >= 1.0 + SENSOR[2], "base sensor pocket missing"
     under = [tt, ring, fb, cap, spacer]
+    for x, y in WALL_INSERTS["A"]:
+        for dy in (-WALL_A_SLOT - 1.2, WALL_A_SLOT + 1.2):
+            assert ray_len(tt, (x, y + dy, TURNTABLE_Z + 1.0), (0, 0, -1)) is None, ("wall A's screw holes not slotted along y", x, y)
     for x, y in WALL_INSERTS["A"] + WALL_INSERTS["B"]:
         assert ray_len(tt, (x, y, TURNTABLE_Z + 1.0), (0, 0, -1)) is None, ("wall screw hole blocked", x, y)
         assert math.hypot(x, y) + 2.75 + 2.0 <= TURNTABLE_R, ("wall screw head off the turntable's edge", x, y)

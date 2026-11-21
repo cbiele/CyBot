@@ -244,7 +244,11 @@ def housing():
     for z0, z1, r in rear_bores + [(L_HOUSING - b, L_HOUSING - a, r) for a, b, r in rear_bores]:
         L.cut(h, L.cyl_z("bore", 0, 0, r, z0 - 0.01, z1 + 0.01, n=160))
     for a in BOLT_ANGLES:
-        L.cut(h, L.cyl_z("bolt", *polar(BOLT_R, a), BOLT_HOLE_R, -1, L_HOUSING + 1, n=32))
+        if STUB_MOUNT:   # blind in the rear half: inserts from the split face
+            L.cut(h, L.cyl_z("bolt", *polar(BOLT_R, a), BOLT_HOLE_R, Z_MID - 1, L_HOUSING + 1, n=32))
+            L.cut(h, L.cyl_z("clamp insert", *polar(BOLT_R, a), INSERT_R, Z_MID - CLAMP_INSERT_DEPTH, Z_MID + 0.01, n=32))
+        else:
+            L.cut(h, L.cyl_z("bolt", *polar(BOLT_R, a), BOLT_HOLE_R, -1, L_HOUSING + 1, n=32))
     rear, front = copy(h, "housing-rear"), copy(h, "housing-front")
     bpy.data.objects.remove(h)
     L.cut(rear, L.box("split", -50, 50, -50, 50, Z_MID, L_HOUSING + 5))
@@ -313,6 +317,9 @@ def check_housing_and_carriers():
             assert d * math.cos(math.pi / 24) - 0.01 <= got <= d + 0.01, (half, d, got)
 
 STUB_SCREW_R, STUB_SCREW_ANGLES, STUB_INSERT_DEPTH = 21.5, [0, 90, 180, 270], 5.0   # between the R30 bolts
+# The halves clamp with M3 x 25s from the front face into M3 x 5.7 inserts sunk from the split face into the rear half,
+# so the rear face stays flat: in the shoulder it runs 0.5 from the arm's turning plate A.
+CLAMP_L, CLAMP_INSERT_DEPTH = 25.0, 7.0
 
 def wall_round(o, centre, r, n=16):
     """Least material round a vertical hole of radius r, by horizontal rays out from its edge."""
@@ -339,6 +346,18 @@ def check_stub_mount():
         d = tree.ray_cast(Vector((x, y, STUB_INSERT_DEPTH + 0.02)), Vector((0, 0, 1)))[3]; bm.free()
         assert abs(floor.z - STUB_INSERT_DEPTH) < 0.01, ("stub insert depth", a, floor.z)
         assert d is not None and d + 0.02 >= 1.2, ("stub insert floor", a, d)
+    engage = CLAMP_L - (L_HOUSING - Z_MID)
+    assert 3.0 <= engage <= CLAMP_INSERT_DEPTH - 0.5, ("clamp bolts into the rear half", engage)
+    for a in BOLT_ANGLES:
+        x, y = polar(BOLT_R, a)
+        tree, bm = L._tree(rear)
+        face = tree.ray_cast(Vector((x, y, -1.0)), Vector((0, 0, 1)))[0]
+        floor = tree.ray_cast(Vector((x, y, Z_MID + 1.0)), Vector((0, 0, -1)))[0]; bm.free()
+        assert face is not None and abs(face.z) < 0.01, ("clamp hole through the rear face", a)
+        assert floor is not None and abs(floor.z - (Z_MID - CLAMP_INSERT_DEPTH)) < 0.01, ("clamp insert depth", a, floor)
+        assert abs(bore_diameter(rear, x, y, Z_MID - CLAMP_INSERT_DEPTH / 2) - 2 * INSERT_R) < 0.1, ("clamp insert", a)
+        for z in (Z_MID - 0.5, Z_MID - CLAMP_INSERT_DEPTH + 0.5):
+            assert wall_round(rear, (x, y, z), INSERT_R) >= 1.2, ("clamp insert wall", a, z)
 
 PARTS["housing-rear"], PARTS["housing-front"] = housing()
 PARTS["carrier-rear"] = carrier(False)
