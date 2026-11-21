@@ -10,6 +10,7 @@
   - bf263c5: Tasks 2 and 3, the shoulder joint and the base
   - ef95e8b: Task 4, `head_concept --shoulder`
   - 3c1dbb4: Task 5, the print sheets and plates
+  - ca65424: the final review's fix pass
 - **Ledger, with every ruling:** `.superpowers/sdd/2026-11-21-arm-mounted-shoulder-v1-base/progress.md`. The final review isn't in it yet.
 - **All generators pass:** `elbow.py` (ELBOW DONE), `shoulder.py` (SHOULDER DONE, about 2 min), `head_concept.py -- --shoulder` (HEAD DONE, about 49 min). The other five head variants are identical to their baselines.
 
@@ -28,33 +29,19 @@
   - The shoulder axis is 156.5 above the bench (it was 219.5).
 - **Whole-arm results:**
   - Bench reach is 161 mm at φ 0, and 219 mm at the worst φ.
-  - 2448 of 3885 poses are over the NEMA17's capacity (worst 12.5 N·m).
-  - Tipping margin is −81 mm: clamp the feet.
+  - 2449 of 3885 poses are over the NEMA17's capacity (worst 12.5 N·m).
+  - Tipping margin is −79 mm: clamp the feet.
 
-## Next: the final review's fix pass (one pass, each fix gets a failing check first)
+## Fix pass: done (ca65424)
 
-**Critical:**
-1. **The base spacer can't be fitted in the order the sheet gives.** The spacer is r26.8 and the lower 6810's bore is r25. New order:
-   1. Upper 6810 in from the top.
-   2. Lower the cylinder through it.
-   3. Tip the drum and slide the spacer up through the open lower seat.
-   4. Press the lower 6810 onto the cylinder and into its seat.
-   5. Fit the retainer.
-   - This touches `model/shoulder/PRINT.md` step 2, and possibly a check that the spacer passes the lower seat.
-2. **The bracket's tubes can't be assembled.**
-   - The sockets are blind, the tubes point different ways, and there's no slack.
-   - Fix: bore the front tower's sockets through, as on the elbow (`THROUGH_SOCKET`), re-cut the tubes, and hang the bracket on the rear tube first. Alternatively, split the bracket.
-   - Add an insertion check: each tube can slide in along its axis with the others in place.
-
-**Important:**
-3. **No screw-access check for the shoulder motor's four M3s against `sh_belt_envelope(±1)`.**
-   - The plan required one. Its two inboard screws likely sit under the 80T belt hull by about 1 mm.
-   - The fix may be a 45° motor turn, as on the base.
-4. **The rear bracket tower bends at about 17 MPa** (218 N, 61 mm up, a 19 × 13 section), against the 10 MPa rule.
-   - Deepen it, or bridge the two towers.
-   - Add a bending assert.
-5. **`head_concept.shoulder_body()` doesn't draw the three bracket tubes**, so soft limits, reach and tipping miss them. Add them from `S.TUBE_ENDS` to `SH_COL`.
-6. **The sheet's order clamps the feet in step 1,** then needs the drum tipped or lifted (the spacer, and the motor offered up from below, which hangs 8.5 off the bench). Move the clamping to the end.
+Each fix had a check that failed first, then passed:
+- **Base order:** `check_base_order` slides each part home in `BASE_ORDER`. The spacer now goes in before the lower 6810. The legs go on, and the feet are clamped, after everything that comes up from under the drum.
+- **Bracket tubes:** `check_bracket_assembly`. The towers are bored through, and each tube goes in from outside its tower.
+- **Tower bending:** `tower_mpa`. The towers taper to feet at x 72 (front) and 84 (rear): 7.7 and 8.7 MPa, both torque senses. The ear is widened, so the leg pinch screws are reached with the turntable turned.
+- **Shoulder motor:** turned 45°, with the screws access-checked against the belt loop. The upper cross members moved to z −102, and plate B's window is shorter.
+- **`head_concept`:** draws the bracket tubes and weighs them as aluminium.
+- **Status:** elbow, shoulder and `head_concept --shoulder` all pass, and the `--elbow` report is unchanged. The four changed plates are re-sliced and the renders refreshed.
+- **Next:** print. The user should check the tapered towers' look.
 
 **Minor (ledger as deferred unless they're cheap):**
 - **Post lip:** the sheet says 1.5, the code says 1.0.
