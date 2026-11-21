@@ -388,10 +388,10 @@ def slot_y(name, x, z, r, half, y0, y1, along="z"):
     return hull([cyl_y("a", x - dx, z - dz, r, y0, y1, n=32), cyl_y("b", x + dx, z + dz, r, y0, y1, n=32)], name)
 
 
-def plate_common_cuts(p, y0, y1):
+def plate_common_cuts(p, y0, y1, window=WINDOW):
     for x, z in CROSS_MEMBERS:
         L.cut(p, cyl_y("cross member", x, z, CM_HOLE_R, y0 - 1, y1 + 1, n=48))
-    wx, wz0, wz1 = WINDOW
+    wx, wz0, wz1 = window
     L.cut(p, L.box("window", -wx, wx, y0 - 1, y1 + 1, wz1, wz0))
 
 
@@ -407,6 +407,8 @@ def plate_a():
     p = stadium("upper-plate-A", y0, y1)
     ix, iz = IDLER_AT
     L.union(p, slot_y("idler boss", ix, iz, IDLER_BOSS_R, IDLER_SLOT, y1 - 0.01, ROLLER_Y[0] - 0.5, along="x"))
+    for b in sh_stop_blocks():
+        L.union(p, b)
     L.finish(p)
     L.cut(p, cyl_y("compact hub", 0, 0, 14.0, y0 - 1, y1 + 1))
     for x, z in [polar(F.BOLT_R, a) for a in F.BOLT_ANGLES]:
@@ -417,6 +419,7 @@ def plate_a():
             L.cut(p, slot_y("motor screw", sx * MOTOR_HOLE, MOTOR_Z + sz * MOTOR_HOLE, 1.7, MOTOR_SLOT, y0 - 1, y1 + 1))
     L.cut(p, slot_y("idler slot", ix, iz, 1.7, IDLER_SLOT, y0 - 1, ROLLER_Y[0] + 1, along="x"))
     seat(p, SHOULDER_Z, y1, y0)
+    L.cut(p, sh_sensor_pocket())
     plate_common_cuts(p, y0, y1)
     PRINT_POSE["upper-plate-A"] = basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, 0, -Y_REAR))
     return p
@@ -429,15 +432,91 @@ def plate_b():
         L.union(p, b)
     L.finish(p)
     seat(p, 0.0, y0, y1)
-    seat(p, SHOULDER_Z, y1, y0)
+    L.cut(p, cyl_y("shoulder compact hub", 0, SHOULDER_Z, 14.0, y1 - 1, y0 + 1))
+    for x, z in [polar(F.BOLT_R, a) for a in F.BOLT_ANGLES]:
+        L.cut(p, cyl_y("shoulder compact bolt", x, SHOULDER_Z + z, 1.7, y1 - 1, y0 + 1, n=32))
+    L.cut(p, slot_y("shoulder pilot", 0, SH_MOTOR_Z, MOTOR_PILOT_R + 0.5, SH_MOTOR_SLOT, y1 - 1, y0 + 1))
+    for sx in (1, -1):
+        for sz in (1, -1):
+            L.cut(p, slot_y("shoulder motor screw", sx * MOTOR_HOLE, SH_MOTOR_Z + sz * MOTOR_HOLE, 1.7, SH_MOTOR_SLOT, y1 - 1, y0 + 1))
     h = MOTOR_SQ / 2 + 1.0
     L.cut(p, L.box("motor window", -h, h, y1 - 1, y0 + 1, MOTOR_Z - h - MOTOR_SLOT, MOTOR_Z + h + MOTOR_SLOT))
     L.cut(p, sensor_pocket())
     index_holes(p)
-    plate_common_cuts(p, y1, y0)
+    plate_common_cuts(p, y1, y0, WINDOW_B)
     L.finish(p)
     PRINT_POSE["upper-plate-B"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, -Y_REAR))
     return p
+
+
+def sh_tab():
+    """Stand-in for the fixed lug's tab outside plate A (shoulder.py builds the lug): its edges meet plate A's blocks at the stops."""
+    y = Y_REAR + PLATE_T
+    t = sector_y("sh tab", SH_STOP_R[0], SH_TAB_R1, SH_TAB_PHI - SH_TAB_HALF, SH_TAB_PHI + SH_TAB_HALF, y + SH_TAB_GAP, y + SH_STOP_H)
+    t.data.transform(Matrix.Translation((0, 0, SHOULDER_Z)))
+    return t
+
+
+def sh_stop_blocks():
+    """On plate A's outer face; plate angle a shows at a - psi, so each block's edge meets the tab's at a stop."""
+    y = Y_REAR + PLATE_T
+    at_max = SH_TAB_PHI + SH_TAB_HALF + SH_PSI_STOPS[1]
+    at_min = SH_TAB_PHI - SH_TAB_HALF + SH_PSI_STOPS[0]
+    bs = [sector_y("sh stop", SH_STOP_R[0], SH_STOP_R[1], at_max, at_max + SH_STOP_BLOCK_DEG, y - 0.01, y + SH_STOP_H),
+          sector_y("sh stop", SH_STOP_R[0], SH_STOP_R[1], at_min - SH_STOP_BLOCK_DEG, at_min, y - 0.01, y + SH_STOP_H)]
+    for b in bs:
+        b.data.transform(Matrix.Translation((0, 0, SHOULDER_Z)))
+    return bs
+
+
+def sh_sensor_pocket():
+    """The TO-92 flush in plate A's outer face under the fixed tab's magnet at psi 0, leads out radially."""
+    y = Y_REAR + PLATE_T
+    p = L.box("sh sensor pocket", -SENSOR[0] / 2 - 0.1, SENSOR[0] / 2 + 0.1, y - SENSOR[2] - 0.1, y + 1, -SH_MAGNET_AT_R - SENSOR[1] / 2 - 0.1, -SH_MAGNET_AT_R + SENSOR[1] / 2 + 0.1)
+    L.union(p, L.box("leads", -1.5, 1.5, y - 1.0, y + 1, -PLATE_R - 1, -SH_MAGNET_AT_R))
+    p.data.transform(Matrix.Translation((0, 0, SHOULDER_Z)))
+    return p
+
+
+def sh_motor_posed(slot, length=SH_MOTOR_L, grow=0.0):
+    zm = SH_MOTOR_Z + slot * SH_MOTOR_SLOT
+    h = MOTOR_SQ / 2 + grow
+    return L.box("sh motor", -h, h, -Y_REAR - grow, -Y_REAR + length + grow, zm - h, zm + h)
+
+
+def box_gap(slot, o, hi=40.0):
+    """Clearance from the shoulder motor's box to o, by growing the box until it first meets o (to 0.05)."""
+    lo = 0.0
+    while hi - lo > 0.05:
+        mid = (lo + hi) / 2
+        b = sh_motor_posed(slot, grow=mid)
+        hit = bvh_hit(b, o) or overlap(b, o) > 0.0
+        bpy.data.objects.remove(b)
+        lo, hi = (lo, mid) if hit else (mid, hi)
+    return lo
+
+
+def sh_screw_heads(slot):
+    zm, y = SH_MOTOR_Z + slot * SH_MOTOR_SLOT, -Y_REAR - PLATE_T
+    hs = [cyl_y("head", sx * MOTOR_HOLE, zm + sz * MOTOR_HOLE, 2.75, y - 3.0, y, n=24) for sx in (1, -1) for sz in (1, -1)]
+    hs += [cyl_y("head", x, SHOULDER_Z + z, 2.75, y - 3.0, y, n=24) for x, z in [polar(F.BOLT_R, a) for a in F.BOLT_ANGLES]]
+    return hull_free_join(hs, "sh heads")
+
+
+def sh_pulley_envelope(z, r_od, r_hub=9.0):
+    e = cyl_y("hub", 0, z, r_hub + 0.5, SH_PULLEY_Y0 - PULLEY_HUB - 0.01, SH_PULLEY_Y0 + 0.01)
+    L.union(e, cyl_y("teeth", 0, z, r_od + 1.5, SH_PULLEY_Y0 - PULLEY_H, SH_PULLEY_Y0 - PULLEY_HUB))
+    return e
+
+
+def sh_belt_envelope(slot):
+    """The 80T, the 20T and the belt outside plate B, the motor at slot (-1 to +1 of its travel)."""
+    zm = SH_MOTOR_Z + slot * SH_MOTOR_SLOT
+    band = hull([cyl_y("a", 0, SHOULDER_Z, R80_OD + BELT_T, SH_TEETH_Y[0] - 1.5, SH_TEETH_Y[1] + 1.5),
+                 cyl_y("b", 0, zm, R20_OD + BELT_T, SH_TEETH_Y[0] - 1.5, SH_TEETH_Y[1] + 1.5)], "sh belt")
+    L.union(band, sh_pulley_envelope(SHOULDER_Z, R80_OD))
+    L.union(band, sh_pulley_envelope(zm, R20_OD))
+    return band
 
 
 def idler():
@@ -552,7 +631,7 @@ def check_plates():
             for sz in (1, -1):
                 assert ray_len(pa, (sx * MOTOR_HOLE, Y_REAR - 1, zm + sz * MOTOR_HOLE), (0, 1, 0)) is None, "motor screw slot closed"
         assert ray_len(pa, (IDLER_AT[0] + s * IDLER_SLOT, Y_REAR - 1, IDLER_AT[1]), (0, 1, 0)) is None, "idler slot closed"
-    for p, z, y_in, y_out in ((pb, 0.0, -Y_REAR, -Y_REAR - PLATE_T), (pb, SHOULDER_Z, -Y_REAR - PLATE_T, -Y_REAR), (pa, SHOULDER_Z, Y_REAR + PLATE_T, Y_REAR)):
+    for p, z, y_in, y_out in ((pb, 0.0, -Y_REAR, -Y_REAR - PLATE_T), (pa, SHOULDER_Z, Y_REAR + PLATE_T, Y_REAR)):
         ym = y_in + (y_out - y_in) * B6810[2] / PLATE_T / 2
         d = seat_diameter(p, z, ym)
         assert 2 * B6810[1] <= d <= 2 * B6810[1] + 0.2, ("6810 seat", p.name, z, d)
@@ -667,6 +746,83 @@ def check_wedge(sc, pb):
     bearing_mpa = stall_n / (ly * (B6810[0] - WEDGE_R[0]))          # on the journal window's side, the smaller face
     assert max(shear_mpa, bearing_mpa) <= 10.0, ("wedge at a motor stall", shear_mpa, bearing_mpa)
     REPORT["wedge_mpa_at_stall"] = {"shear": round(shear_mpa, 1), "bearing": round(bearing_mpa, 1)}
+
+
+def sh_angle(a, psi):
+    """Plate angle a (x-z plane, from +x towards +z) at shoulder pitch psi: the arm turns by Rotation(psi, 'Y')."""
+    return a - psi
+
+
+def material_round(o, centre, axis, r, n=8):
+    """Least material round a hole of radius r at centre, by rays outwards from its edge square to its axis."""
+    axis = Vector(axis).normalized()
+    a = axis.orthogonal().normalized(); b = axis.cross(a)
+    t, c, out = tree(o), Vector(centre), []
+    for k in range(n):
+        th = 2 * math.pi * (k + 0.37) / n
+        u = a * math.cos(th) + b * math.sin(th)
+        loc, nrm, _, d = t.ray_cast(c + u * (r + 0.02), u)
+        assert loc is not None and nrm.dot(u) > 0, ("hole breaks into a void", centre, k)
+        out.append(d + 0.02)
+    return min(out)
+
+
+def check_shoulder_end():
+    pa, pb = PARTS["upper-plate-A"], PARTS["upper-plate-B"]
+    cm = cross_members()
+    compacts = join([cyl_y("elbow compact", 0, 0, HOUSING_R, Y_REAR - F.HUB_FACE, Y_REAR, n=96),
+                     cyl_y("shoulder compact", 0, SHOULDER_Z, HOUSING_R, SH_COMPACT_REAR_Y, SH_COMPACT_REAR_Y + F.HUB_FACE, n=96)], "compacts")
+    gaps = {}
+    for s in (-1, 1):
+        for o, n in [(pa, "plate A"), (cm, "cross members"), (compacts, "compacts")] + [(motor_posed(e), f"elbow motor {e}") for e in (-1, 1)]:
+            g = box_gap(s, o)
+            gaps[f"{n} at {s}"] = round(g, 2)
+            assert g >= 1.0, ("shoulder motor", n, s, g)
+        assert overlap(sh_motor_posed(s, SH_MOTOR_L_MAX), pa) < 0.05, ("the longest shoulder motor hits plate A", s)
+        assert abs(math.hypot(0, SH_MOTOR_Z + s * SH_MOTOR_SLOT - SHOULDER_Z) - (SH_BELT_C + s * SH_MOTOR_SLOT)) < 0.1, "shoulder belt centres"
+        zm = SH_MOTOR_Z + s * SH_MOTOR_SLOT
+        assert ray_len(pb, (0, -Y_REAR + 1, zm), (0, -1, 0)) is None, "shoulder pilot slot closed"
+        for sx in (1, -1):
+            for sz in (1, -1):
+                assert ray_len(pb, (sx * MOTOR_HOLE, -Y_REAR + 1, zm + sz * MOTOR_HOLE), (0, -1, 0)) is None, "shoulder motor screw slot closed"
+        env = sh_belt_envelope(s)
+        for o, n in ((pb, "plate B"), (sh_screw_heads(s), "screw heads"), (cm, "cross members")):
+            assert overlap(env, o) < 0.05, ("shoulder belt envelope hits", n, s)
+        assert min(v.co.y for v in env.data.vertices) >= SH_BELT_ENVELOPE_Y + 2.0 - 0.01, "shoulder belt envelope past its y"
+    assert ray_len(pb, (0, -Y_REAR + 1, SHOULDER_Z), (0, -1, 0)) is None, "shoulder compact's rod can't leave through plate B"
+    pbz = copy(pb, "pb xz"); pbz.data.transform(basis((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, 0, 0)))
+    assert L.hole_diameter(pbz, 0, SHOULDER_Z, -(Y_REAR + PLATE_T / 2)) >= 28.0, "shoulder compact hub clearance under r14"
+    walls = {}
+    ym = -Y_REAR - PLATE_T / 2
+    holes = [((x, ym, SHOULDER_Z + z), 1.7) for x, z in [polar(F.BOLT_R, a) for a in F.BOLT_ANGLES]]
+    holes += [((x, ym, z), CM_HOLE_R) for x, z in CROSS_MEMBERS]
+    holes += [((x, ym, SHOULDER_Z + z), INDEX_HOLE_R) for x, z in [polar(INDEX_R, INDEX_PIN_DEG + p) for p in INDEX_ANGLES]]
+    for c, r in holes:
+        w = material_round(pb, c, (0, 1, 0), r)
+        walls[str(tuple(round(v, 1) for v in c))] = round(w, 2)
+        assert w >= 2.0, ("plate B wall round a hole", c, w)
+    elbow_window_top = MOTOR_Z + MOTOR_SQ / 2 + 1.0 + MOTOR_SLOT
+    for s in (-1, 1):
+        for sz in (1, -1):
+            z = SH_MOTOR_Z + s * SH_MOTOR_SLOT + sz * MOTOR_HOLE
+            for edge_gap in (WINDOW_B[2] - z, z - elbow_window_top):
+                assert edge_gap - 1.7 >= 2.0, ("shoulder screw slot near a window", z, edge_gap)
+    tab = sh_tab(); blocks = join(sh_stop_blocks(), "sh blocks")
+    sg = {}
+    for psi in (SH_PSI_STOPS[0], SH_PSI_STOPS[0] + 2.0, 0.0, SH_PSI_STOPS[1] - 2.0, SH_PSI_STOPS[1]):
+        b = copy(blocks, "b"); b.data.transform(Matrix.Translation((0, 0, SHOULDER_Z)) @ Matrix.Rotation(math.radians(psi), 4, 'Y') @ Matrix.Translation((0, 0, -SHOULDER_Z)))
+        sg[psi] = round(min_gap(tab, b), 2)
+        bpy.data.objects.remove(b)
+    assert sg[SH_PSI_STOPS[0]] <= 0.3 and sg[SH_PSI_STOPS[1]] <= 0.3, ("shoulder tab doesn't meet the stops", sg)
+    assert min(sg[SH_PSI_STOPS[0] + 2.0], sg[SH_PSI_STOPS[1] - 2.0]) >= 1.0, ("shoulder stops within 1 inside", sg)
+    for b in sh_stop_blocks():
+        assert overlap(b, pa) > 1.0 and touching(b, pa), "a shoulder block isn't part of plate A"
+    vs = [v.co for v in blocks.data.vertices]
+    assert min(math.hypot(p.x, p.z - SHOULDER_Z) for p in vs) >= B6810[1] + 0.05 + 0.9, "a shoulder block covers the 6810 seat"
+    assert ray_len(pa, (SH_MAGNET_AT_R * math.cos(math.radians(SH_TAB_PHI)), Y_REAR + PLATE_T + 1.0,
+                        SHOULDER_Z + SH_MAGNET_AT_R * math.sin(math.radians(SH_TAB_PHI))), (0, -1, 0)) >= 1.0 + SENSOR[2], "shoulder sensor pocket missing"
+    REPORT.update({"sh_motor_z": round(SH_MOTOR_Z, 2), "sh_belt_envelope_y": SH_BELT_ENVELOPE_Y, "sh_motor_gaps_mm": gaps,
+                   "sh_plate_b_walls_mm": walls, "sh_stop_gaps_mm": sg})
 
 
 def non_manifold_at(o):
@@ -811,6 +967,7 @@ PARTS["elbow-stop-collar"] = stop_collar()
 PARTS["elbow-key-wedge"] = key_wedge()
 CHECKS.append(check_bracket)
 CHECKS.append(check_plates)
+CHECKS.append(check_shoulder_end)
 for check in CHECKS:
     check()
 print("ELBOW", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, **REPORT}))

@@ -97,5 +97,26 @@ STAND_PAD = (40.0, 60.0)
 # The rear tube is 45 degrees off the other two, so it can't go in with them: its hub socket runs through the lug and
 # the tube is fed in from outside the hub, after the other two are in, then 15 into the collar.
 THROUGH_SOCKET = "rear"
+# The shoulder drive rides in the arm (2026-11-21 spec), the elbow's joint mirrored: the shoulder compact's rear face
+# on plate B's inner face at the shoulder, the NEMA17 on plate B's inner face above the elbow motor, the 20T/80T belt
+# outside plate B. No idler: every spot on the belt's back crowds the plate's edge, the elbow motor's window or the
+# shoulder motor's screws, so the motor's slot tensions it. Plate A turns on the fixed hub's 6810 and carries the
+# shoulder's stop blocks and Hall sensor; the fixed lug outside it carries the tab and the magnet.
+SH_BELT_C = round(_C.belt_centre_distance(20, 80, 420, pitch=3.0), 2)
+SH_MOTOR_Z, SH_MOTOR_SLOT = SHOULDER_Z + SH_BELT_C, 3.0
+SH_MOTOR_L, SH_MOTOR_L_MAX = 48.0, PLATE_GAP - 1.0           # a longer NEMA17 fits up to plate A's inner face, less 1
+SH_COMPACT_REAR_Y = -Y_REAR
+SH_PULLEY_Y0 = -(Y_REAR + PLATE_T + PULLEY_GAP)
+SH_TEETH_Y = (SH_PULLEY_Y0 - PULLEY_HUB - 1.5 - 11.5, SH_PULLEY_Y0 - PULLEY_HUB - 1.5)
+SH_BELT_PLANE_Y = sum(SH_TEETH_Y) / 2
+SH_BELT_ENVELOPE_Y = -BELT_ENVELOPE_Y
+R80_OD = (80 * 3.0 / 3.141592653589793 - 0.762) / 2
+WINDOW_B = (16.0, -45.0, SH_MOTOR_Z + MOTOR_SQ / 2 + SH_MOTOR_SLOT + 3.0)   # plate B's window stops 3 above the motor's square at its top slot end
+SH_PSI_STOPS = (-93.0, 93.0)                 # shoulder.py sets these and asserts they match
+SH_TAB_PHI, SH_TAB_HALF = 270.0, 12.0        # the fixed tab hangs under the shoulder axis
+SH_STOP_R = (33.5, 37.5)                     # outside plate A's 6810 seat (it enters from the outer face), inside the plate's r38
+SH_STOP_BLOCK_DEG, SH_STOP_H = 30.0, 6.0     # proud of plate A's outer face
+SH_TAB_GAP, SH_TAB_R1 = 0.6, 40.0           # the tab stands off plate A's face; it reaches past the blocks so the magnet fits in it
+SH_MAGNET_AT_R = sum(SH_STOP_R) / 2          # over the sensor, which must clear plate A's 6810 seat
 # A wedge pushed in from outside through the collar's and the journal's wire windows: keys the collar to the hub with the tongue.
 WEDGE_HALF_W, WEDGE_Y, WEDGE_R = 7.9, (-45.5, -39.7), (HUB_BORE_R + 0.5, STOP_COLLAR_R - 0.1)
