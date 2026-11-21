@@ -957,15 +957,21 @@ def moved_base(o, slot):
 
 
 def drum_rib(phi):
-    """In the leg's vertical plane: from the hub's top out under the socket's boss to the wall, its underside a 45-degree diagonal
-    down to the wall's foot, so the hub's moment reaches the bench and the boss prints on it."""
-    zt, zb = DRUM_TOP, BENCH_Z
+    """In the leg's vertical plane: a full-height web from the hub tube out under the socket's boss to the wall, filleted onto
+    the hub, so the hub is held to the drum down its whole height and not only at its top."""
+    zt, zb = DRUM_TOP, BENCH_Z - 2.0                                # past the drum's own faces: no coplanar union
     t, n = math.tan(math.radians(LEG_DEG)), (math.sin(math.radians(LEG_DEG)), math.cos(math.radians(LEG_DEG)))
     mr, mz, h = SOCKET["mouth_r"], SOCKET_MOUTH_Z, SOCKET["boss_r"] * TEARDROP
     rw = DRUM_R - DRUM_WALL / 2
     tip = (mr - h * n[0], mz - h * n[1] + 0.5)          # the teardrop's point on the boss's end face
-    pts = [(HUB_TUBE_R - 0.5, zt), (mr + (zt - mz) * t, zt), tip, (rw, tip[1] - (tip[0] - rw)), (rw, zb), (rw - 1.0, zb - 1.0)]
+    pts = [(HUB_TUBE_R - 0.5, zt), (mr + (zt - mz) * t, zt), tip, (rw, tip[1] - (tip[0] - rw)), (rw, zb), (HUB_TUBE_R - 0.5, zb)]
     r = prism_y("rib", pts, -DRUM_RIB / 2, DRUM_RIB / 2)
+    hw, w = DRUM_RIB / 2, DRUM_RIB / 2 + RIB_FILLET
+    x0 = math.sqrt(HUB_TUBE_R ** 2 - w ** 2) - 0.5
+    plan = [(x0, -w), (HUB_TUBE_R + RIB_FILLET, -hw), (HUB_TUBE_R + RIB_FILLET, hw), (x0, w)]   # (radial, tangential)
+    fillet = prism_y("rib fillet", plan, zb, zt - 0.2)
+    fillet.data.transform(Matrix.Rotation(math.radians(90), 4, 'X'))
+    L.union(r, fillet)
     r.data.transform(Matrix.Rotation(math.radians(phi), 4, 'Z'))
     return r
 
@@ -1158,6 +1164,12 @@ def check_base():
     bpy.data.objects.remove(above)
     cm3 = volume(fb) / 1000.0
     assert cm3 <= FIXED_BASE_MAX_CM3, ("fixed base too heavy", round(cm3, 1))
+    for phi in LEG_PHI:
+        u = Vector((math.cos(math.radians(phi)), math.sin(math.radians(phi)), 0)); t = Vector((-u.y, u.x, 0))
+        heights = [BENCH_Z + k + 0.5 for k in range(int(DRUM_H))]
+        joined = sum(1 for z in heights if (lambda h: h[0] is not None and h[1].dot(t) > 0)(
+            tree(fb).ray_cast(u * (HUB_TUBE_R + 1.0) + Vector((0, 0, z)), t)))
+        assert joined >= 0.9 * len(heights), ("rib not joined to the hub tube down its height", phi, joined, len(heights))
     tab, block = phi_tab(), phi_block()
     gaps = {}
     for phi in (PHI_RANGE[0], PHI_RANGE[1], PHI_STOPS[0], PHI_STOPS[1], PHI_STOPS[0] + 0.3, PHI_STOPS[1] - 0.3, 0.0, 90.0, -90.0):

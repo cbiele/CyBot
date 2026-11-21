@@ -30,7 +30,7 @@
 - **Whole-arm results:**
   - Bench reach is 161 mm at φ 0, and 219 mm at the worst φ.
   - 2449 of 3885 poses are over the NEMA17's capacity (worst 12.5 N·m).
-  - Tipping margin is −79 mm: clamp the feet.
+  - Tipping margin is −78 mm: clamp the feet.
 
 ## Fix pass: done (ca65424)
 

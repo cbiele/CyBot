@@ -25,7 +25,7 @@ The project files in `print/` hold the plates below, arranged and set up. Open, 
 | Plate | File | Parts | Layer | Supports | Sliced (est.) |
 |---|---|---|---|---|---|
 | 1 | `print/plate-1-turntable-0.16.3mf` | `turntable`, top face down | 0.16 | none | 5 h 10, 148 g |
-| 2 | `print/plate-2-fixed-base-0.16-supports-15pc.3mf` | `fixed-base` (the drum) | 0.16 | tree, 15% infill | 7 h 56, 269 g |
+| 2 | `print/plate-2-fixed-base-0.16-supports-15pc.3mf` | `fixed-base` (the drum) | 0.16 | tree, 15% infill | 8 h 41, 291 g |
 | 3 | `print/plate-3-ring-and-cylinder-0.12.3mf` | `base-ring-130T` (the ring and the cylinder, one part) | 0.12 | none | 16 h 27, 216 g |
 | 4 | `print/plate-4-shoulder-and-base-parts-0.16.3mf` | `shoulder-hub`, `shoulder-lug`, `shoulder-socket-bracket`, `shoulder-rod-post`, `shoulder-output-plate`, `base-spacer`, `base-retainer`, `base-motor-plate` | 0.16 | none | 6 h 55, 204 g |
 | 5 | `print/plate-5-pulleys-0.12.3mf` | `shoulder-pulley-80T`, 2 × `elbow/axis3-pulley-20T` (shoulder and base) | 0.12 | none | 4 h 25, 53 g |
@@ -164,5 +164,5 @@ The base goes together in this order, and `shoulder.py` checks it (`BASE_ORDER`)
   - The input rod's side load from the belt is about 70 N at the 625 and 50 N at the compact.
 - **Stability:**
   - The pads sit on a square whose edges are 224 mm from the base axis.
-  - At full reach, base turned 270°, with 500 g at the wrist, the arm's centre of mass (4.3 kg) falls 79 mm past that edge.
+  - At full reach, base turned 270°, with 500 g at the wrist, the arm's centre of mass (4.3 kg) falls 78 mm past that edge.
   - **Clamp the feet.**

@@ -127,6 +127,7 @@ DRUM_R, DRUM_H = 96.0, 75.0
 BENCH_Z = DRUM_TOP - DRUM_H                  # the drum's underside: the bench
 DRUM = (DRUM_R, DRUM_TOP, BENCH_Z)
 DRUM_WALL, DRUM_RIB = 1.8, 1.8              # a shell open top and bottom, like V1's ring: the turntable covers it
+RIB_FILLET = 5.0                             # each rib's fillets onto the hub tube, either side, down its full height
 BASE_6810_SPACING = 50.0
 BASE_6810_Z = (DRUM_TOP - B6810[2], DRUM_TOP - B6810[2] - BASE_6810_SPACING)   # each bearing's lower face: upper, lower
 CYL = {"r": B6810[0], "shoulder_r": 26.8, "bore_r": 18.0, "end_z": BASE_6810_Z[1] + 0.3}   # the end 0.3 inside the lower inner ring, so the retainer clamps
