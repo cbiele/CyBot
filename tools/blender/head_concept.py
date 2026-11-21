@@ -763,7 +763,9 @@ def shoulder_body():
     place(stl(os.path.join(folder, "shoulder-pulley-80T.stl"), "shoulder 80T"), SH_COL, "pulley", m @ Matrix.Translation((0, y0, 0)) @ out)
     place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "shoulder 20T"), SH_COL, "pulley", m @ Matrix.Translation((0, y0, zm)) @ out)
     h = S.MOTORS["17"]["sq"] / 2
-    place(L.box("shoulder motor 17HS19", -h, h, -E.Y_REAR, -E.Y_REAR + E.SH_MOTOR_L, zm - h, zm + h), SH_COL, "motor", m)
+    shm = L.box("shoulder motor 17HS19", -h, h, -E.Y_REAR, -E.Y_REAR + E.SH_MOTOR_L, -h, h)
+    shm.data.transform(Matrix.Translation((0, 0, zm)) @ Matrix.Rotation(math.radians(E.SH_MOTOR_TURN), 4, 'Y'))   # turned 45 on its shaft
+    place(shm, SH_COL, "motor", m)
     bx, by = S.base_motor_at()
     bm = L.box("base motor 17HS19", -h, h, -h, h, S.BASE_MOTOR_FACE_Z - S.BASE_MOTOR_L, S.BASE_MOTOR_FACE_Z)
     bm.data.transform(Matrix.Translation((bx, by, 0)) @ Matrix.Rotation(math.radians(S.BASE_MOTOR_DEG + 45.0), 4, 'Z'))   # turned 45 on its shaft
@@ -775,6 +777,12 @@ def shoulder_body():
         t = L.cyl_between(f"leg tube {phi:.0f}", s, f, S.TUBE_LEG_R, n=24)
         t.data.transform(t.matrix_world); t.matrix_world = Matrix()
         place(t, BASE_COL, "steel", m)
+    for name, ((ax, az), (bx, bz)) in S.TUBE_ENDS.items():   # the lug's three tubes to the socket bracket
+        a, b = Vector((ax, S.TUBE_PLANE_Y, az)), Vector((bx, S.TUBE_PLANE_Y, bz))
+        d = (b - a).normalized()
+        t = L.cyl_between("bracket tube " + name, a - d * E.SOCKET_DEPTH, b + d * E.SOCKET_DEPTH, E.TUBE_OR, n=24)
+        t.data.transform(t.matrix_world); t.matrix_world = Matrix()
+        place(t, SH_COL, "steel", m)
 
 
 def shoulder_moving():
@@ -911,6 +919,8 @@ def tip_margin(groups, upper, tip, sweep):
     """Least distance from the whole arm's centre of mass, projected, to the pad square's edges, at the longest reaches."""
     turning, still = phi_split()
     turn_g = [(centre([o]), printed_g([o])) for o in turning if o.name.startswith("shoulder ")]   # the fixed shoulder; its drive is in upper
+    tube_l = {"bracket tube " + n: math.dist(a, b) + 2 * E.SOCKET_DEPTH for n, (a, b) in S.TUBE_ENDS.items()}
+    turn_g += [(centre([o]), LEG_TUBE_G / S.TUBE_L * tube_l[o.name]) for o in turning if o.name in tube_l]   # aluminium, as the legs
     still_g = [(centre([o]), printed_g([o])) for o in still if not o.name.startswith(("base motor", "leg tube"))]
     still_g += [(centre([obj("base motor 17HS19")]), MOTOR_G)] + [(centre([o]), LEG_TUBE_G) for o in still if o.name.startswith("leg tube")]
     pads = [Vector((p[0], p[1], 0)) + Vector((SH_AT.x, SH_AT.y, 0)) for p in S.FOOT_PADS]
@@ -931,6 +941,8 @@ def tip_margin(groups, upper, tip, sweep):
 
 def shoulder_report(report):
     fixed = shoulder_fixed()
+    tubes = [o for o in fixed if o.name.startswith("bracket tube")]
+    assert len(tubes) == len(S.TUBE_ENDS), ("the bracket's tubes aren't in the fixed shoulder the arm is checked against", [o.name for o in tubes])
     turning, still = phi_split()
     body, rest = past_elbow()
     ft = merged_tree(fixed)

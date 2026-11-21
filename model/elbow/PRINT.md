@@ -13,7 +13,7 @@ The project files in `print/` hold the plates below, arranged and set up. Open, 
 | Plate | File | Parts | Layer | Supports | Sliced (est.) |
 |---|---|---|---|---|---|
 | 1 | `print/plate-1-upper-plate-A-0.16.3mf` | `upper-plate-A` (with the shoulder's stop blocks and Hall pocket), at 45° | 0.16 | none | 3 h 22, 96 g |
-| 2 | `print/plate-2-upper-plate-B-0.16.3mf` | `upper-plate-B` (with the shoulder compact's holes and the shoulder motor's slots), at 45° | 0.16 | none | 3 h 19, 94 g |
+| 2 | `print/plate-2-upper-plate-B-0.16.3mf` | `upper-plate-B` (with the shoulder compact's holes and the shoulder motor's slots), at 45° | 0.16 | none | 3 h 23, 95 g |
 | 3 | `print/plate-3-hubs-collar-0.16-supports.3mf` | `elbow-hub`, `elbow-stop-collar`, `elbow-key-wedge`, `elbow-collar-lower`, `elbow-collar-upper` | 0.16 | tree (auto), build plate only | 6 h 02, 120 g |
 | 4 | `print/plate-4-pulleys-idler-0.12.3mf` | `axis3-pulley-20T`, `axis3-pulley-60T`, `belt-idler`, `forearm-tube/ax4-output-plate` (the elbow compact's, same part) | 0.12 | none | 3 h 04, 36 g |
 | 6 | `print/plate-6-reprint-stop-collar-wedge-0.16-supports.3mf` | `elbow-stop-collar`, `elbow-key-wedge` | 0.16 | tree (auto), build plate only | 0 h 44, 16 g |

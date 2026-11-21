@@ -72,9 +72,12 @@ _LZ = 19.3
 TUBE_ENDS = {"front": ((math.sqrt(_LR ** 2 - _LZ ** 2), -_LZ), (45.0, -_LZ)),
              "rear": ((-math.sqrt(_LR ** 2 - _LZ ** 2), _LZ), (-45.0, _LZ)),
              "diagonal": ((math.sqrt(_LR ** 2 - _LZ ** 2), _LZ), (45.0, 6.0))}
-BRACKET = {"x": 64.0, "tower_x": 45.0, "tops": {"front": 15.0, "rear": 27.0}, "flange_y": (55.0, LUG["spider_y"][0]), "flange_t": 5.0}
+# Each tower's outer face runs from x at its top out to root_x on the base, so it takes its tubes' bending within
+# PRINTED_MPA (it can't be deeper in y: below the tubes' band is the elbow belt's sweep).
+BRACKET = {"x": 64.0, "root_x": {"front": 72.0, "rear": 84.0}, "tower_x": 45.0, "tops": {"front": 15.0, "rear": 27.0},
+           "flange_y": (55.0, LUG["spider_y"][0]), "flange_t": 5.0}
 BRACKET_BOLTS = [(-56.0, 61.0), (-33.0, 61.0), (33.0, 61.0), (56.0, 61.0)]   # outside the hub and lug (r31), so a driver comes straight down
-EAR = {"x": BRACKET["x"] + 2.0, "y": (53.0, LUG["spider_y"][1] + 2.0)}   # the turntable's tab under the bracket, outside the arm's y band
+EAR = {"x": (-BRACKET["root_x"]["rear"] - 2.0, BRACKET["root_x"]["front"] + 2.0), "y": (53.0, LUG["spider_y"][1] + 2.0)}   # the turntable's tab under the bracket, outside the arm's y band
 B625 = (2.5, 8.0, 5.0)                       # bore r, seat r (params.json seat_625), width
 POST = {"y": (E.SH_BELT_ENVELOPE_Y - 1.0, E.SH_BELT_ENVELOPE_Y - 1.0 - 1.0 - B625[2]), "half": 12.0, "top": B625[1] + 4.0,
         "lip_r": 6.5, "lip_t": 1.0, "foot_x": 24.0, "foot_t": 5.0}   # (inner face, outer face): the 625 from outside against a lip
@@ -161,6 +164,9 @@ PHI_TAB_DEG, PHI_HALF, PHI_R = 180.0, 4.0, (66.0, 88.0)   # r66 clear of the bel
 PHI_BLOCK_TOP = PHI_TAB_Z[1] + 7.0
 BASE_HALL = {"magnet": (78.0, PHI_TAB_DEG, PHI_TAB_Z[1] + MAGNET_RECESS), "sensor_top": PHI_TAB_Z[1] - 0.5}
 HALL_POST_HALF = 5.0
+# The base's assembly order, as the print sheet gives it: each part slides home along z past what's already in. A part
+# that comes up from below the bench needs the drum tipped or lifted, so it must come before the legs go on.
+BASE_ORDER = ("upper 6810", "turntable, ring and cylinder", "base-spacer", "lower 6810", "base-retainer", "base motor", "legs on", "clamp the feet")
 
 # Legs (2026-11-20 spec): four Ø9 aluminium tubes, 250 long, about 15 degrees below level, in sockets on the drum's
 # side, so the drum's underside and the four pads all sit on the bench: five contacts. The sockets' mouths are set

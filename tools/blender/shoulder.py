@@ -366,13 +366,14 @@ def tubes():
 
 
 def sockets(part, at_lug):
-    """Each tube's socket in part (SOCKET_DEPTH from its mouth) and its open span cleared by TUBE_CLEAR."""
+    """Each tube's socket in part and its open span cleared by TUBE_CLEAR: SOCKET_DEPTH deep in the lug, through the
+    bracket's towers (the tubes go in from outside them: blind both ends, no tube could get between)."""
     for n in TUBE_ENDS:
         a, b = tube_axis(n)
         d = (b - a).normalized()
         mouth, into = (a, -d) if at_lug else (b, d)
         L.cut(part, rod("span", a + d * 0.5, b - d * 0.5, E.TUBE_OR + E.TUBE_CLEAR, n=48))   # short of the mouths: its end on a face left open edges
-        L.cut(part, rod("socket", mouth - into * 0.5, mouth + into * E.SOCKET_DEPTH, E.SOCKET_R, n=48))
+        L.cut(part, rod("socket", mouth - into * 0.5, mouth + into * (E.SOCKET_DEPTH if at_lug else 3 * BRACKET["x"]), E.SOCKET_R, n=48))
 
 
 def socket_boss(mouth, into, name):
@@ -413,12 +414,14 @@ def lug():
 
 def socket_bracket():
     """On the turntable's ear: a base with M3s down into the turntable, and two towers holding the tubes' outer sockets."""
-    X, tx, (f0, _), ft = BRACKET["x"], BRACKET["tower_x"], BRACKET["flange_y"], BRACKET["flange_t"]
+    X, tx, (f0, _), ft, rx = BRACKET["x"], BRACKET["tower_x"], BRACKET["flange_y"], BRACKET["flange_t"], BRACKET["root_x"]
     s0, s1 = LUG["spider_y"]
     zb = -SHOULDER_AXIS_Z
-    b = L.box("shoulder-socket-bracket", -X, X, f0, s1, zb, zb + ft)
-    L.union(b, L.box("front tower", tx, X, s0, s1, zb + ft - 0.01, BRACKET["tops"]["front"]))
-    L.union(b, L.box("rear tower", -X, -tx, s0, s1, zb + ft - 0.01, BRACKET["tops"]["rear"]))
+    b = L.box("shoulder-socket-bracket", -rx["rear"], rx["front"], f0, s1, zb, zb + ft)
+    for name, sgn in (("front", 1), ("rear", -1)):
+        top, root = L.box("top", *sorted((sgn * tx, sgn * X)), s0, s1, zb + ft - 0.01, BRACKET["tops"][name]), \
+            L.box("root", *sorted((sgn * tx, sgn * rx[name])), s0, s1, zb + ft - 0.01, zb + ft)
+        L.union(b, hull([top, root], name + " tower"))
     L.finish(b)
     sockets(b, False)
     for x, y in BRACKET_BOLTS:
@@ -466,7 +469,9 @@ def compact_bolts():
 
 def sh_motor_box(slot):
     h, zm = E.MOTOR_SQ / 2, E.SH_MOTOR_Z + slot * E.SH_MOTOR_SLOT + E.UPPER_L
-    return L.box("shoulder motor", -h, h, -E.Y_REAR, -E.Y_REAR + E.SH_MOTOR_L, zm - h, zm + h)
+    b = L.box("shoulder motor", -h, h, -E.Y_REAR, -E.Y_REAR + E.SH_MOTOR_L, -h, h)
+    b.data.transform(Matrix.Translation((0, 0, zm)) @ Matrix.Rotation(math.radians(E.SH_MOTOR_TURN), 4, 'Y'))
+    return b
 
 
 def pulley_env(z, r_od, r_hub=9.0):
@@ -481,6 +486,18 @@ def sh_belt_envelope(slot):
     zm = E.SH_MOTOR_Z + slot * E.SH_MOTOR_SLOT + E.UPPER_L
     band = hull([cyl_y("a", 0, 0, R80_OD + E.BELT_T, E.SH_TEETH_Y[0] - 1.5, E.SH_TEETH_Y[1] + 1.5),
                  cyl_y("b", 0, zm, E.R20_OD + E.BELT_T, E.SH_TEETH_Y[0] - 1.5, E.SH_TEETH_Y[1] + 1.5)], "shoulder belt")
+    L.union(band, pulley_env(0.0, R80_OD))
+    L.union(band, pulley_env(zm, E.R20_OD))
+    return band
+
+
+def sh_belt_loop(slot):
+    """The shoulder belt's loop only (not inside its spans) and both pulleys, the motor at slot: what a driver can't pass."""
+    zm = E.SH_MOTOR_Z + slot * E.SH_MOTOR_SLOT + E.UPPER_L
+    y0, y1 = E.SH_TEETH_Y[0] - 1.5, E.SH_TEETH_Y[1] + 1.5
+    band = hull([cyl_y("a", 0, 0, R80_OD + E.BELT_T, y0, y1, n=192), cyl_y("b", 0, zm, E.R20_OD + E.BELT_T, y0, y1)], "shoulder belt loop")
+    L.cut(band, hull([cyl_y("a", 0, 0, R80_OD - GROOVE_DEPTH - 0.5, y0 - 1.0, y1 + 1.0, n=192),
+                      cyl_y("b", 0, zm, E.R20_OD - GROOVE_DEPTH - 0.5, y0 - 1.0, y1 + 1.0)], "inside the belt"))
     L.union(band, pulley_env(0.0, R80_OD))
     L.union(band, pulley_env(zm, E.R20_OD))
     return band
@@ -601,6 +618,11 @@ def check_shoulder_core():
     for a in COLLAR_SCREW_ANGLES:
         x, z = polar(COLLAR_SCREW_R, a)
         screw_access(("lug", a), (x, LUG_CB_Y, z), (0, 1, 0), 2.75, BOLT_HEAD_H, [pa, hub, lg, br])
+    for s in (-1, 1):   # tightened after the belt is tensioned: a driver from outside plate B, between or outside its spans
+        loop, zm = sh_belt_loop(s), E.SH_MOTOR_Z + s * E.SH_MOTOR_SLOT + E.UPPER_L
+        for dx, dz in E.SH_MOTOR_SCREWS:
+            screw_access(("shoulder motor screw", s, round(dx, 1), round(dz, 1)), (dx, PLATE_FACES["B"][0], zm + dz), (0, -1, 0), 2.75, BOLT_HEAD_H, [pb, loop])
+        bpy.data.objects.remove(loop)
     for (x, y), part in [(xy, br) for xy in BRACKET_BOLTS] + [(xy, post) for xy in POST_BOLTS]:
         screw_access(("turntable bolt", part.name, x), (x, y, zb + BRACKET["flange_t"]), (0, 0, 1), 2.75, BOLT_HEAD_H,
                      [pa, pb, hub, lg, br, post, cp] + tubes())
@@ -624,7 +646,10 @@ def check_tubes(lg, br):
         assert (b - a).length >= 20.0, (name, "open span under 20")
         for part, mouth, into in ((lg, a, -d), (br, b, d)):
             inside_ = ray_len(part, mouth + into * 1.0, into)
-            assert inside_ is not None and abs(inside_ + 1.0 - E.SOCKET_DEPTH) < 0.06, (name, part.name, "socket depth", inside_)
+            if part is br:
+                assert inside_ is None, (name, "the tower's socket doesn't run through for the tube to go in from outside", inside_)
+            else:
+                assert inside_ is not None and abs(inside_ + 1.0 - E.SOCKET_DEPTH) < 0.06, (name, part.name, "socket depth", inside_)
             p = mouth + into * (E.SOCKET_DEPTH - 1.0)
             side = d.cross(Vector((0, 1, 0))).normalized()
             for w in (side, -side, Vector((0, 1, 0)), Vector((0, -1, 0))):
@@ -635,13 +660,75 @@ def check_tubes(lg, br):
         assert overlap(o, t_all) < 1.0, ("a tube runs into a part outside its socket", o.name, overlap(o, t_all))
     loads = truss_loads()
     assert max(abs(f) for f in loads.values()) <= 600.0, ("tube axial load", loads)
+    towers = tower_mpa(br)
+    assert max(s for s, _ in towers.values()) <= PRINTED_MPA, ("a bracket tower bending across its layers (MPa, at z)", towers)
     socket_m = ARM_LOAD_N * TUBE_PLANE_Y / len(TUBE_ENDS)      # the arm's weight off the tubes' plane, shared at the sockets
-    REPORT.update({"tube_lengths_mm": tube_lengths(), "tube_axial_n": loads, "tube_socket_bending_nmm": round(socket_m)})
+    REPORT.update({"tube_lengths_mm": tube_lengths(), "tube_axial_n": loads, "tube_socket_bending_nmm": round(socket_m), "bracket_tower_mpa": towers})
     bpy.data.objects.remove(t_all)
 
 
-def truss_loads():
-    """Axial force in each tube (tension +) with the arm's weight and the design torque on the lug."""
+def check_bracket_assembly():
+    """The arm on the turntable with the lug and post on: the bracket slides in along the shoulder axis from outside onto
+    the ear, then each tube, glued, slides in along its own axis from outside its tower into the lug's socket, the
+    others already in."""
+    lg, br, post = PARTS["shoulder-lug"], PARTS["shoulder-socket-bracket"], PARTS["shoulder-rod-post"]
+    arm, tt = turning_shoulder(0.0), turntable_disc(SHOULDER_AXIS_Z)
+    fixed = [lg, post, arm, tt]
+    b = copy(br, "bracket"); b.data.transform(Matrix.Translation((0, 0, 0.05)))   # off the turntable's face it slides on
+    pl = concat([copy(p, "p") for p in fixed], "placed")
+    hit = slides_home(b, (0, -1, 0), LUG["spider_y"][1] + 1.0 - BRACKET["flange_y"][0], pl)
+    bpy.data.objects.remove(pl); bpy.data.objects.remove(b)
+    assert hit is None, ("the bracket can't slide in along the axis onto the ear", hit)
+    ts = dict(zip(TUBE_ENDS, tubes()))
+    for name, t in ts.items():
+        a, bm = tube_axis(name)
+        d = (bm - a).normalized()
+        inner = a - d * E.SOCKET_DEPTH
+        out_x = math.copysign(max(BRACKET["root_x"].values()), d.x)
+        pl = concat([copy(p, "p") for p in fixed + [br] + [o for n, o in ts.items() if n != name]], "placed")
+        hit = slides_home(t, -d, (out_x - inner.x) / d.x + 1.0, pl)
+        bpy.data.objects.remove(pl)
+        assert hit is None, (name, "tube can't slide in from outside its tower to the lug's socket", hit)
+    for o in list(ts.values()) + [arm, tt]:
+        bpy.data.objects.remove(o)
+
+
+def tower_mpa(br):
+    """The worst bending plus direct stress across each of br's towers, at every 1 mm from its root on the base up to
+    its top tube, from its tubes' forces, the design torque either way round. The section's width is measured off the
+    part beside the sockets; where a socket crosses the section its diameter comes off the section's depth."""
+    root_z = -SHOULDER_AXIS_Z + BRACKET["flange_t"]
+    y = LUG["spider_y"][0] + 0.5
+    depth = LUG["spider_y"][1] - LUG["spider_y"][0]
+    out = {}
+    for tower, names, sgn in (("front", ("front", "diagonal"), 1), ("rear", ("rear",), -1)):
+        axes = [tube_axis(n) for n in names]
+        top = max(m.z for _, m in axes) - E.SOCKET_R
+        z = root_z + 0.5
+        while z < top:
+            x_out = sgn * (3 * BRACKET["x"] - ray_len(br, (sgn * 3 * BRACKET["x"], y, z), (-sgn, 0, 0)))
+            x_in = sgn * (BRACKET["tower_x"] - 5.0 + ray_len(br, (sgn * (BRACKET["tower_x"] - 5.0), y, z), (sgn, 0, 0)))
+            h, x0 = abs(x_out - x_in), (x_out + x_in) / 2
+            crossed = any(min(m.z, m.z + (x_out - m.x) * (m - a).z / (m - a).x) - E.SOCKET_R <= z <= m.z + E.SOCKET_R for a, m in axes)
+            b = depth - (2 * E.SOCKET_R if crossed else 0.0)
+            for torque in (SHOULDER_DESIGN_NMM, -SHOULDER_DESIGN_NMM):
+                f = truss_loads(torque)
+                mo = n = 0.0
+                for name, (a, mouth) in zip(names, axes):
+                    if mouth.z - E.SOCKET_R <= z:
+                        continue
+                    force = -f[name] * (mouth - a).normalized()   # on the tower: a tube in tension pulls it towards the lug
+                    mo += (mouth.x - x0) * force.z - (mouth.z - z) * force.x
+                    n += force.z
+                s = abs(mo) / (b * h * h / 6) + abs(n) / (b * h)
+                if s > out.get(tower, (0.0,))[0]:
+                    out[tower] = (round(s, 1), round(z, 1))
+            z += 1.0
+    return out
+
+
+def truss_loads(torque=SHOULDER_DESIGN_NMM):
+    """Axial force in each tube (tension +) with the arm's weight and the torque on the lug."""
     names = list(TUBE_ENDS)
     us, ps = [], []
     for n in names:
@@ -649,7 +736,7 @@ def truss_loads():
         u = (b - a).normalized()
         us.append((u.x, u.z)); ps.append((a.x, a.z))
     m = [[us[i][0] for i in range(3)], [us[i][1] for i in range(3)], [ps[i][0] * us[i][1] - ps[i][1] * us[i][0] for i in range(3)]]
-    f = mathutils.Matrix(m).inverted() @ Vector((0.0, ARM_LOAD_N, SHOULDER_DESIGN_NMM))
+    f = mathutils.Matrix(m).inverted() @ Vector((0.0, ARM_LOAD_N, torque))
     return {n: round(f[i], 1) for i, n in enumerate(names)}
 
 
@@ -682,7 +769,7 @@ def check_stops(lg, pa):
 
 def turntable_disc(h):
     t = L.cyl_z("turntable's top", 0, 0, TURNTABLE_R, -h - TURNTABLE_T, -h, n=192)
-    L.union(t, L.box("ear", -EAR["x"], EAR["x"], EAR["y"][0], EAR["y"][1], -h - TURNTABLE_T, -h))
+    L.union(t, L.box("ear", *EAR["x"], *EAR["y"], -h - TURNTABLE_T, -h))
     return t
 
 
@@ -769,7 +856,7 @@ def turntable():
     """A plate with an ear under the shoulder's socket bracket; the ring screws up into its underside; the base stop's tab and the Hall magnet under it."""
     zt, zb = TURNTABLE_Z, TT_HUB_Z0
     t = L.cyl_z("turntable", 0, 0, TURNTABLE_R, zb, zt, n=192)
-    L.union(t, L.box("ear", -EAR["x"], EAR["x"], EAR["y"][0], EAR["y"][1], zb, zt))
+    L.union(t, L.box("ear", *EAR["x"], *EAR["y"], zb, zt))
     L.union(t, phi_tab())
     L.finish(t)
     for a in RING_SCREW_ANGLES:
@@ -1101,10 +1188,10 @@ def check_base():
         d = ray_len(tt, (x + 1.85, y, TURNTABLE_Z + 1.0), (0, 0, -1))
         assert d is not None and abs(d - 1.0 - M3_INSERT_DEPTH) < 0.06, ("bracket or post insert in the turntable", x, y, d)
         assert material_round(tt, (x, y, TURNTABLE_Z - M3_INSERT_DEPTH / 2), (0, 0, 1), M3_INSERT_R) >= INSERT_WALL_MIN, ("turntable insert wall", x, y)
-    for n, (x0, x1, y0, y1) in (("bracket", (-BRACKET["x"], BRACKET["x"], BRACKET["flange_y"][0], LUG["spider_y"][1])),
+    for n, (x0, x1, y0, y1) in (("bracket", (-BRACKET["root_x"]["rear"], BRACKET["root_x"]["front"], BRACKET["flange_y"][0], LUG["spider_y"][1])),
                                 ("post", (-POST["foot_x"], POST["foot_x"], POST["y"][1], POST["y"][0]))):
         for x, y in ((x0, y0), (x0, y1), (x1, y0), (x1, y1)):
-            inside_tt = math.hypot(x, y) <= TURNTABLE_R - 2.0 or (abs(x) <= EAR["x"] - 2.0 and EAR["y"][0] <= y <= EAR["y"][1] - 2.0)
+            inside_tt = math.hypot(x, y) <= TURNTABLE_R - 2.0 or (EAR["x"][0] + 2.0 <= x <= EAR["x"][1] - 2.0 and EAR["y"][0] <= y <= EAR["y"][1] - 2.0)
             assert inside_tt, (n + "'s foot within 2 of the turntable's edge", x, y)
     REPORT.update({"base_belt_centres": belts, "base_motor_flat_gap_mm": flat_gap, "base_motor_belt_min_gap_mm": round(belt_gap, 2),
                    "base_running_gap_mm": round(running, 2), "drum": DRUM, "bench_z": BENCH_Z, "bench_to_shoulder_axis_mm": round(-BENCH_Z, 1),
@@ -1115,6 +1202,58 @@ def check_base():
     REPORT["bolts"].update({"ring to turntable (from under the ring)": RING_SCREW_L, "base motor through the plate and shelf": BASE_MOTOR_SCREW_L,
                             "retainer into the cylinder": RETAINER["screw_l"]})
     for o in (turning, tab, block):
+        bpy.data.objects.remove(o)
+
+
+def bearing_6810(z0):
+    """A 6810 with its lower face at z0, 0.05 inside its seat and land and 0.02 inside its faces, so it slides on them."""
+    b = L.cyl_z("6810", 0, 0, B6810[1] - 0.05, z0 + 0.02, z0 + B6810[2] - 0.02, n=192)
+    L.cut(b, L.cyl_z("bore", 0, 0, B6810[0] + 0.05, z0 - 1.0, z0 + B6810[2] + 1.0, n=192))
+    return b
+
+
+def slides_home(o, d, travel, placed, step=1.0):
+    """Where o, sliding along d to its seat from travel back, first meets placed (its distance short of home), or None."""
+    tp, s = tree(placed), travel
+    while True:
+        s = max(s, 0.05)
+        c = copy(o, "sliding"); c.data.transform(Matrix.Translation(-Vector(d) * s))
+        hit = tree(c).overlap(tp)
+        bpy.data.objects.remove(c)
+        if hit:
+            return round(s, 2)
+        if s == 0.05:
+            return None
+        s -= step
+
+
+def check_base_order():
+    """The sheet's order (BASE_ORDER): each part slides home along z past what's already in; any that comes up from under
+    the bench comes before the legs go on, and the feet are clamped after the legs."""
+    up, down = Vector((0, 0, 1)), Vector((0, 0, -1))
+    turning = concat([copy(PARTS[n], n) for n in ("turntable", "base-ring-130T")], "turntable, ring and cylinder")
+    parts = {"upper 6810": (bearing_6810(BASE_6810_Z[0]), down), "turntable, ring and cylinder": (turning, down),
+             "base-spacer": (copy(PARTS["base-spacer"], "spacer"), up), "lower 6810": (bearing_6810(BASE_6810_Z[1]), up),
+             "base-retainer": (copy(PARTS["base-retainer"], "retainer"), up), "base motor": (base_motor_box(0.0), up)}
+    placed, under_bench = [PARTS["fixed-base"]], []
+    for i, step in enumerate(BASE_ORDER):
+        if step not in parts:
+            continue
+        o, d = parts[step]
+        zs = [v.co.z for v in o.data.vertices]
+        travel = MOTORS["17"]["shaft"] + 2.0 if step == "base motor" else (DRUM_TOP + 1.0 - min(zs) if d == down else max(zs) - (BENCH_Z - 1.0))
+        if d == up and min(zs) - travel < BENCH_Z:
+            under_bench.append(i)
+        pl = concat([copy(p, "p") for p in placed], "placed")
+        hit = slides_home(o, d, travel, pl)
+        bpy.data.objects.remove(pl)
+        assert hit is None, (step, "meets a part already in, this far short of home", hit, [p.name for p in placed])
+        placed.append(o)
+    legs, clamp = BASE_ORDER.index("legs on"), BASE_ORDER.index("clamp the feet")
+    assert all(i < legs for i in under_bench), ("comes up from under the bench after the legs are on", [BASE_ORDER[i] for i in under_bench if i > legs])
+    assert legs < clamp, "the feet are clamped before the legs are on"
+    REPORT["base_order"] = BASE_ORDER
+    for o in placed[1:]:
         bpy.data.objects.remove(o)
 
 
@@ -1224,7 +1363,10 @@ def check_legs():
         c = m - d * PINCH_AT
         side = c + d * 2.5 + n * (SOCKET["boss_r"] + 5.0)          # beside the insert, on the boss's top line
         seat = side - n * ray_len(fb, side, -n) - d * 2.5
-        screw_access(("leg pinch screw", phi), seat, n, 2.75, BOLT_HEAD_H, [fb, tt])
+        away = (phi + 270.0) % 360.0 - 180.0     # the turntable turned so its ear (+y at phi 0) is opposite this leg: it spans more than 90 degrees
+        t = copy(tt, "t"); t.data.transform(rot_base(away))
+        screw_access(("leg pinch screw", phi, "turntable at", away), seat, n, 2.75, BOLT_HEAD_H, [fb, t])
+        bpy.data.objects.remove(t)
     assert CLAMP_TAB[0] >= 30 and CLAMP_TAB[1] >= 30 and CLAMP_TAB[2] >= 6, "clamp tab"
     pts = [(p[0], p[1]) for p in FOOT_PADS]
     edges = []
@@ -1247,7 +1389,7 @@ PARTS["turntable"], PARTS["base-ring-130T"] = turntable(), base_ring()
 PARTS["base-spacer"], PARTS["base-retainer"] = base_spacer(), base_retainer()
 PARTS["fixed-base"], PARTS["base-motor-plate"] = fixed_base(), base_motor_plate()
 PARTS["foot"], PARTS["foot-pad"] = foot_part(), foot_pad()
-CHECKS += [check_shoulder_core, check_axis_and_stops, check_base, check_legs]
+CHECKS += [check_shoulder_core, check_bracket_assembly, check_axis_and_stops, check_base, check_base_order, check_legs]
 for check in CHECKS:
     check()
 print("SHOULDER", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, **REPORT}))

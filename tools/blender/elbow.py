@@ -436,9 +436,8 @@ def plate_b():
     for x, z in [polar(F.BOLT_R, a) for a in F.BOLT_ANGLES]:
         L.cut(p, cyl_y("shoulder compact bolt", x, SHOULDER_Z + z, 1.7, y1 - 1, y0 + 1, n=32))
     L.cut(p, slot_y("shoulder pilot", 0, SH_MOTOR_Z, MOTOR_PILOT_R + 0.5, SH_MOTOR_SLOT, y1 - 1, y0 + 1))
-    for sx in (1, -1):
-        for sz in (1, -1):
-            L.cut(p, slot_y("shoulder motor screw", sx * MOTOR_HOLE, SH_MOTOR_Z + sz * MOTOR_HOLE, 1.7, SH_MOTOR_SLOT, y1 - 1, y0 + 1))
+    for dx, dz in SH_MOTOR_SCREWS:
+        L.cut(p, slot_y("shoulder motor screw", dx, SH_MOTOR_Z + dz, 1.7, SH_MOTOR_SLOT, y1 - 1, y0 + 1))
     h = MOTOR_SQ / 2 + 1.0
     L.cut(p, L.box("motor window", -h, h, y1 - 1, y0 + 1, MOTOR_Z - h - MOTOR_SLOT, MOTOR_Z + h + MOTOR_SLOT))
     L.cut(p, sensor_pocket())
@@ -481,7 +480,9 @@ def sh_sensor_pocket():
 def sh_motor_posed(slot, length=SH_MOTOR_L, grow=0.0):
     zm = SH_MOTOR_Z + slot * SH_MOTOR_SLOT
     h = MOTOR_SQ / 2 + grow
-    return L.box("sh motor", -h, h, -Y_REAR - grow, -Y_REAR + length + grow, zm - h, zm + h)
+    b = L.box("sh motor", -h, h, -Y_REAR - grow, -Y_REAR + length + grow, -h, h)
+    b.data.transform(Matrix.Translation((0, 0, zm)) @ Matrix.Rotation(math.radians(SH_MOTOR_TURN), 4, 'Y'))
+    return b
 
 
 def box_gap(slot, o, hi=40.0):
@@ -498,7 +499,7 @@ def box_gap(slot, o, hi=40.0):
 
 def sh_screw_heads(slot):
     zm, y = SH_MOTOR_Z + slot * SH_MOTOR_SLOT, -Y_REAR - PLATE_T
-    hs = [cyl_y("head", sx * MOTOR_HOLE, zm + sz * MOTOR_HOLE, 2.75, y - 3.0, y, n=24) for sx in (1, -1) for sz in (1, -1)]
+    hs = [cyl_y("head", dx, zm + dz, 2.75, y - 3.0, y, n=24) for dx, dz in SH_MOTOR_SCREWS]
     hs += [cyl_y("head", x, SHOULDER_Z + z, 2.75, y - 3.0, y, n=24) for x, z in [polar(F.BOLT_R, a) for a in F.BOLT_ANGLES]]
     return hull_free_join(hs, "sh heads")
 
@@ -782,9 +783,8 @@ def check_shoulder_end():
         assert abs(math.hypot(0, SH_MOTOR_Z + s * SH_MOTOR_SLOT - SHOULDER_Z) - (SH_BELT_C + s * SH_MOTOR_SLOT)) < 0.1, "shoulder belt centres"
         zm = SH_MOTOR_Z + s * SH_MOTOR_SLOT
         assert ray_len(pb, (0, -Y_REAR + 1, zm), (0, -1, 0)) is None, "shoulder pilot slot closed"
-        for sx in (1, -1):
-            for sz in (1, -1):
-                assert ray_len(pb, (sx * MOTOR_HOLE, -Y_REAR + 1, zm + sz * MOTOR_HOLE), (0, -1, 0)) is None, "shoulder motor screw slot closed"
+        for dx, dz in SH_MOTOR_SCREWS:
+            assert ray_len(pb, (dx, -Y_REAR + 1, zm + dz), (0, -1, 0)) is None, "shoulder motor screw slot closed"
         env = sh_belt_envelope(s)
         for o, n in ((pb, "plate B"), (sh_screw_heads(s), "screw heads"), (cm, "cross members")):
             assert overlap(env, o) < 0.05, ("shoulder belt envelope hits", n, s)
@@ -803,8 +803,8 @@ def check_shoulder_end():
         assert w >= 2.0, ("plate B wall round a hole", c, w)
     elbow_window_top = MOTOR_Z + MOTOR_SQ / 2 + 1.0 + MOTOR_SLOT
     for s in (-1, 1):
-        for sz in (1, -1):
-            z = SH_MOTOR_Z + s * SH_MOTOR_SLOT + sz * MOTOR_HOLE
+        for _, dz in SH_MOTOR_SCREWS:
+            z = SH_MOTOR_Z + s * SH_MOTOR_SLOT + dz
             for edge_gap in (WINDOW_B[2] - z, z - elbow_window_top):
                 assert edge_gap - 1.7 >= 2.0, ("shoulder screw slot near a window", z, edge_gap)
     tab = sh_tab(); blocks = join(sh_stop_blocks(), "sh blocks")

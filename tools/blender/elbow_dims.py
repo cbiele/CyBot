@@ -66,7 +66,7 @@ IDLER_BOSS_R = 7.0
 BELT_ENVELOPE_Y = Y_REAR + PLATE_T + PULLEY_GAP + PULLEY_H + 3.5 + 2.0   # pulley tops plus the idler bolt's head, plus 2
 SHOULDER_6810_Y = ((Y_REAR, Y_REAR + B6810[2]), (-Y_REAR, -Y_REAR - B6810[2]))
 LIP_IN_R = 28.5                              # bears on the outer ring only
-CROSS_MEMBERS = [(27.0, -95.0), (-27.0, -95.0), (29.5, -182.0), (-29.5, -182.0)]   # the lower pair 3+ from the motor window, the index holes and the edge
+CROSS_MEMBERS = [(27.0, -102.0), (-27.0, -102.0), (29.5, -182.0), (-29.5, -182.0)]   # the upper pair 1 below the turned shoulder motor's corner; the lower pair 3+ from the motor window, the index holes and the edge
 CM_HOLE_R = TUBE_OR + 0.1
 WINDOW = (16.0, -45.0, -118.0)               # lightening: |x|, z top, z bottom
 # The stops and the Hall magnet ride on a collar keyed onto the hub's journal end after plate B is on: anything wider than
@@ -105,13 +105,17 @@ THROUGH_SOCKET = "rear"
 SH_BELT_C = round(_C.belt_centre_distance(20, 80, 420, pitch=3.0), 2)
 SH_MOTOR_Z, SH_MOTOR_SLOT = SHOULDER_Z + SH_BELT_C, 3.0
 SH_MOTOR_L, SH_MOTOR_L_MAX = 48.0, PLATE_GAP - 1.0           # a longer NEMA17 fits up to plate A's inner face, less 1
+# Turned 45 degrees on its shaft: square, its two screws towards the shoulder sat under the 80T belt's spans, where no
+# driver reaches them once the belt is tensioned; turned, one sits between the spans and two outside them.
+SH_MOTOR_TURN, SH_MOTOR_REACH = 45.0, MOTOR_SQ / 2 * 2 ** 0.5   # the turned square's corner, from the shaft
+SH_MOTOR_SCREWS = [(MOTOR_HOLE * 2 ** 0.5 * c, MOTOR_HOLE * 2 ** 0.5 * s) for c, s in ((1, 0), (0, 1), (-1, 0), (0, -1))]   # (x, z) off the shaft
 SH_COMPACT_REAR_Y = -Y_REAR
 SH_PULLEY_Y0 = -(Y_REAR + PLATE_T + PULLEY_GAP)
 SH_TEETH_Y = (SH_PULLEY_Y0 - PULLEY_HUB - 1.5 - 11.5, SH_PULLEY_Y0 - PULLEY_HUB - 1.5)
 SH_BELT_PLANE_Y = sum(SH_TEETH_Y) / 2
 SH_BELT_ENVELOPE_Y = -BELT_ENVELOPE_Y
 R80_OD = (80 * 3.0 / 3.141592653589793 - 0.762) / 2
-WINDOW_B = (16.0, -45.0, SH_MOTOR_Z + MOTOR_SQ / 2 + SH_MOTOR_SLOT + 3.0)   # plate B's window stops 3 above the motor's square at its top slot end
+WINDOW_B = (16.0, -45.0, SH_MOTOR_Z + SH_MOTOR_REACH + SH_MOTOR_SLOT + 3.0)   # plate B's window stops 3 above the turned motor's corner at its top slot end
 SH_PSI_STOPS = (-93.0, 93.0)                 # shoulder.py sets these and asserts they match
 SH_TAB_PHI, SH_TAB_HALF = 270.0, 12.0        # the fixed tab hangs under the shoulder axis
 SH_STOP_R = (33.5, 37.5)                     # outside plate A's 6810 seat (it enters from the outer face), inside the plate's r38
