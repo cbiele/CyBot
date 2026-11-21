@@ -719,10 +719,9 @@ def offset_wrist_report(report):
 
 
 SH_COL, BASE_COL = "Shoulder and body", "Base and legs"
-SH_MOVING_STL = ("shoulder-hub-b", "shoulder-output-plate", "shoulder-stop-collar")
-SH_SKIP_STL = ("plate-drill-jig", "shoulder-motor-plate-23")      # a drilling tool, and the NEMA23's spare plate
-BASE_STL = ("turntable", "base-ring-130T", "spigot-spacer", "spigot-cap", "fixed-base", "base-motor-plate", "foot", "foot-pad")
-PHI_TURNING_STL = ("turntable", "base-ring-130T")   # base parts that turn with phi; the rest of the base stays with the bench
+SH_MOVING = ("shoulder motor 17HS19", "shoulder 20T", "shoulder 80T")   # the arm-mounted drive (2026-11-21): it turns with psi, with the ax2 compact
+BASE_STL = ("turntable", "base-ring-130T", "base-spacer", "base-retainer", "fixed-base", "base-motor-plate", "foot", "foot-pad")
+PHI_TURNING_STL = ("turntable", "base-ring-130T", "base-spacer", "base-retainer")   # base parts that turn with phi; the rest of the base stays with the bench
 SH_AT = ELBOW_AT - Vector((0, 0, E.UPPER_L))   # the shoulder axis; the shoulder frame maps in by translation
 PRINTED_G_MM3 = 1.24e-3 * 0.4                  # PLA at 40% infill
 MOTOR_G, COMPACT_G, PAYLOAD_G, LEG_TUBE_G = 350, 120, 500, 17   # each; the tube is Ø9 x 1 aluminium, 250 long
@@ -750,30 +749,27 @@ def shoulder_body():
     poses = json.load(open(os.path.join(folder, "poses.json")))
     m = shoulder_frame()
     for name, rows in poses.items():
-        if name in SH_SKIP_STL:
-            continue
-        col, mat = (BASE_COL, "fixed") if name in BASE_STL else (SH_COL, "moving" if name in SH_MOVING_STL else "fixed")
+        col, mat = (BASE_COL, "fixed") if name in BASE_STL else (SH_COL, "fixed")
         if name in ("foot", "foot-pad"):
             for phi in S.LEG_PHI:
                 place(stl(os.path.join(folder, name + ".stl"), f"{name} {phi:.0f}"), col, mat,
                       m @ Matrix.Rotation(math.radians(phi - S.LEG_PHI[0]), 4, 'Z') @ Matrix(rows))
             continue
         place(stl(os.path.join(folder, name + ".stl"), "shoulder " + name), col, mat, m @ Matrix(rows))
-    cycloid("20-1-compact", "ax2", SH_COL, m @ basis_frame((1, 0, 0), (0, 0, 1), (0, -1, 0), (0, S.COMPACT_REAR_Y, 0)))
-    up = Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))   # a pulley's z onto -y, hub towards the stub
-    out = Matrix(((1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 0, 1)))  # a pulley's z onto +y, hub towards the motor
-    top = S.PULLEY80_Y + E.PULLEY_H
-    mx, mz = S.motor_at()
-    place(stl(os.path.join(folder, "shoulder-pulley-80T.stl"), "shoulder 80T"), SH_COL, "pulley", m @ Matrix.Translation((0, top, 0)) @ up)
-    place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "shoulder 20T"), SH_COL, "pulley",
-          m @ Matrix.Translation((mx, S.PULLEY20_HUB_Y[1] - E.PULLEY_H, mz)) @ out)
+    cycloid("20-1-compact", "ax2", SH_COL, m @ basis_frame((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, S.COMPACT_REAR_Y, 0)))   # rear face on plate B, output to +y
+    out = Matrix(((1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 0, 1)))  # a pulley's z onto +y: its hub towards plate B
+    y0 = E.SH_PULLEY_Y0 - E.PULLEY_H
+    zm = E.SH_MOTOR_Z + E.UPPER_L
+    place(stl(os.path.join(folder, "shoulder-pulley-80T.stl"), "shoulder 80T"), SH_COL, "pulley", m @ Matrix.Translation((0, y0, 0)) @ out)
+    place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "shoulder 20T"), SH_COL, "pulley", m @ Matrix.Translation((0, y0, zm)) @ out)
     h = S.MOTORS["17"]["sq"] / 2
-    local = basis_frame((S.BELT_U[0], 0, S.BELT_U[1]), (S.BELT_W[0], 0, S.BELT_W[1]), (0, 1, 0), (mx, 0, mz))
-    place(L.box("shoulder motor 17HS19", -h, h, -h, h, S.MOTOR_FACE_Y, S.MOTOR_FACE_Y + S.MOTORS["17"]["length"]), SH_COL, "motor", m @ local)
+    place(L.box("shoulder motor 17HS19", -h, h, -E.Y_REAR, -E.Y_REAR + E.SH_MOTOR_L, zm - h, zm + h), SH_COL, "motor", m)
     bx, by = S.base_motor_at()
-    place(L.box("base motor 17HS19", bx - h, bx + h, by - h, by + h, S.BASE_PLATE_Z[1], S.BASE_PLATE_Z[1] + S.BASE_MOTOR_L), BASE_COL, "motor", m)
+    bm = L.box("base motor 17HS19", -h, h, -h, h, S.BASE_MOTOR_FACE_Z - S.BASE_MOTOR_L, S.BASE_MOTOR_FACE_Z)
+    bm.data.transform(Matrix.Translation((bx, by, 0)) @ Matrix.Rotation(math.radians(S.BASE_MOTOR_DEG + 45.0), 4, 'Z'))   # turned 45 on its shaft
+    place(bm, BASE_COL, "motor", m)
     place(stl(os.path.join(MODEL, "elbow", "axis3-pulley-20T.stl"), "base 20T"), BASE_COL, "pulley",
-          m @ Matrix.Translation((bx, by, S.BASE20_HUB_Z[1] - E.PULLEY_H)))
+          m @ Matrix.Translation((bx, by, S.BASE20_HUB_Z[0] + E.PULLEY_H)) @ Matrix.Diagonal((1, -1, -1, 1)))   # hub down to the motor
     for phi in S.LEG_PHI:
         _, s, f = S.leg(phi)
         t = L.cyl_between(f"leg tube {phi:.0f}", s, f, S.TUBE_LEG_R, n=24)
@@ -782,16 +778,21 @@ def shoulder_body():
 
 
 def shoulder_moving():
-    """Everything the shoulder carries: the upper arm, everything past the elbow, and the hub's parts."""
+    """Everything the shoulder carries: the upper arm, everything past the elbow, and the arm-mounted shoulder drive."""
     out = [o for n in COLS if n not in (SH_COL, BASE_COL, "V1 arm kept", "V1 head (for comparison)") for o in COLS[n].objects]
-    return out + [o for o in COLS[SH_COL].objects if any(o.name == "shoulder " + k for k in SH_MOVING_STL)]
+    return out + sh_drive()
+
+
+def sh_drive():
+    """The shoulder drive that rides in the arm: its motor, pulleys and the compact's housing (its insides sit between the
+    housing and the fixed output, so neither side counts them)."""
+    return [o for o in COLS[SH_COL].objects if o.name in SH_MOVING or o.name.startswith("ax2 housing")]
 
 
 def shoulder_fixed():
-    """The body, the base and the legs (both shoulder plates' motor: the 17 is drawn; the 23's box is no bigger where it matters)."""
-    body = [o for o in COLS[SH_COL].objects if not any(o.name == "shoulder " + k for k in SH_MOVING_STL)]
-    body = [o for o in body if not (o.name.startswith("ax2 ") and "housing" not in o.name)]   # the compact's insides turn with its output
-    return body + list(COLS[BASE_COL].objects)
+    """The fixed shoulder (hub, lug, tubes' bracket, post), the base and the legs."""
+    drive = sh_drive()
+    return [o for o in COLS[SH_COL].objects if o not in drive and not o.name.startswith("ax2 ")] + list(COLS[BASE_COL].objects)
 
 
 def printed_g(objs):
@@ -814,7 +815,10 @@ def named_elbow_masses():
 def upper_arm_masses():
     plates = [obj("elbow upper-plate-A"), obj("elbow upper-plate-B")]
     compact = [o for o in COLS[ELBOW_COMPACT_COL].objects if "housing" in o.name]
-    return [(centre(plates), printed_g(plates)), (centre([obj("elbow motor 17HS8401B")]), MOTOR_G), (centre(compact), COMPACT_G)]
+    sh_compact = [o for o in COLS[SH_COL].objects if o.name.startswith("ax2 housing")]
+    pulleys = [obj("shoulder 80T"), obj("shoulder 20T")]
+    return [(centre(plates), printed_g(plates)), (centre([obj("elbow motor 17HS8401B")]), MOTOR_G), (centre(compact), COMPACT_G),
+            (centre([obj("shoulder motor 17HS19")]), MOTOR_G), (centre(sh_compact), COMPACT_G), (centre(pulleys), printed_g(pulleys))]
 
 
 def arm_points(psi, theta, pitch, groups, upper, tip, payload):
@@ -830,10 +834,10 @@ def shoulder_torque(psi, theta, pitch, groups, upper, tip):
 
 
 def upper_arm_objs():
-    """What turns with the shoulder but not the elbow: the upper arm, the elbow compact, the shoulder hub's parts."""
+    """What turns with the shoulder but not the elbow: the upper arm, the elbow compact, the arm-mounted shoulder drive."""
     _, rest = past_elbow()
     out = [o for n in (ELBOW_COL, ELBOW_COMPACT_COL) for o in COLS[n].objects if o not in rest]
-    return out + [o for o in COLS[SH_COL].objects if any(o.name == "shoulder " + k for k in SH_MOVING_STL)]
+    return out + sh_drive()
 
 
 def np_verts(objs, m=None):
@@ -906,9 +910,7 @@ def bench_reach(turning, still, bench_z, tip, phi):
 def tip_margin(groups, upper, tip, sweep):
     """Least distance from the whole arm's centre of mass, projected, to the pad square's edges, at the longest reaches."""
     turning, still = phi_split()
-    turn_g = [(centre([o]), printed_g([o])) for o in turning if o.name.startswith("shoulder ") and "motor 17HS19" not in o.name and "80T" not in o.name]
-    turn_g += [(centre([obj("shoulder motor 17HS19")]), MOTOR_G), (centre([o for o in COLS[SH_COL].objects if o.name.startswith("ax2 housing")]), COMPACT_G)]
-    turn_g += [(centre([obj("shoulder 80T")]), printed_g([obj("shoulder 80T")]))]
+    turn_g = [(centre([o]), printed_g([o])) for o in turning if o.name.startswith("shoulder ")]   # the fixed shoulder; its drive is in upper
     still_g = [(centre([o]), printed_g([o])) for o in still if not o.name.startswith(("base motor", "leg tube"))]
     still_g += [(centre([obj("base motor 17HS19")]), MOTOR_G)] + [(centre([o]), LEG_TUBE_G) for o in still if o.name.startswith("leg tube")]
     pads = [Vector((p[0], p[1], 0)) + Vector((SH_AT.x, SH_AT.y, 0)) for p in S.FOOT_PADS]
@@ -916,7 +918,6 @@ def tip_margin(groups, upper, tip, sweep):
     for psi in (S.PSI_RANGE[0], S.PSI_RANGE[1]):
         th, pitch = max(sweep, key=lambda tp: abs((shoulder_rot(psi) @ elbow_rot(tp[0]) @ pitch_matrix(tp[1]) @ tip).x - SH_AT.x))
         arm = arm_points(psi, th, pitch, groups, upper, tip, PAYLOAD_G)
-        arm += [(shoulder_rot(psi) @ centre([o]), printed_g([o])) for o in COLS[SH_COL].objects if any(o.name == "shoulder " + k for k in SH_MOVING_STL)]
         for phi in range(0, 360, 45):
             bm = base_rot(phi)
             pts = [(bm @ p, g) for p, g in arm + turn_g] + still_g
@@ -946,6 +947,9 @@ def shoulder_report(report):
     named = named_elbow_masses()
     groups = [grp for _, grp in named]
     upper = upper_arm_masses()
+    drive = sh_drive()
+    assert not [o for o in drive if o in shoulder_fixed()], "the shoulder drive counted as fixed"
+    assert sum(1 for _, g in upper if g == MOTOR_G) == 2 and sum(1 for _, g in upper if g == COMPACT_G) == 2, "each arm motor and compact once"
     sweep = [(th, p) for p in (-90, 0, 90) for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 5)]
     poses = [(psi, th, p) for psi in range(int(S.PSI_RANGE[0]), int(S.PSI_RANGE[1]) + 1, 5) for th, p in sweep]
     worst = max(poses, key=lambda q: shoulder_torque(*q, groups, upper, tip))
@@ -976,10 +980,11 @@ def shoulder_report(report):
                    "shoulder_soft_limits": [list(h) for h in union], "shoulder_soft_limits_phi0": limits0,
                    "shoulder_soft_limits_by_phi": {str(k): len(v) for k, v in per_phi.items()}, "bench_reach": reach,
                    "bench_reach_worst_phi": {"phi": far, "closest_r_mm": reaches[far]["closest_r_mm"], "pose": reaches[far]["pose"]},
-                   "bench_z": round(bench, 1), "tip_margin_mm": round(tip_mm, 1), "tip_worst": tip_at})
+                   "bench_z": round(bench, 1), "bench_to_shoulder_axis_mm": round(SH_AT.z - bench, 1), "tip_margin_mm": round(tip_mm, 1), "tip_worst": tip_at})
+    assert abs(report["bench_to_shoulder_axis_mm"] + S.BENCH_Z) <= 0.1, "the bench height disagrees with shoulder.py's"
     assert report["shoulder_current_cap_a"] == round(S.SHOULDER_CURRENT_CAP_A, 3)
     if margin < 1.2:
-        report["shoulder_note"] = "shoulder: bench test at higher current, NEMA23 plate ready"
+        report["shoulder_note"] = "shoulder: NEMA17 short of the estimate, bench test at higher current"
     if tip_mm < 15:
         # The user accepted clamped feet as the stability answer (2026-11-20), so tipping unclamped is reported, not asserted.
         report["tip_note"] = "clamp the feet"
