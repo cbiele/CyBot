@@ -878,13 +878,13 @@ def soft_limits(turning, still, bench_z, phi):
     return hits
 
 
-def bench_reach(fixed, bench_z, tip):
+def bench_reach(turning, still, bench_z, tip, phi):
     """Poses (psi, theta, wrist pitch) that bring the tool's point to the bench (within 2) with nothing of the arm under
-    it or in the body, the base or the legs, at phi 0: the one nearest the base axis."""
+    it or in the body, the base or the legs, with the base at phi: the one nearest the base axis."""
     import numpy as np
     body, rest = past_elbow()
     upper = upper_arm_objs()
-    ft = merged_tree(fixed)
+    ft = merged_tree(turning + still, None, {id(o): base_rot(-phi) for o in still})
     cands = []
     for psi in range(int(S.PSI_RANGE[0]), int(S.PSI_RANGE[1]) + 1):
         for th in range(int(E.RANGE[0]), int(E.RANGE[1]) + 1, 2):
@@ -958,13 +958,15 @@ def shoulder_report(report):
     over = [q for q in poses if shoulder_torque(*q, groups, upper, tip) > capacity]
     over_worst = max(over, key=lambda q: shoulder_torque(*q, groups, upper, tip)) if over else None
     bench = SH_AT.z + S.FOOT_PAD_Z
-    phis = sorted(set(list(range(0, 360, 45)) + [int(S.BASE_MOTOR_DEG) % 360]))
+    phis = sorted(set(list(range(0, 360, 15)) + [int(S.BASE_MOTOR_DEG) % 360]))
+    assert all(int(p) % 360 in phis for p in list(S.LEG_PHI) + [S.BASE_MOTOR_DEG]), "phi samples miss a leg's or the shelf's centre line"
     per_phi = {phi: soft_limits(turning, still, bench, phi) for phi in phis}
     union = sorted({tuple(h) for hs in per_phi.values() for h in hs})
     limits0 = per_phi[0]
-    assert {tuple(h) for h in limits0} <= set(union), "the soft limits over phi miss phi 0's"
-    reach = bench_reach(fixed, bench, tip)
-    assert reach["reaches"], ("the tool can't reach the bench", reach)
+    reaches = {phi: bench_reach(turning, still, bench, tip, phi) for phi in phis}
+    assert all(r["reaches"] for r in reaches.values()), ("the tool can't reach the bench", {k: r for k, r in reaches.items() if not r["reaches"]})
+    reach = reaches[0]
+    far = max(phis, key=lambda k: reaches[k]["closest_r_mm"])
     tip_mm, tip_at = tip_margin(groups, upper, tip, sweep)
     report.update({"shoulder_at": [round(c, 1) for c in SH_AT], "shoulder_home_clashes": home, "upper_arm_hits_body": bool(upper_hit),
                    "plate_mass_g": round(upper[0][1]), "shoulder_torque_worst_nm": round(t, 2), "shoulder_worst_pose_psi_theta_pitch": list(worst),
@@ -973,6 +975,7 @@ def shoulder_report(report):
                    "shoulder_current_cap_a": round(S.SHOULDER_CURRENT_CAP_A, 3), "psi_range": list(S.PSI_RANGE),
                    "shoulder_soft_limits": [list(h) for h in union], "shoulder_soft_limits_phi0": limits0,
                    "shoulder_soft_limits_by_phi": {str(k): len(v) for k, v in per_phi.items()}, "bench_reach": reach,
+                   "bench_reach_worst_phi": {"phi": far, "closest_r_mm": reaches[far]["closest_r_mm"], "pose": reaches[far]["pose"]},
                    "bench_z": round(bench, 1), "tip_margin_mm": round(tip_mm, 1), "tip_worst": tip_at})
     assert report["shoulder_current_cap_a"] == round(S.SHOULDER_CURRENT_CAP_A, 3)
     if margin < 1.2:
