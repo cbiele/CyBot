@@ -430,6 +430,54 @@ def socket_bracket():
     return b
 
 
+def lug_cradle():
+    """Under the lug: a saddle CRADLE["gap"] below it on the bracket's flange, its front past the flange under the tab's
+    45; behind the flange a tail down on the turntable with two M3s into it. Prints standing on the tail's back face, the
+    saddle's back edge at 45 degrees up from the tail."""
+    w, (y0, y1), (t0, t1), zt = CRADLE["half_x"], CRADLE["y"], CRADLE["tail_y"], -SHOULDER_AXIS_Z
+    zf, zs = zt + BRACKET["flange_t"], zt + CRADLE["seat_h"]
+    c = L.box("shoulder-lug-cradle", -w, w, y0, y1, zf, CRADLE["top_z"])
+    L.union(c, L.box("tail", -w, w, y1 - 0.01, t1, zf, zs))
+    L.union(c, L.box("foot", -w, w, t0, t1, zt, zf + 0.01))
+    L.finish(c)
+    top = CRADLE["top_z"] + 1.0
+    edge = prism_y("45", [(y1 + 0.5, zs - 0.5), (y1 + 0.5, top), (y1 + 0.5 - (top - zs + 0.5), top)], -w - 1.0, w + 1.0)
+    edge.data.transform(Matrix.Rotation(math.radians(90), 4, 'Z'))
+    L.cut(c, edge)
+    g = CRADLE["gap"]
+    for shift in ((0, 0, -g), (g, 0, 0), (-g, 0, 0)):   # down, and either side for the tab's steep flanks
+        under = copy(PARTS["shoulder-lug"], "lug, less the gap"); under.data.transform(Matrix.Translation(shift))
+        L.cut(c, under)
+    for x, y in CRADLE_SCREWS:
+        L.cut(c, L.cyl_z("screw", x, y, M3_CLEAR_R, zt - 1.0, zs + 1.0, n=30))
+    L.finish(c)
+    PRINT_POSE["shoulder-lug-cradle"] = basis((1, 0, 0), (0, 0, -1), (0, 1, 0), (0, 0, t1))
+    return c
+
+
+def hub_cradle(sgn):
+    """One half (sgn +1: +x, -1: -x) of the saddle under the hub inside the arm, or with sgn 0 the whole saddle in one
+    piece: HUB_CRADLE["gap"] under the hub out to half_x, a foot tab on out past the hub with an M3 down into the
+    turntable. Prints on its flat underside."""
+    H, zt = HUB_CRADLE, -SHOULDER_AXIS_Z
+    (y0, y1), name = H["y"], "shoulder-hub-cradle" + {1: "-right", -1: "-left", 0: ""}[sgn]
+    x0, x1 = (-H["half_x"], H["half_x"]) if sgn == 0 else sorted((sgn * H["split"], sgn * H["half_x"]))
+    c = L.box(name, x0, x1, y0, y1, zt, H["top_z"])
+    for s in ((1, -1) if sgn == 0 else (sgn,)):
+        L.union(c, L.box("tab", *sorted((s * (H["half_x"] - 0.01), s * H["tab_x"])), y0, y1, zt, zt + H["tab_t"]))
+    L.finish(c)
+    g = H["gap"]
+    for shift in ((0, 0, -g), (g, 0, 0), (-g, 0, 0)):
+        under = copy(PARTS["shoulder-hub"], "hub, less the gap"); under.data.transform(Matrix.Translation(shift))
+        L.cut(c, under)
+    for x, y in HUB_CRADLE_SCREWS:
+        if sgn == 0 or x * sgn > 0:
+            L.cut(c, L.cyl_z("screw", x, y, M3_CLEAR_R, zt - 1.0, zt + H["tab_t"] + 1.0, n=30))
+    L.finish(c)
+    PRINT_POSE[name] = Matrix.Translation((0, 0, -zt))
+    return c
+
+
 def rod_post():
     """Outside the shoulder belt on plate B's side: a 625 on the input rod's end, two M3s down into the turntable."""
     (y_in, y_out), hw, top, ft = POST["y"], POST["half"], POST["top"], POST["foot_t"]
@@ -510,8 +558,10 @@ def ring_zone():
 
 
 def fixed_shoulder():
-    """What the hub holds still: the hub, the output plate, the lug, the tubes, the socket bracket and the post."""
-    return [copy(PARTS[n], n) for n in ("shoulder-hub", "shoulder-output-plate", "shoulder-lug", "shoulder-socket-bracket", "shoulder-rod-post")] + tubes()
+    """What the hub holds still: the hub, the output plate, the lug, the tubes, the socket bracket, the post and the cradles
+    under the lug and the hub (both the halves and the one-piece, which take the same place)."""
+    return [copy(PARTS[n], n) for n in ("shoulder-hub", "shoulder-output-plate", "shoulder-lug", "shoulder-socket-bracket", "shoulder-rod-post", "shoulder-lug-cradle",
+                                          "shoulder-hub-cradle-right", "shoulder-hub-cradle-left", "shoulder-hub-cradle")] + tubes()
 
 
 def turning_shoulder(psi):
@@ -693,6 +743,107 @@ def check_bracket_assembly():
         bpy.data.objects.remove(o)
 
 
+def check_lug_cradle():
+    """The cradle sits on the bracket's flange and the turntable, CRADLE["gap"] under the lug along its length and
+    across its width, slides in from behind along the axis with the arm and lug on, and its screws reach the turntable."""
+    n = "shoulder-lug-cradle"
+    part_ok(n); on_bed(n)
+    c, lg, br = PARTS[n], PARTS["shoulder-lug"], PARTS["shoulder-socket-bracket"]
+    tt = turntable_disc(SHOULDER_AXIS_Z)
+    zt = -SHOULDER_AXIS_Z
+    for o in [lg, br, tt] + tubes():
+        assert overlap(c, o) < 0.05, ("cradle overlaps", o.name)
+    assert touching(c, br) and touching(c, tt), "cradle not down on the bracket's flange and the turntable"
+    gaps = []
+    for y in (CRADLE["y"][0] + 1.0, 50.0, 60.0, 70.0):
+        for x in (-CRADLE["half_x"] + 1.0, 0.0, CRADLE["half_x"] - 1.0):
+            under = zt + ray_len(lg, (x, y, zt), (0, 0, 1))
+            gaps.append(round(ray_len(c, (x, y, under - 0.001), (0, 0, -1)), 2))
+    assert all(CRADLE["gap"] - 0.05 <= g <= CRADLE["gap"] + 0.1 for g in gaps), ("cradle not 0.2 under the lug", gaps)
+    arm = turning_shoulder(0.0)
+    pl = concat([copy(p, "p") for p in [lg, br, PARTS["shoulder-hub"], arm, tt] + tubes()], "placed")
+    s = copy(c, "cradle"); s.data.transform(Matrix.Translation((0, 0, 0.05)))   # off the flange it slides on
+    hit = slides_home(s, (0, -1, 0), CRADLE["tail_y"][1] - CRADLE["y"][0] + 1.0, pl)
+    for o in (pl, s, arm):
+        bpy.data.objects.remove(o)
+    assert hit is None, ("the cradle can't slide in from behind along the axis", hit)
+    for x, y in CRADLE_SCREWS:
+        screw_access(("cradle screw", x), (x, y, zt + CRADLE["seat_h"]), (0, 0, 1), 2.75, BOLT_HEAD_H, [lg, br, c] + tubes())
+    assert 3.0 <= CRADLE_SCREW_L - CRADLE["seat_h"] <= M3_INSERT_DEPTH - 0.5, "cradle screws into the turntable"
+    REPORT["bolts"]["cradle into the turntable"] = CRADLE_SCREW_L
+    REPORT["cradle_gaps_mm"] = sorted(set(gaps))
+    bpy.data.objects.remove(tt)
+
+
+def check_hub_cradle():
+    """Each half sits on the turntable CRADLE gap under the hub, slides in from its own side with the arm on, and its
+    screw's head clears the arm through the range with a driver's path from above."""
+    names = ("shoulder-hub-cradle-right", "shoulder-hub-cradle-left")
+    halves = [PARTS[n] for n in names]
+    hub, op = PARTS["shoulder-hub"], PARTS["shoulder-output-plate"]
+    tt, arm = turntable_disc(SHOULDER_AXIS_Z), turning_shoulder(0.0)
+    zt = -SHOULDER_AXIS_Z
+    for n, h in zip(names, halves):
+        part_ok(n); on_bed(n)
+        for o in (hub, op, tt, arm):
+            assert overlap(h, o) < 0.05, (n, "overlaps", o.name)
+        assert touching(h, tt), (n, "not down on the turntable")
+    assert min_gap(*halves) >= 0.1, "the halves overlap"
+    gaps = []
+    for y in (HUB_CRADLE["y"][0] + 1.0, sum(HUB_CRADLE["y"]) / 2, HUB_CRADLE["y"][1] - 1.0):
+        for x in (-15.0, -8.0, -1.0, 1.0, 8.0, 15.0):
+            under = zt + ray_len(hub, (x, y, zt), (0, 0, 1))
+            gaps.append(round(min(ray_len(h, (x, y, under - 0.001), (0, 0, -1)) or 99.0 for h in halves), 2))
+    assert all(HUB_CRADLE["gap"] - 0.05 <= g <= HUB_CRADLE["gap"] + 0.1 for g in gaps), ("hub cradle not 0.2 under the hub", gaps)
+    for sgn, (n, h) in zip((1, -1), zip(names, halves)):
+        pl = concat([copy(p, "p") for p in (hub, op, arm, tt)], "placed")
+        s = copy(h, "sliding"); s.data.transform(Matrix.Translation((0, 0, 0.05)))
+        hit = slides_home(s, (-sgn, 0, 0), HUB_CRADLE["tab_x"] + 1.0, pl)
+        bpy.data.objects.remove(pl); bpy.data.objects.remove(s)
+        assert hit is None, (n, "can't slide in from its side", hit)
+    heads = concat([rod("head", Vector((x, y, zt + HUB_CRADLE["tab_t"])), Vector((x, y, zt + HUB_CRADLE["tab_t"] + BOLT_HEAD_H)), 2.75, n=24)
+                    for x, y in HUB_CRADLE_SCREWS], "heads")
+    hv = [v.co.copy() for v in heads.data.vertices]
+    swept = [turning_shoulder(float(p)) for p in range(int(PSI_RANGE[0]), int(PSI_RANGE[1]) + 1, 3)]
+    worst = min(sweep_gap(a, tree(heads), hv, bounds(hv, 10.0)) for a in swept)
+    assert worst >= 0.5, ("a hub cradle screw head within 0.5 of the arm", round(worst, 2))
+    for x, y in HUB_CRADLE_SCREWS:
+        screw_access(("hub cradle screw", x), (x, y, zt + HUB_CRADLE["tab_t"]), (0, 0, 1), 2.75, BOLT_HEAD_H, [hub, op, arm] + halves)
+    assert 3.0 <= HUB_CRADLE_SCREW_L - HUB_CRADLE["tab_t"] <= M3_INSERT_DEPTH - 0.5, "hub cradle screws into the turntable"
+    REPORT["bolts"]["hub cradle into the turntable"] = HUB_CRADLE_SCREW_L
+    REPORT["hub_cradle_gaps_mm"] = sorted(set(gaps)); REPORT["hub_cradle_head_gap_mm"] = round(worst, 2)
+    for o in [heads, tt, arm] + swept:
+        bpy.data.objects.remove(o)
+
+
+def check_hub_cradle_one():
+    """The one-piece saddle (the halves joined across the split) goes on the turntable before the arm, and the hub
+    lowers into it: the same gap under the hub, right across the middle, and the same screws."""
+    n = "shoulder-hub-cradle"
+    c, hub, op = PARTS[n], PARTS["shoulder-hub"], PARTS["shoulder-output-plate"]
+    tt, arm = turntable_disc(SHOULDER_AXIS_Z), turning_shoulder(0.0)
+    zt = -SHOULDER_AXIS_Z
+    part_ok(n); on_bed(n)
+    for o in (hub, op, tt, arm):
+        assert overlap(c, o) < 0.05, (n, "overlaps", o.name)
+    assert touching(c, tt), (n, "not down on the turntable")
+    gaps = []
+    for y in (HUB_CRADLE["y"][0] + 1.0, sum(HUB_CRADLE["y"]) / 2, HUB_CRADLE["y"][1] - 1.0):
+        for x in (-15.0, -8.0, 0.0, 8.0, 15.0):
+            under = zt + ray_len(hub, (x, y, zt), (0, 0, 1))
+            gaps.append(round(ray_len(c, (x, y, under - 0.001), (0, 0, -1)) or 99.0, 2))
+    assert all(HUB_CRADLE["gap"] - 0.05 <= g <= HUB_CRADLE["gap"] + 0.1 for g in gaps), ("one-piece cradle not 0.2 under the hub", gaps)
+    pl = concat([copy(p, "p") for p in (hub, op, arm)], "lowered")
+    hit = slides_home(c, (0, 0, 1), 30.0, pl)
+    bpy.data.objects.remove(pl)
+    assert hit is None, ("the hub can't lower into the one-piece cradle", hit)
+    for x, y in HUB_CRADLE_SCREWS:
+        screw_access(("one-piece hub cradle screw", x), (x, y, zt + HUB_CRADLE["tab_t"]), (0, 0, 1), 2.75, BOLT_HEAD_H, [hub, op, arm, c])
+    REPORT["hub_cradle_one_gaps_mm"] = sorted(set(gaps))
+    for o in (tt, arm):
+        bpy.data.objects.remove(o)
+
+
 def tower_mpa(br):
     """The worst bending plus direct stress across each of br's towers, at every 1 mm from its root on the base up to
     its top tube, from its tubes' forces, the design torque either way round. The section's width is measured off the
@@ -862,7 +1013,7 @@ def turntable():
     for a in RING_SCREW_ANGLES:
         x, y = polar(RING_SCREW_R, a)
         L.cut(t, L.cyl_z("ring insert", x, y, M3_INSERT_R, zb - 1.0, zb + M3_INSERT_DEPTH, n=32))
-    for x, y in BRACKET_BOLTS + POST_BOLTS:
+    for x, y in BRACKET_BOLTS + POST_BOLTS + CRADLE_SCREWS + HUB_CRADLE_SCREWS:
         L.cut(t, L.cyl_z("bracket insert", x, y, M3_INSERT_R, zt - M3_INSERT_DEPTH, zt + 1.0, n=31))
     mx, my = hall_xy()
     L.cut(t, L.cyl_z("magnet", mx, my, MAGNET_R + 0.1, PHI_TAB_Z[1] - 1.0, PHI_TAB_Z[1] + MAGNET_RECESS + MAGNET_D, n=32))
@@ -1196,7 +1347,7 @@ def check_base():
     hall = magnet_face - sensor
     assert 1.0 <= hall <= 2.0, ("base Hall gap", hall)
     assert ray_len(fb, (mx, my, sensor + 1.0), (0, 0, -1)) >= 1.0 + SENSOR[2], "base sensor pocket missing"
-    for x, y in BRACKET_BOLTS + POST_BOLTS:
+    for x, y in BRACKET_BOLTS + POST_BOLTS + CRADLE_SCREWS + HUB_CRADLE_SCREWS:
         d = ray_len(tt, (x + 1.85, y, TURNTABLE_Z + 1.0), (0, 0, -1))
         assert d is not None and abs(d - 1.0 - M3_INSERT_DEPTH) < 0.06, ("bracket or post insert in the turntable", x, y, d)
         assert material_round(tt, (x, y, TURNTABLE_Z - M3_INSERT_DEPTH / 2), (0, 0, 1), M3_INSERT_R) >= INSERT_WALL_MIN, ("turntable insert wall", x, y)
@@ -1397,11 +1548,14 @@ def check_legs():
 bpy.ops.wm.read_factory_settings(use_empty=True)
 PARTS["shoulder-hub"], PARTS["shoulder-output-plate"] = shoulder_hub(), output_plate()
 PARTS["shoulder-lug"], PARTS["shoulder-socket-bracket"], PARTS["shoulder-rod-post"] = lug(), socket_bracket(), rod_post()
+PARTS["shoulder-lug-cradle"] = lug_cradle()
+PARTS["shoulder-hub-cradle-right"], PARTS["shoulder-hub-cradle-left"] = hub_cradle(1), hub_cradle(-1)
+PARTS["shoulder-hub-cradle"] = hub_cradle(0)
 PARTS["turntable"], PARTS["base-ring-130T"] = turntable(), base_ring()
 PARTS["base-spacer"], PARTS["base-retainer"] = base_spacer(), base_retainer()
 PARTS["fixed-base"], PARTS["base-motor-plate"] = fixed_base(), base_motor_plate()
 PARTS["foot"], PARTS["foot-pad"] = foot_part(), foot_pad()
-CHECKS += [check_shoulder_core, check_bracket_assembly, check_axis_and_stops, check_base, check_base_order, check_legs]
+CHECKS += [check_shoulder_core, check_bracket_assembly, check_lug_cradle, check_hub_cradle, check_hub_cradle_one, check_axis_and_stops, check_base, check_base_order, check_legs]
 for check in CHECKS:
     check()
 print("SHOULDER", json.dumps({**{n: L.stats(o) for n, o in PARTS.items()}, **REPORT}))

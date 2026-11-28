@@ -77,6 +77,20 @@ TUBE_ENDS = {"front": ((math.sqrt(_LR ** 2 - _LZ ** 2), -_LZ), (45.0, -_LZ)),
 BRACKET = {"x": 64.0, "root_x": {"front": 72.0, "rear": 84.0}, "tower_x": 45.0, "tops": {"front": 15.0, "rear": 27.0},
            "flange_y": (55.0, LUG["spider_y"][0]), "flange_t": 5.0}
 BRACKET_BOLTS = [(-56.0, 61.0), (-33.0, 61.0), (33.0, 61.0), (56.0, 61.0)]   # outside the hub and lug (r31), so a driver comes straight down
+# Under the lug, which otherwise hangs off its three tubes: a saddle 0.2 under it from past plate A's stops back over the
+# bracket's flange, slid in from behind along the axis (narrow enough to pass under the spider), and a tail behind the
+# flange screwed down into the turntable, where a driver reaches.
+CRADLE = {"half_x": 10.0, "y": (TAB_Y[1] + 1.0, LUG["spider_y"][1] - 0.2), "tail_y": (LUG["spider_y"][1] + 0.3, LUG["spider_y"][1] + 6.3),
+          "gap": 0.2, "seat_h": 8.0, "top_z": -26.0}
+CRADLE_SCREWS = [(-5.0, LUG["spider_y"][1] + 3.3), (5.0, LUG["spider_y"][1] + 3.3)]
+CRADLE_SCREW_L = 12                          # through the tail's 8 into the turntable's inserts
+# Under the hub inside the arm, between the compact's output and plate A: two mirrored halves split on the axis, each
+# slid in from its own side (the hub only rises away from a half as it comes in), each with a foot tab out past the hub
+# screwed down into the turntable (y 18 keeps their inserts clear of the ring's, underneath).
+HUB_CRADLE = {"y": (HUB["face_y"] + 0.4, PLATE_FACES["A"][0] - 1.0), "split": 0.1, "half_x": 20.0, "tab_x": 33.0,
+              "tab_t": 6.0, "gap": 0.2, "top_z": -19.5}
+HUB_CRADLE_SCREWS = [(30.0, 18.0), (-30.0, 18.0)]
+HUB_CRADLE_SCREW_L = 10                      # through the tab's 6 into the turntable's inserts
 EAR = {"x": (-BRACKET["root_x"]["rear"] - 2.0, BRACKET["root_x"]["front"] + 2.0), "y": (53.0, LUG["spider_y"][1] + 2.0)}   # the turntable's tab under the bracket, outside the arm's y band
 B625 = (2.5, 8.0, 5.0)                       # bore r, seat r (params.json seat_625), width
 POST = {"y": (E.SH_BELT_ENVELOPE_Y - 1.0, E.SH_BELT_ENVELOPE_Y - 1.0 - 1.0 - B625[2]), "half": 12.0, "top": B625[1] + 4.0,
