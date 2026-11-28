@@ -213,7 +213,7 @@ if HOLLOW_T8:
 
 LIP_R = 15.0                                 # holds each 6804's outer ring at the housing face
 CARRIER_R, CARRIER_BORE_R = 22.0, 22.5
-CARRIER_TRIM = 0.5 if HOLLOW_T8 else 0.0     # off each plate's disk face: the T8 hub bound when compacted into the housing
+CARRIER_TRIM = 0.0 if HOLLOW and not HOLLOW_T8 else 0.5   # off each plate's disk face: the T8 hub bound when compacted into the housing; the compact gets the same
 HOUSING_R, BOLT_R, BOLT_HOLE_R = 34.0, 30.0, 1.7
 BOLT_ANGLES = [45 + 90 * k for k in range(4)]
 SHOULDER_R = 13.4 if HOLLOW_T8 else 11.5     # bears on the main bearing's inner ring only
